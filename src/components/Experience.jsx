@@ -6,9 +6,13 @@ import { Suspense, useRef, useState, useEffect } from "react";
 import gsap from "gsap";
 import * as THREE from "three";
 
-const FishConfig = ({ setFishColor, setFishSpeed }) => {
+// 폭피, 원바운드, 물고기키우기
+// 액자 제거 및 갤러리룸 추가
+
+const FishConfig = ({ setFishColor, setFishSpeed, setFishScale }) => {
 	const [colorInput, setColorInput] = useState("#ffffff");
 	const [speedInput, setSpeedInput] = useState(30);
+	const [scaleInput, setScaleInput] = useState(1);
 
 	const handleColorChange = (e) => {
 		setColorInput(e.target.value);
@@ -19,10 +23,19 @@ const FishConfig = ({ setFishColor, setFishSpeed }) => {
 		const inputSpeed = e.target.value;
 		const parsedSpeed = Number(inputSpeed);
 
-		// Ensure the input is a valid number before updating the state
 		if (!isNaN(parsedSpeed)) {
 			setSpeedInput(parsedSpeed);
 			setFishSpeed(parsedSpeed);
+		}
+	};
+
+	const handleScaleChange = (e) => {
+		const inputScale = e.target.value;
+		const parsedScale = Number(inputScale);
+
+		if (!isNaN(parsedScale)) {
+			setScaleInput(parsedScale);
+			setFishScale(parsedScale);
 		}
 	};
 
@@ -36,25 +49,49 @@ const FishConfig = ({ setFishColor, setFishSpeed }) => {
 				<label>Fish Speed: </label>
 				<input type="number" value={speedInput.toString()} onChange={handleSpeedChange} min="10" max="200" />
 			</div>
+			<div>
+				<label>Fish Scale: </label>
+				<input type="number" value={scaleInput.toString()} onChange={handleScaleChange} min="0.1" max="10" step="0.1" />
+			</div>
 		</div>
 	);
 };
 
-const FishModel = ({ fishRef, sphereRefs, fishColor }) => {
+const FishModel = ({ fishRef, sphereRefs, fishColor, fishScale }) => {
 	const { scene } = useGLTF("/model/fish.glb");
 	const { camera } = useThree();
 	const [isNearSphere, setIsNearSphere] = useState([false, false, false, false]);
+	const [showHitBox, setShowHitBox] = useState(false); // Hit box visibility state
+	const hitBoxRef = useRef();
 
-	// Apply custom fish color
+	useEffect(() => {
+		// 디버그
+		const toggleHitBox = (e) => {
+			if (e.key === "d") {
+				setShowHitBox((prev) => !prev);
+			}
+		};
+
+		window.addEventListener("keydown", toggleHitBox);
+		return () => window.removeEventListener("keydown", toggleHitBox);
+	}, []);
+
 	scene.traverse((child) => {
 		if (child.isMesh) {
 			child.castShadow = true;
-			child.material.color.set(fishColor); // Set fish color
+			child.material.color.set(fishColor);
 		}
 	});
 
 	useFrame(() => {
 		if (fishRef.current) {
+			fishRef.current.scale.set(fishScale, fishScale, fishScale);
+
+			if (hitBoxRef.current) {
+				hitBoxRef.current.position.set(fishRef.current.position.x, fishRef.current.position.y, fishRef.current.position.z);
+				hitBoxRef.current.scale.set(fishScale * 2, fishScale * 2, fishScale * 2);
+			}
+
 			const fishPosition = fishRef.current.position;
 
 			sphereRefs.forEach((sphereRef, index) => {
@@ -88,7 +125,17 @@ const FishModel = ({ fishRef, sphereRefs, fishColor }) => {
 		}
 	});
 
-	return <primitive ref={fishRef} object={scene} position={[0, 1, 0]} castShadow />;
+	return (
+		<>
+			<primitive ref={fishRef} object={scene} position={[0, 1, 0]} castShadow />
+			{showHitBox && (
+				<mesh ref={hitBoxRef}>
+					<boxGeometry args={[1, 1, 1]} />
+					<meshBasicMaterial color="red" wireframe transparent opacity={0.5} />
+				</mesh>
+			)}
+		</>
+	);
 };
 
 const Plane = ({ planeRef }) => {
@@ -171,12 +218,11 @@ const ClickHandler = ({ fishRef, planeRef, fishMoveSpeed }) => {
 	});
 };
 
-const Grid = ({ fishRef }) => {
-	const cellSize = 6; // Size of each cell
+const Grid = ({ fishRef, fishScale }) => {
+	const cellSize = 6;
 	const cells = [];
 	const [activeCell, setActiveCell] = useState(null);
 
-	// Initialize grid cells
 	for (let x = -3; x <= 3; x++) {
 		for (let z = -3; z <= 3; z++) {
 			cells.push({
@@ -196,8 +242,12 @@ const Grid = ({ fishRef }) => {
 					const fishPosition = fishRef.current.position;
 					const cellPosition = cells[randomIndex].position;
 
-					// hit
-					if (Math.abs(fishPosition.x - cellPosition[0]) < cellSize / 2 && Math.abs(fishPosition.z - cellPosition[2]) < cellSize / 2) {
+					const adjustedHitRadius = cellSize / 2 + (fishScale * cellSize) / 4;
+
+					const isHit =
+						Math.abs(fishPosition.x - cellPosition[0]) < adjustedHitRadius && Math.abs(fishPosition.z - cellPosition[2]) < adjustedHitRadius;
+
+					if (isHit) {
 						console.log("hit");
 					}
 				}
@@ -206,7 +256,7 @@ const Grid = ({ fishRef }) => {
 		}, 2500);
 
 		return () => clearInterval(interval);
-	}, [cells, fishRef]);
+	}, [cells, fishRef, fishScale]);
 
 	return cells.map((cell, index) => (
 		<group key={index} position={cell.position}>
@@ -228,6 +278,7 @@ const Experience = () => {
 	const planeRef = useRef();
 	const [fishColor, setFishColor] = useState("#ffffff");
 	const [fishSpeed, setFishSpeed] = useState(50);
+	const [fishScale, setFishScale] = useState(1);
 
 	const spherePositions = [
 		[30, 1, 0],
@@ -246,9 +297,9 @@ const Experience = () => {
 				<directionalLight color={0xf8f8ff} intensity={4} position={[2, 1, 3]} castShadow />
 
 				<Suspense fallback={null}>
-					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} fishColor={fishColor} />
+					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} fishColor={fishColor} fishScale={fishScale} />
 					<Plane planeRef={planeRef} />
-					<Grid fishRef={fishRef} />
+					<Grid fishRef={fishRef} fishScale={fishScale} />
 					{sphereRefs.map((sphereRef, index) => (
 						<Sphere key={index} sphereRef={sphereRef} position={spherePositions[index]} />
 					))}
@@ -256,7 +307,7 @@ const Experience = () => {
 				</Suspense>
 			</Canvas>
 
-			<FishConfig setFishColor={setFishColor} setFishSpeed={setFishSpeed} />
+			<FishConfig setFishColor={setFishColor} setFishSpeed={setFishSpeed} setFishScale={setFishScale} />
 		</>
 	);
 };
