@@ -1,0 +1,74 @@
+@font-face {
+	font-family: "NanumSquare";
+	src: url("/fonts/NanumSquareL.woff2") format("woff2");
+	font-weight: 300;
+}
+@font-face {
+	font-family: "NanumSquare";
+	src: url("/fonts/NanumSquareR.woff2") format("woff2");
+	font-weight: 400;
+}
+@font-face {
+	font-family: "NanumSquare";
+	src: url("/fonts/NanumSquareB.woff2") format("woff2");
+	font-weight: 700;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	height: 100vh;
+	font-family: NanumSquare;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	overflow-x: hidden;
+}
+
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+ul,
+input,
+button {
+	margin: 0;
+	word-break: keep-all;
+	white-space: pre-wrap;
+}
+
+ul {
+	padding: 0;
+}
+
+svg,
+img {
+	vertical-align: bottom;
+}
+
+button {
+	padding: 0;
+	border: 0;
+	cursor: pointer;
+	background: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+	font-family: Nanum;
+}
+
+.mobile {
+	display: none;
+	@media screen and (max-width: 480px) {
+		display: block;
+	}
+}
