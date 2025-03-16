@@ -7,3 +7,6 @@
 5. glsl 인트로 추가 다크모드 빛 약해지며 주변에 바라보는 눈, 동공 커짐
    PolyHaven, SketchFab
    https://threejs-journey.com/lesson
+   groot/works
+
+게임 죽으면 YOU'RE COOKED 메세지

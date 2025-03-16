@@ -58,10 +58,10 @@ const FishConfig = ({ setFishColor, setFishSpeed, setFishScale }) => {
 };
 
 const FishModel = ({ fishRef, sphereRefs, fishColor, fishScale }) => {
-	const { scene } = useGLTF("/model/fish.glb");
+	const { scene } = useGLTF("/models/fish.glb");
 	const { camera } = useThree();
 	const [isNearSphere, setIsNearSphere] = useState([false, false, false, false]);
-	const [showHitBox, setShowHitBox] = useState(false); // Hit box visibility state
+	const [showHitBox, setShowHitBox] = useState(false);
 	const hitBoxRef = useRef();
 
 	useEffect(() => {
