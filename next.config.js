@@ -2,7 +2,7 @@ const nextConfig = {
 	transpilePackages: ["three"],
 	sassOptions: {},
 	reactStrictMode: false,
-	webpack: (config, { isServer }) => {
+	webpack: (config) => {
 		config.module.rules.push({
 			test: /\.(glsl|vs|fs)$/,
 		});

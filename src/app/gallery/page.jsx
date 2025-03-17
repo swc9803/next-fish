@@ -4,7 +4,9 @@ import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { vertexShader, fragmentShader } from "./shaders/particleShader";
+
+import vertexShader from "./shaders/particles/vertex.glsl";
+import fragmentShader from "./shaders/particles/fragment.glsl";
 
 function AnimatedParticles() {
 	const meshRef = useRef();
@@ -83,9 +85,7 @@ export default function ParticleScene() {
 	return (
 		<Canvas camera={{ position: [0, 0, 10] }} style={{ background: "black" }}>
 			<OrbitControls enableZoom={true} enablePan={false} />
-
 			<fog attach="fog" args={["black", 10, 30]} />
-
 			<AnimatedParticles />
 		</Canvas>
 	);
