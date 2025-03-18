@@ -11,3 +11,7 @@
    groot/works
 
 게임 죽으면 YOU'RE COOKED 메세지
+
+# gallery
+
+atom, jotai 제거
