@@ -2,11 +2,14 @@
 
 import { CameraControls, Dodecahedron, Environment, Grid, MeshDistortMaterial, RenderTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
+import { useAtom } from "jotai";
 import { useControls } from "leva";
 import { useEffect, useRef } from "react";
+import { slideAtom } from "./Overlay.jsx";
 import { Scene } from "./Scene.jsx";
 
-export const modelInfo = [
+// model animation 추가
+export const modelArray = [
 	{
 		path: "models/gallery/cybertruck_scene.glb",
 		mainColor: "#f9c0ff",
@@ -31,89 +34,136 @@ export const modelInfo = [
 		price: 150000,
 		range: 800,
 	},
+	{
+		path: "models/gallery/cybertruck_scene.glb",
+		mainColor: "#ff5050",
+		name: "car name 4",
+		description: "High-speed sports car",
+		price: 95000,
+		range: 500,
+	},
+	{
+		path: "models/gallery/cybertruck_scene.glb",
+		mainColor: "#5078ff",
+		name: "car name 5",
+		description: "Heavy-duty truck",
+		price: 120000,
+		range: 700,
+	},
 ];
 
-const CameraHandler = ({ slide, slideDistance }) => {
+const CameraHandler = ({ slideDistance }) => {
 	const viewport = useThree((state) => state.viewport);
 	const cameraControls = useRef();
-	const lastSlide = useRef(slide);
-	const isFirstRender = useRef(true);
+	const [slide] = useAtom(slideAtom);
+	const lastSlide = useRef(0);
 
 	const { dollyDistance } = useControls({
-		dollyDistance: { value: 10, min: 0, max: 50 },
+		dollyDistance: {
+			value: 10,
+			min: 0,
+			max: 50,
+		},
 	});
 
 	const moveToSlide = async () => {
-		if (!cameraControls.current) return;
-
-		const targetX = slide * (viewport.width + slideDistance);
-		const lastX = lastSlide.current * (viewport.width + slideDistance);
-
-		if (isFirstRender.current) {
-			cameraControls.current.setLookAt(targetX, 0, 5, targetX, 0, 0, false);
-			isFirstRender.current = false;
-			lastSlide.current = slide;
-			return;
-		}
-		if (slide === 0 && lastSlide.current === modelInfo.length - 1) {
-			cameraControls.current.setLookAt(lastX, 0, 5, lastX, 0, 0, false);
-		} else if (slide === modelInfo.length - 1 && lastSlide.current === 0) {
-			cameraControls.current.setLookAt(lastX, 0, 5, lastX, 0, 0, false);
-		}
-
-		await cameraControls.current.setLookAt(lastX, 3, dollyDistance, lastX, 0, 0, true);
-		await cameraControls.current.setLookAt(targetX, 1, dollyDistance, targetX, 0, 0, true);
-		await cameraControls.current.setLookAt(targetX, 0, 5, targetX, 0, 0, true);
-
-		lastSlide.current = slide;
+		await cameraControls.current.setLookAt(
+			lastSlide.current * (viewport.width + slideDistance),
+			3,
+			dollyDistance,
+			lastSlide.current * (viewport.width + slideDistance),
+			0,
+			0,
+			true
+		);
+		await cameraControls.current.setLookAt(
+			(slide + 1) * (viewport.width + slideDistance),
+			1,
+			dollyDistance,
+			slide * (viewport.width + slideDistance),
+			0,
+			0,
+			true
+		);
+		await cameraControls.current.setLookAt(slide * (viewport.width + slideDistance), 0, 5, slide * (viewport.width + slideDistance), 0, 0, true);
 	};
 
 	useEffect(() => {
-		moveToSlide();
+		const resetTimeout = setTimeout(() => {
+			cameraControls.current.setLookAt(slide * (viewport.width + slideDistance), 0, 5, slide * (viewport.width + slideDistance), 0, 0);
+		}, 200);
+		return () => clearTimeout(resetTimeout);
+	}, [viewport]);
+
+	useEffect(() => {
+		if (lastSlide.current !== slide) {
+			moveToSlide();
+			lastSlide.current = slide;
+		}
 	}, [slide]);
 
-	return <CameraControls ref={cameraControls} touches={{ one: 0, two: 0, three: 0 }} mouseButtons={{ left: 0, middle: 0, right: 0 }} />;
+	return (
+		<CameraControls
+			ref={cameraControls}
+			touches={{
+				one: 0,
+				two: 0,
+				three: 0,
+			}}
+			mouseButtons={{
+				left: 0,
+				middle: 0,
+				right: 0,
+			}}
+		/>
+	);
 };
 
-export const Experience = ({ slide }) => {
+export const Experience = () => {
 	const viewport = useThree((state) => state.viewport);
 	const { slideDistance } = useControls({
-		slideDistance: { value: 1, min: 0, max: 10 },
+		slideDistance: {
+			value: 1,
+			min: 0,
+			max: 10,
+		},
 	});
-
 	return (
 		<>
 			<ambientLight intensity={0.2} />
 			<Environment preset={"city"} />
-			<CameraHandler slide={slide} slideDistance={slideDistance} />
-			<Grid position-y={-viewport.height / 2} sectionSize={1} cellSize={0.5} infiniteGrid fadeDistance={50} fadeStrength={5} />
+			<CameraHandler slideDistance={slideDistance} />
 
-			<group>
-				<mesh position-y={viewport.height / 2 + 1.5}>
-					<sphereGeometry args={[1, 32, 32]} />
-					<MeshDistortMaterial color={modelInfo[0].mainColor} speed={3} />
-				</mesh>
+			{modelArray.map((model, index) => (
+				<group key={index}>
+					<mesh position-x={index * (viewport.width + slideDistance)} position-y={viewport.height / 2 + 1.5}>
+						<boxGeometry />
+						<MeshDistortMaterial color={model.mainColor} speed={3} />
+					</mesh>
 
-				<mesh position-x={viewport.width + slideDistance} position-y={viewport.height / 2 + 1.5}>
-					<boxGeometry />
-					<MeshDistortMaterial color={modelInfo[1].mainColor} speed={3} />
-				</mesh>
-
-				<Dodecahedron position-x={2 * (viewport.width + slideDistance)} position-y={viewport.height / 2 + 1.5}>
-					<MeshDistortMaterial color={modelInfo[2].mainColor} speed={3} />
-				</Dodecahedron>
-			</group>
-
-			{modelInfo.map((item, index) => (
-				<mesh key={index} position-x={index * (viewport.width + slideDistance)}>
-					<planeGeometry args={[viewport.width, viewport.height]} />
-					<meshBasicMaterial toneMapped={false}>
-						<RenderTexture attach="map">
-							<Scene {...item} />
-						</RenderTexture>
-					</meshBasicMaterial>
-				</mesh>
+					<mesh position={[index * (viewport.width + slideDistance), 0, 0]}>
+						<planeGeometry args={[viewport.width, viewport.height]} />
+						<meshBasicMaterial toneMapped={false}>
+							<RenderTexture attach="map">
+								<Scene {...model} />
+							</RenderTexture>
+						</meshBasicMaterial>
+					</mesh>
+				</group>
 			))}
+
+			<Grid
+				position-y={-viewport.height / 2}
+				sectionSize={1}
+				sectionColor={"purple"}
+				sectionThickness={1}
+				cellSize={0.5}
+				cellColor={"#6f6f6f"}
+				cellThickness={0.6}
+				infiniteGrid
+				fadeDistance={50}
+				fadeStrength={5}
+			/>
 		</>
 	);
 };

@@ -2,10 +2,14 @@
 
 import styles from "./Overlay.module.scss";
 
+import { atom, useAtom } from "jotai";
 import { useEffect, useState } from "react";
-import { modelInfo } from "./Experience";
+import { modelArray } from "./Experience";
 
-export const Overlay = ({ slide, setSlide }) => {
+export const slideAtom = atom(0);
+
+export const Overlay = () => {
+	const [slide, setSlide] = useAtom(slideAtom);
 	const [displaySlide, setDisplaySlide] = useState(slide);
 	const [visible, setVisible] = useState(false);
 
@@ -34,13 +38,13 @@ export const Overlay = ({ slide, setSlide }) => {
 				</svg>
 
 				<div className={styles.navigation}>
-					<button onClick={() => setSlide((prev) => (prev - 1 + modelInfo.length) % modelInfo.length)} disabled={!visible}>
+					<button onClick={() => setSlide((prev) => (prev > 0 ? prev - 1 : modelArray.length - 1))} disabled={!visible}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
 						</svg>
 					</button>
 
-					<button onClick={() => setSlide((prev) => (prev + 1) % modelInfo.length)} disabled={!visible}>
+					<button onClick={() => setSlide((prev) => (prev < modelArray.length - 1 ? prev + 1 : 0))} disabled={!visible}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
 						</svg>
@@ -48,8 +52,8 @@ export const Overlay = ({ slide, setSlide }) => {
 				</div>
 
 				<div className={styles.content}>
-					<h1>{modelInfo[displaySlide].name}</h1>
-					<p>{modelInfo[displaySlide].description}</p>
+					<h1>{modelArray[displaySlide].name}</h1>
+					<p>{modelArray[displaySlide].description}</p>
 
 					<div className={styles.info}>
 						<div className={styles["info-block"]}>
@@ -57,7 +61,7 @@ export const Overlay = ({ slide, setSlide }) => {
 								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 									<path d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
 								</svg>
-								<p>${modelInfo[displaySlide].price.toLocaleString()}</p>
+								<p>${modelArray[displaySlide].price.toLocaleString()}</p>
 							</div>
 							<p className={styles["info-text"]}>After Federal Tax Credit</p>
 						</div>
