@@ -54,6 +54,7 @@ export const modelArray = [
 
 const CameraHandler = ({ slideDistance }) => {
 	const viewport = useThree((state) => state.viewport);
+	const { camera } = useThree();
 	const cameraControls = useRef();
 	const [slide] = useAtom(slideAtom);
 	const lastSlide = useRef(0);
@@ -66,6 +67,12 @@ const CameraHandler = ({ slideDistance }) => {
 		},
 	});
 
+	const logCameraPosition = () => {
+		setTimeout(() => {
+			console.log(`x: ${camera.position.x.toFixed(2)}, y: ${camera.position.y.toFixed(2)}, z: ${camera.position.z.toFixed(2)}`);
+		}, 100);
+	};
+
 	const moveToSlide = async () => {
 		await cameraControls.current.setLookAt(
 			lastSlide.current * (viewport.width + slideDistance),
@@ -76,6 +83,8 @@ const CameraHandler = ({ slideDistance }) => {
 			0,
 			true
 		);
+		logCameraPosition();
+
 		await cameraControls.current.setLookAt(
 			(slide + 1) * (viewport.width + slideDistance),
 			1,
@@ -85,7 +94,10 @@ const CameraHandler = ({ slideDistance }) => {
 			0,
 			true
 		);
+		logCameraPosition();
+
 		await cameraControls.current.setLookAt(slide * (viewport.width + slideDistance), 0, 5, slide * (viewport.width + slideDistance), 0, 0, true);
+		logCameraPosition();
 	};
 
 	useEffect(() => {

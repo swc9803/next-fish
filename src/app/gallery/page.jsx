@@ -5,7 +5,7 @@ import { Leva } from "leva";
 import { Experience } from "@/components/gallery/Experience.jsx";
 import { Overlay } from "@/components/gallery/Overlay.jsx";
 
-function App() {
+const Gallery = () => {
 	return (
 		<>
 			<Leva />
@@ -16,6 +16,6 @@ function App() {
 			</Canvas>
 		</>
 	);
-}
+};
 
-export default App;
+export default Gallery;
