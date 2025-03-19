@@ -2,14 +2,10 @@
 
 import styles from "./Overlay.module.scss";
 
-import { atom, useAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { modelInfo } from "./Experience";
 
-export const slideAtom = atom(0);
-
-export const Overlay = () => {
-	const [slide, setSlide] = useAtom(slideAtom);
+export const Overlay = ({ slide, setSlide }) => {
 	const [displaySlide, setDisplaySlide] = useState(slide);
 	const [visible, setVisible] = useState(false);
 
@@ -38,13 +34,13 @@ export const Overlay = () => {
 				</svg>
 
 				<div className={styles.navigation}>
-					<button onClick={() => setSlide((prev) => (prev < modelInfo.length - 1 ? prev + 1 : 0))} disabled={!visible}>
+					<button onClick={() => setSlide((prev) => (prev - 1 + modelInfo.length) % modelInfo.length)} disabled={!visible}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
 						</svg>
 					</button>
 
-					<button onClick={() => setSlide((prev) => (prev < modelInfo.length - 1 ? prev + 1 : 0))} disabled={!visible}>
+					<button onClick={() => setSlide((prev) => (prev + 1) % modelInfo.length)} disabled={!visible}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
 						</svg>

@@ -2,13 +2,10 @@
 
 import { CameraControls, Dodecahedron, Environment, Grid, MeshDistortMaterial, RenderTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { useAtom } from "jotai";
 import { useControls } from "leva";
 import { useEffect, useRef } from "react";
-import { slideAtom } from "./Overlay.jsx";
 import { Scene } from "./Scene.jsx";
 
-// model animation 추가
 export const modelInfo = [
 	{
 		path: "models/gallery/cybertruck_scene.glb",
@@ -36,88 +33,61 @@ export const modelInfo = [
 	},
 ];
 
-const CameraHandler = ({ slideDistance }) => {
+const CameraHandler = ({ slide, slideDistance }) => {
 	const viewport = useThree((state) => state.viewport);
 	const cameraControls = useRef();
-	const [slide] = useAtom(slideAtom);
-	const lastSlide = useRef(0);
+	const lastSlide = useRef(slide);
+	const isFirstRender = useRef(true);
 
 	const { dollyDistance } = useControls({
-		dollyDistance: {
-			value: 10,
-			min: 0,
-			max: 50,
-		},
+		dollyDistance: { value: 10, min: 0, max: 50 },
 	});
 
 	const moveToSlide = async () => {
-		await cameraControls.current.setLookAt(
-			lastSlide.current * (viewport.width + slideDistance),
-			3,
-			dollyDistance,
-			lastSlide.current * (viewport.width + slideDistance),
-			0,
-			0,
-			true
-		);
-		await cameraControls.current.setLookAt(
-			(slide + 1) * (viewport.width + slideDistance),
-			1,
-			dollyDistance,
-			slide * (viewport.width + slideDistance),
-			0,
-			0,
-			true
-		);
-		await cameraControls.current.setLookAt(slide * (viewport.width + slideDistance), 0, 5, slide * (viewport.width + slideDistance), 0, 0, true);
+		if (!cameraControls.current) return;
+
+		const targetX = slide * (viewport.width + slideDistance);
+		const lastX = lastSlide.current * (viewport.width + slideDistance);
+
+		if (isFirstRender.current) {
+			cameraControls.current.setLookAt(targetX, 0, 5, targetX, 0, 0, false);
+			isFirstRender.current = false;
+			lastSlide.current = slide;
+			return;
+		}
+		if (slide === 0 && lastSlide.current === modelInfo.length - 1) {
+			cameraControls.current.setLookAt(lastX, 0, 5, lastX, 0, 0, false);
+		} else if (slide === modelInfo.length - 1 && lastSlide.current === 0) {
+			cameraControls.current.setLookAt(lastX, 0, 5, lastX, 0, 0, false);
+		}
+
+		await cameraControls.current.setLookAt(lastX, 3, dollyDistance, lastX, 0, 0, true);
+		await cameraControls.current.setLookAt(targetX, 1, dollyDistance, targetX, 0, 0, true);
+		await cameraControls.current.setLookAt(targetX, 0, 5, targetX, 0, 0, true);
+
+		lastSlide.current = slide;
 	};
 
 	useEffect(() => {
-		// reset camera position when resize
-		const resetTimeout = setTimeout(() => {
-			cameraControls.current.setLookAt(slide * (viewport.width + slideDistance), 0, 5, slide * (viewport.width + slideDistance), 0, 0);
-		}, 200);
-		return () => clearTimeout(resetTimeout);
-	}, [viewport]);
-
-	useEffect(() => {
-		if (lastSlide.current !== slide) {
-			moveToSlide();
-			lastSlide.current = slide;
-		}
+		moveToSlide();
 	}, [slide]);
 
-	return (
-		<CameraControls
-			ref={cameraControls}
-			touches={{
-				one: 0,
-				two: 0,
-				three: 0,
-			}}
-			mouseButtons={{
-				left: 0,
-				middle: 0,
-				right: 0,
-			}}
-		/>
-	);
+	return <CameraControls ref={cameraControls} touches={{ one: 0, two: 0, three: 0 }} mouseButtons={{ left: 0, middle: 0, right: 0 }} />;
 };
 
-export const Experience = () => {
+export const Experience = ({ slide }) => {
 	const viewport = useThree((state) => state.viewport);
 	const { slideDistance } = useControls({
-		slideDistance: {
-			value: 1,
-			min: 0,
-			max: 10,
-		},
+		slideDistance: { value: 1, min: 0, max: 10 },
 	});
+
 	return (
 		<>
 			<ambientLight intensity={0.2} />
 			<Environment preset={"city"} />
-			<CameraHandler slideDistance={slideDistance} />
+			<CameraHandler slide={slide} slideDistance={slideDistance} />
+			<Grid position-y={-viewport.height / 2} sectionSize={1} cellSize={0.5} infiniteGrid fadeDistance={50} fadeStrength={5} />
+
 			<group>
 				<mesh position-y={viewport.height / 2 + 1.5}>
 					<sphereGeometry args={[1, 32, 32]} />
@@ -134,18 +104,6 @@ export const Experience = () => {
 				</Dodecahedron>
 			</group>
 
-			<Grid
-				position-y={-viewport.height / 2}
-				sectionSize={1}
-				sectionColor={"purple"}
-				sectionThickness={1}
-				cellSize={0.5}
-				cellColor={"#6f6f6f"}
-				cellThickness={0.6}
-				infiniteGrid
-				fadeDistance={50}
-				fadeStrength={5}
-			/>
 			{modelInfo.map((item, index) => (
 				<mesh key={index} position-x={index * (viewport.width + slideDistance)}>
 					<planeGeometry args={[viewport.width, viewport.height]} />

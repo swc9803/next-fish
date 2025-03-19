@@ -14,4 +14,5 @@
 
 # gallery
 
-atom, jotai 제거
+use client 최소화
+슬라이드 카메라 이동 애니메이션 수정
