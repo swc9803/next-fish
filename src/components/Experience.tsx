@@ -39,8 +39,8 @@ const FishConfig = () => {
 };
 
 interface FishModelProps {
-	fishRef: RefAny;
-	sphereRefs: RefMesh[];
+	fishRef: React.RefObject<Object3D>;
+	sphereRefs: React.RefObject<Mesh>[];
 }
 
 const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
@@ -52,6 +52,9 @@ const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
 
 	const { fishColor, fishScale } = useFishStore();
 
+	const sphereTimelines = useRef<gsap.core.Timeline[]>([]);
+
+	// 테스트용 d 입력 시 hit box 노출
 	useEffect(() => {
 		const toggleHitBox = (e: KeyboardEvent) => {
 			if (e.key === "d") setShowHitBox((prev) => !prev);
@@ -61,59 +64,78 @@ const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
 		return () => window.removeEventListener("keydown", toggleHitBox);
 	}, []);
 
-	scene.traverse((child) => {
-		if (!(child instanceof Mesh)) return;
-		if (child.name !== "Mesh") return;
+	useEffect(() => {
+		scene.traverse((child) => {
+			if (!(child instanceof Mesh)) return;
+			child.castShadow = true;
 
-		child.castShadow = true;
-
-		const material = child.material;
-		if (Array.isArray(material)) {
-			material.forEach((mat) => {
-				if (mat instanceof MeshStandardMaterial && mat.color) {
-					mat.color.set(fishColor);
+			if (child.name === "Mesh") {
+				const material = child.material;
+				if (Array.isArray(material)) {
+					material.forEach((mat) => {
+						if (mat instanceof MeshStandardMaterial && mat.color) {
+							mat.color.set(fishColor);
+						}
+					});
+				} else if (material instanceof MeshStandardMaterial && material.color) {
+					material.color.set(fishColor);
 				}
-			});
-		} else if (material instanceof MeshStandardMaterial && material.color) {
-			material.color.set(fishColor);
-		}
-	});
-
-	useFrame(() => {
-		if (fishRef.current) {
-			fishRef.current.scale.set(fishScale, fishScale, fishScale);
-
-			if (hitBoxRef.current) {
-				hitBoxRef.current.position.copy(fishRef.current.position);
-				hitBoxRef.current.scale.set(fishScale * 2, fishScale * 2, fishScale * 2);
 			}
+		});
+	}, [fishColor, scene]);
 
-			const fishPosition = fishRef.current.position as Vector3;
+	useEffect(() => {
+		sphereRefs.forEach((ref, i) => {
+			if (ref.current) {
+				const tl = gsap.timeline({ paused: true });
+				tl.to(ref.current.scale, { x: 2, y: 2, z: 2, duration: 0.5 });
+				sphereTimelines.current[i] = tl;
+			}
+		});
+	}, [sphereRefs]);
 
-			sphereRefs.forEach((sphereRef, index) => {
-				if (sphereRef.current) {
-					const distance = fishPosition.distanceTo(sphereRef.current.position);
-					if (distance < 5 && !isNearSphere[index]) {
-						gsap.to(sphereRef.current.scale, { x: 2, y: 2, z: 2, duration: 0.5 });
-						setIsNearSphere((prev) => {
-							const next = [...prev];
-							next[index] = true;
-							return next;
-						});
-					} else if (distance >= 5 && isNearSphere[index]) {
-						gsap.to(sphereRef.current.scale, { x: 1, y: 1, z: 1, duration: 0.5 });
-						setIsNearSphere((prev) => {
-							const next = [...prev];
-							next[index] = false;
-							return next;
-						});
-					}
-				}
-			});
+	// 매 프레임마다 애니메이션, 카메라 위치 업데이트
+	useFrame(() => {
+		if (!fishRef.current) return;
 
-			camera.position.set(fishPosition.x, 17, fishPosition.z + 14);
-			camera.lookAt(fishPosition);
+		fishRef.current.scale.set(fishScale, fishScale, fishScale);
+
+		// 히트박스 위치 동기화
+		if (hitBoxRef.current) {
+			hitBoxRef.current.position.copy(fishRef.current.position);
+			hitBoxRef.current.scale.set(fishScale * 2, fishScale * 2, fishScale * 2);
 		}
+
+		const fishPosition = fishRef.current.position as Vector3;
+
+		sphereRefs.forEach((sphereRef, index) => {
+			const sphere = sphereRef.current;
+			if (!sphere) return;
+
+			const distance = fishPosition.distanceTo(sphere.position);
+			const isNear = isNearSphere[index];
+			const timeline = sphereTimelines.current[index];
+
+			if (distance < 5 && !isNear) {
+				timeline?.play();
+				setIsNearSphere((prev) => {
+					const next = [...prev];
+					next[index] = true;
+					return next;
+				});
+			} else if (distance >= 5 && isNear) {
+				timeline?.reverse();
+				setIsNearSphere((prev) => {
+					const next = [...prev];
+					next[index] = false;
+					return next;
+				});
+			}
+		});
+
+		// 카메라 따라가기
+		camera.position.set(fishPosition.x, 17, fishPosition.z + 14);
+		camera.lookAt(fishPosition);
 	});
 
 	return (
@@ -280,6 +302,7 @@ const Experience = () => {
 		[0, 1, -30],
 	];
 
+	// 다크모드 시 배경 트렌지션
 	const BackgroundTransition = ({ darkMode }: { darkMode: boolean }) => {
 		const { scene } = useThree();
 
@@ -300,7 +323,7 @@ const Experience = () => {
 				r: targetBg.r,
 				g: targetBg.g,
 				b: targetBg.b,
-				duration: 1.2,
+				duration: 0.7,
 				ease: "power2.inOut",
 			});
 
@@ -308,7 +331,7 @@ const Experience = () => {
 				r: targetFog.r,
 				g: targetFog.g,
 				b: targetFog.b,
-				duration: 1.2,
+				duration: 0.7,
 				ease: "power2.inOut",
 			});
 		}, [darkMode]);
