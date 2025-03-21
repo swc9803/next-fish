@@ -2,7 +2,7 @@ import styles from "./page.module.scss";
 
 // components
 // import Guide from "../components/Guide.jsx";
-import Experience from "../components/Experience.jsx";
+import Experience from "@/components/Experience.tsx";
 
 const Home = () => {
 	return (

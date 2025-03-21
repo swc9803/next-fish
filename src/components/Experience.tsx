@@ -1,14 +1,18 @@
 "use client";
 
 // library
+import { Suspense, useRef, useState, useEffect, JSX } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import { Suspense, useRef, useState, useEffect } from "react";
-import { Vector2, Vector3, Raycaster, BoxGeometry } from "three";
+import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, MeshStandardMaterial } from "three";
 import gsap from "gsap";
 
 // store
 import { useFishStore } from "@/store/useFishStore";
+
+type RefMesh = React.RefObject<Mesh>;
+type RefAny = React.RefObject<Object3D>;
+type Vec3 = [number, number, number];
 
 const FishConfig = () => {
 	const { fishColor, fishSpeed, fishScale, darkMode, setFishColor, setFishSpeed, setFishScale, toggleDarkMode } = useFishStore();
@@ -21,11 +25,11 @@ const FishConfig = () => {
 			</div>
 			<div>
 				<label>Fish Speed: </label>
-				<input type="number" value={fishSpeed} onChange={(e) => setFishSpeed(Number(e.target.value))} min="10" max="200" />
+				<input type="number" value={fishSpeed} onChange={(e) => setFishSpeed(Number(e.target.value))} min={10} max={200} />
 			</div>
 			<div>
 				<label>Fish Scale: </label>
-				<input type="number" value={fishScale} onChange={(e) => setFishScale(Number(e.target.value))} min="0.1" max="10" step="0.1" />
+				<input type="number" value={fishScale} onChange={(e) => setFishScale(Number(e.target.value))} min={0.1} max={10} step={0.1} />
 			</div>
 			<button onClick={toggleDarkMode} type="button">
 				{darkMode ? "Set LightMode" : "Set DarkMode"}
@@ -34,41 +38,44 @@ const FishConfig = () => {
 	);
 };
 
-const FishModel = ({ fishRef, sphereRefs }) => {
+interface FishModelProps {
+	fishRef: RefAny;
+	sphereRefs: RefMesh[];
+}
+
+const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
 	const { scene } = useGLTF("/models/fish.glb");
 	const { camera } = useThree();
-	const [isNearSphere, setIsNearSphere] = useState([false, false, false, false]);
+	const [isNearSphere, setIsNearSphere] = useState<boolean[]>([false, false, false, false]);
 	const [showHitBox, setShowHitBox] = useState(false);
-	const hitBoxRef = useRef();
+	const hitBoxRef = useRef<Mesh>(null);
 
 	const { fishColor, fishScale } = useFishStore();
 
 	useEffect(() => {
-		const toggleHitBox = (e) => {
-			if (e.key === "d") {
-				setShowHitBox((prev) => !prev);
-			}
+		const toggleHitBox = (e: KeyboardEvent) => {
+			if (e.key === "d") setShowHitBox((prev) => !prev);
 		};
+
 		window.addEventListener("keydown", toggleHitBox);
 		return () => window.removeEventListener("keydown", toggleHitBox);
 	}, []);
 
 	scene.traverse((child) => {
-		if (child.isMesh) {
-			child.castShadow = true;
-			const mesh = child;
-			if (mesh.name === "Mesh") {
-				const material = mesh.material;
-				if (Array.isArray(material)) {
-					material.forEach((mat, idx) => {
-						if (mat.color) {
-							mat.color.set(fishColor);
-						}
-					});
-				} else if (material.color) {
-					material.color.set(fishColor);
+		if (!(child instanceof Mesh)) return;
+		if (child.name !== "Mesh") return;
+
+		child.castShadow = true;
+
+		const material = child.material;
+		if (Array.isArray(material)) {
+			material.forEach((mat) => {
+				if (mat instanceof MeshStandardMaterial && mat.color) {
+					mat.color.set(fishColor);
 				}
-			}
+			});
+		} else if (material instanceof MeshStandardMaterial && material.color) {
+			material.color.set(fishColor);
 		}
 	});
 
@@ -81,11 +88,11 @@ const FishModel = ({ fishRef, sphereRefs }) => {
 				hitBoxRef.current.scale.set(fishScale * 2, fishScale * 2, fishScale * 2);
 			}
 
-			const fishPosition = fishRef.current.position;
+			const fishPosition = fishRef.current.position as Vector3;
+
 			sphereRefs.forEach((sphereRef, index) => {
 				if (sphereRef.current) {
 					const distance = fishPosition.distanceTo(sphereRef.current.position);
-
 					if (distance < 5 && !isNearSphere[index]) {
 						gsap.to(sphereRef.current.scale, { x: 2, y: 2, z: 2, duration: 0.5 });
 						setIsNearSphere((prev) => {
@@ -122,21 +129,35 @@ const FishModel = ({ fishRef, sphereRefs }) => {
 	);
 };
 
-const Plane = ({ planeRef }) => (
+interface PlaneProps {
+	planeRef: RefMesh;
+}
+
+const Plane = ({ planeRef }: PlaneProps) => (
 	<mesh ref={planeRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
 		<planeGeometry args={[350, 70]} />
 		<meshPhongMaterial color={0x00bfff} />
 	</mesh>
 );
 
-const Sphere = ({ sphereRef, position }) => (
+interface SphereProps {
+	sphereRef: RefMesh;
+	position: Vec3;
+}
+
+const Sphere = ({ sphereRef, position }: SphereProps) => (
 	<mesh ref={sphereRef} position={position} castShadow>
 		<sphereGeometry args={[1, 32, 32]} />
 		<meshStandardMaterial color="skyblue" />
 	</mesh>
 );
 
-const ClickHandler = ({ fishRef, planeRef }) => {
+interface ClickHandlerProps {
+	fishRef: RefAny;
+	planeRef: RefMesh;
+}
+
+const ClickHandler = ({ fishRef, planeRef }: ClickHandlerProps): JSX.Element => {
 	const { camera, gl } = useThree();
 	const raycaster = useRef(new Raycaster());
 	const mouse = useRef(new Vector2());
@@ -146,20 +167,22 @@ const ClickHandler = ({ fishRef, planeRef }) => {
 	useEffect(() => {
 		const canvas = gl.domElement;
 
-		const updateMousePosition = (e) => {
+		const updateMousePosition = (e: MouseEvent) => {
 			mouse.current.x = (e.clientX / canvas.clientWidth) * 2 - 1;
 			mouse.current.y = -(e.clientY / canvas.clientHeight) * 2 + 1;
 		};
 
-		canvas.addEventListener("mousedown", (e) => {
+		const onMouseDown = (e: MouseEvent) => {
 			setIsClicked(true);
 			updateMousePosition(e);
-		});
+		};
+
+		canvas.addEventListener("mousedown", onMouseDown);
 		canvas.addEventListener("mousemove", updateMousePosition);
 		window.addEventListener("mouseup", () => setIsClicked(false));
 
 		return () => {
-			canvas.removeEventListener("mousedown", updateMousePosition);
+			canvas.removeEventListener("mousedown", onMouseDown);
 			canvas.removeEventListener("mousemove", updateMousePosition);
 			window.removeEventListener("mouseup", () => setIsClicked(false));
 		};
@@ -187,14 +210,19 @@ const ClickHandler = ({ fishRef, planeRef }) => {
 			}
 		}
 	});
+	return <></>;
 };
 
-const Grid = ({ fishRef }) => {
+interface GridProps {
+	fishRef: RefAny;
+}
+
+const Grid = ({ fishRef }: GridProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const cellSize = 6;
-	const [activeCell, setActiveCell] = useState(null);
+	const [activeCell, setActiveCell] = useState<number | null>(null);
 
-	const cells = [];
+	const cells: Vec3[] = [];
 	for (let x = -3; x <= 3; x++) {
 		for (let z = -3; z <= 3; z++) {
 			cells.push([x * cellSize, 0.1, z * cellSize]);
@@ -208,7 +236,7 @@ const Grid = ({ fishRef }) => {
 
 			setTimeout(() => {
 				if (fishRef.current) {
-					const fishPos = fishRef.current.position;
+					const fishPos = fishRef.current.position as Vector3;
 					const cellPos = cells[randomIndex];
 					const radius = cellSize / 2 + (fishScale * cellSize) / 4;
 
@@ -240,12 +268,12 @@ const Grid = ({ fishRef }) => {
 };
 
 const Experience = () => {
-	const sphereRefs = [useRef(), useRef(), useRef(), useRef()];
-	const fishRef = useRef();
-	const planeRef = useRef();
+	const sphereRefs: RefMesh[] = [useRef(null), useRef(null), useRef(null), useRef(null)];
+	const fishRef = useRef<Object3D>(null);
+	const planeRef = useRef<Mesh>(null);
 	const darkMode = useFishStore((state) => state.darkMode);
 
-	const spherePositions = [
+	const spherePositions: Vec3[] = [
 		[30, 1, 0],
 		[-30, 1, 0],
 		[0, 1, 30],
