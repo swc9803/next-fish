@@ -12,19 +12,28 @@ import {
 	useAnimations,
 } from "@react-three/drei";
 
-import * as THREE from "three";
-
-import { useEffect, useRef } from "react";
+import { LoopOnce, Mesh, Group, AnimationClip, BackSide } from "three";
+import { JSX, useEffect, useRef } from "react";
 import { DEG2RAD } from "three/src/math/MathUtils";
 
-export const Scene = ({ mainColor, path, ...props }) => {
-	const group = useRef();
-	const { scene, animations } = useGLTF(path);
+import { ModelInfo } from "./Experience";
+import { GLTF } from "three-stdlib";
+
+type GLTFResult = GLTF & {
+	scene: Group;
+	animations: AnimationClip[];
+};
+
+interface SceneProps extends ModelInfo {}
+
+export const Scene = ({ mainColor, path }: SceneProps): JSX.Element => {
+	const group = useRef<Group>(null);
+	const { scene, animations } = useGLTF(path) as GLTFResult;
 	const { actions } = useAnimations(animations, group);
 
 	useEffect(() => {
 		scene.traverse((child) => {
-			if (child.isMesh) {
+			if ((child as Mesh).isMesh) {
 				child.castShadow = true;
 				child.receiveShadow = true;
 			}
@@ -33,7 +42,7 @@ export const Scene = ({ mainColor, path, ...props }) => {
 		if (actions && Object.keys(actions).length > 0) {
 			setTimeout(() => {
 				const action = actions[Object.keys(actions)[1]];
-				action.setLoop(THREE.LoopOnce);
+				action.setLoop(LoopOnce, 1);
 				action.clampWhenFinished = true;
 				action.play();
 			}, 4000);
@@ -45,7 +54,7 @@ export const Scene = ({ mainColor, path, ...props }) => {
 	return (
 		<>
 			<color attach="background" args={["#ffffff"]} />
-			<group ref={group} {...props} dispose={null}>
+			<group ref={group} dispose={null}>
 				<PerspectiveCamera makeDefault position={[3, 3, 8]} near={0.5} />
 				<OrbitControls autoRotate enablePan={false} maxPolarAngle={DEG2RAD * 75} minDistance={6} maxDistance={10} autoRotateSpeed={0.5} />
 				<primitive object={scene} scale={ratioScale * 0.03} />
@@ -56,41 +65,12 @@ export const Scene = ({ mainColor, path, ...props }) => {
 				</AccumulativeShadows>
 				<Environment blur={0.8} background>
 					<Sphere scale={15}>
-						<meshBasicMaterial color={mainColor} side={THREE.BackSide} />
+						<meshBasicMaterial color={mainColor} side={BackSide} />
 					</Sphere>
-
-					<Lightformer
-						position={[5, 0, -5]}
-						form="rect" // circle | ring | rect (optional, default = rect)
-						intensity={1} // power level (optional = 1)
-						color="red" // (optional = white)
-						scale={[3, 5]} // Scale it any way you prefer (optional = [1, 1])
-						target={[0, 0, 0]}
-					/>
-					<Lightformer
-						position={[-5, 0, 1]}
-						form="circle" // circle | ring | rect (optional, default = rect)
-						intensity={1} // power level (optional = 1)
-						color="green" // (optional = white)
-						scale={[2, 5]} // Scale it any way you prefer (optional = [1, 1])
-						target={[0, 0, 0]}
-					/>
-					<Lightformer
-						position={[0, 5, -2]}
-						form="ring" // circle | ring | rect (optional, default = rect)
-						intensity={0.5} // power level (optional = 1)
-						color="orange" // (optional = white)
-						scale={[10, 5]} // Scale it any way you prefer (optional = [1, 1])
-						target={[0, 0, 0]}
-					/>
-					<Lightformer
-						position={[0, 0, 5]}
-						form="rect" // circle | ring | rect (optional, default = rect)
-						intensity={1} // power level (optional = 1)
-						color="purple" // (optional = white)
-						scale={[10, 5]} // Scale it any way you prefer (optional = [1, 1])
-						target={[0, 0, 0]}
-					/>
+					<Lightformer position={[5, 0, -5]} form="rect" intensity={1} color="red" scale={3} target={[0, 0, 0]} />
+					<Lightformer position={[-5, 0, 1]} form="circle" intensity={1} color="green" scale={[2, 5, 1]} target={[0, 0, 0]} />
+					<Lightformer position={[0, 5, -2]} form="ring" intensity={0.5} color="orange" scale={[10, 5, 1]} target={[0, 0, 0]} />
+					<Lightformer position={[0, 0, 5]} form="rect" intensity={1} color="purple" scale={[10, 5, 1]} target={[0, 0, 0]} />
 				</Environment>
 			</group>
 		</>

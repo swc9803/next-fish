@@ -2,10 +2,11 @@
 
 import { Canvas } from "@react-three/fiber";
 import { Leva } from "leva";
-import { Experience } from "@/components/gallery/Experience.jsx";
-import { Overlay } from "@/components/gallery/Overlay.jsx";
+import { Experience } from "@/components/gallery/Experience";
+import { Overlay } from "@/components/gallery/Overlay";
+import { JSX } from "react";
 
-const Gallery = () => {
+const Gallery = (): JSX.Element => {
 	return (
 		<>
 			<Leva />

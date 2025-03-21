@@ -1,15 +1,24 @@
 "use client";
 
-import { CameraControls, Dodecahedron, Environment, Grid, MeshDistortMaterial, RenderTexture } from "@react-three/drei";
+import { CameraControls, Environment, Grid, MeshDistortMaterial, RenderTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useAtom } from "jotai";
 import { useControls } from "leva";
-import { useEffect, useRef } from "react";
-import { slideAtom } from "./Overlay.jsx";
-import { Scene } from "./Scene.jsx";
+import { JSX, useEffect, useRef } from "react";
+import { slideAtom } from "./Overlay";
+import { Scene } from "./Scene";
 
-// model animation 추가
-export const modelArray = [
+// 📦 모델 배열
+export interface ModelInfo {
+	path: string;
+	mainColor: string;
+	name: string;
+	description: string;
+	price: number;
+	range: number;
+}
+
+export const modelArray: ModelInfo[] = [
 	{
 		path: "models/gallery/cybertruck_scene.glb",
 		mainColor: "#f9c0ff",
@@ -52,12 +61,16 @@ export const modelArray = [
 	},
 ];
 
-const CameraHandler = ({ slideDistance }) => {
+interface CameraHandlerProps {
+	slideDistance: number;
+}
+
+const CameraHandler = ({ slideDistance }: CameraHandlerProps): JSX.Element => {
 	const viewport = useThree((state) => state.viewport);
 	const { camera } = useThree();
-	const cameraControls = useRef();
+	const cameraControls = useRef<CameraControls>(null);
 	const [slide] = useAtom(slideAtom);
-	const lastSlide = useRef(0);
+	const lastSlide = useRef<number>(0);
 
 	const { dollyDistance } = useControls({
 		dollyDistance: {
@@ -74,6 +87,8 @@ const CameraHandler = ({ slideDistance }) => {
 	};
 
 	const moveToSlide = async () => {
+		if (!cameraControls.current) return;
+
 		await cameraControls.current.setLookAt(
 			lastSlide.current * (viewport.width + slideDistance),
 			3,
@@ -102,7 +117,7 @@ const CameraHandler = ({ slideDistance }) => {
 
 	useEffect(() => {
 		const resetTimeout = setTimeout(() => {
-			cameraControls.current.setLookAt(slide * (viewport.width + slideDistance), 0, 5, slide * (viewport.width + slideDistance), 0, 0);
+			cameraControls.current?.setLookAt(slide * (viewport.width + slideDistance), 0, 5, slide * (viewport.width + slideDistance), 0, 0);
 		}, 200);
 		return () => clearTimeout(resetTimeout);
 	}, [viewport]);
@@ -114,24 +129,10 @@ const CameraHandler = ({ slideDistance }) => {
 		}
 	}, [slide]);
 
-	return (
-		<CameraControls
-			ref={cameraControls}
-			touches={{
-				one: 0,
-				two: 0,
-				three: 0,
-			}}
-			mouseButtons={{
-				left: 0,
-				middle: 0,
-				right: 0,
-			}}
-		/>
-	);
+	return <CameraControls ref={cameraControls} touches={{ one: 0, two: 0, three: 0 }} mouseButtons={{ left: 0, middle: 0, right: 0, wheel: 0 }} />;
 };
 
-export const Experience = () => {
+export const Experience = (): JSX.Element => {
 	const viewport = useThree((state) => state.viewport);
 	const { slideDistance } = useControls({
 		slideDistance: {
@@ -140,10 +141,11 @@ export const Experience = () => {
 			max: 10,
 		},
 	});
+
 	return (
 		<>
 			<ambientLight intensity={0.2} />
-			<Environment preset={"city"} />
+			<Environment preset="city" />
 			<CameraHandler slideDistance={slideDistance} />
 
 			{modelArray.map((model, index) => (
@@ -167,10 +169,10 @@ export const Experience = () => {
 			<Grid
 				position-y={-viewport.height / 2}
 				sectionSize={1}
-				sectionColor={"purple"}
+				sectionColor="purple"
 				sectionThickness={1}
 				cellSize={0.5}
-				cellColor={"#6f6f6f"}
+				cellColor="#6f6f6f"
 				cellThickness={0.6}
 				infiniteGrid
 				fadeDistance={50}
