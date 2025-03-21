@@ -4,7 +4,7 @@
 import { Suspense, useRef, useState, useEffect, JSX } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, MeshStandardMaterial } from "three";
+import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, Color, FogExp2, MeshStandardMaterial } from "three";
 import gsap from "gsap";
 
 // store
@@ -280,11 +280,47 @@ const Experience = () => {
 		[0, 1, -30],
 	];
 
+	const BackgroundTransition = ({ darkMode }: { darkMode: boolean }) => {
+		const { scene } = useThree();
+
+		useEffect(() => {
+			if (!scene.background || !(scene.background instanceof Color)) {
+				scene.background = new Color(darkMode ? "#0b0b0b" : "#0c6ceb");
+			}
+			if (!scene.fog) {
+				scene.fog = new FogExp2(new Color(darkMode ? "#111111" : "#00bfff"), 0.02);
+			}
+		}, []);
+
+		useEffect(() => {
+			const targetBg = new Color(darkMode ? "#0b0b0b" : "#0c6ceb");
+			const targetFog = new Color(darkMode ? "#111111" : "#00bfff");
+
+			gsap.to(scene.background as Color, {
+				r: targetBg.r,
+				g: targetBg.g,
+				b: targetBg.b,
+				duration: 1.2,
+				ease: "power2.inOut",
+			});
+
+			gsap.to(scene.fog!.color, {
+				r: targetFog.r,
+				g: targetFog.g,
+				b: targetFog.b,
+				duration: 1.2,
+				ease: "power2.inOut",
+			});
+		}, [darkMode]);
+
+		return null;
+	};
+
 	return (
 		<>
 			<Canvas shadows camera={{ position: [0, 17, 14], fov: 75 }}>
-				<color attach="background" args={[darkMode ? "#0b0b0b" : "#0c6ceb"]} />
-				<fogExp2 attach="fog" args={[darkMode ? "#111111" : "#00bfff", 0.02]} />
+				<BackgroundTransition darkMode={darkMode} />
+
 				<ambientLight color={0xffffff} intensity={0.8} />
 				<directionalLight color={0xf8f8ff} intensity={4} position={[2, 1, 3]} castShadow />
 
