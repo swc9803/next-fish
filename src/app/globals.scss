@@ -72,3 +72,32 @@ textarea {
 		display: block;
 	}
 }
+
+.fish_config {
+	position: absolute;
+	bottom: 20px;
+	right: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	padding: 10px;
+	border-radius: 10px;
+	background: #fff;
+	color: #222;
+	transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+	button {
+		width: 100%;
+		min-height: 1.5rem;
+		border: 1px solid #222;
+		color: #222;
+		transition: border 0.3s ease-in-out, background 0.3s ease-in-out, color 0.3s ease-in-out;
+	}
+	&.dark {
+		background: #222;
+		color: #fff;
+		button {
+			border: 1px solid #fff;
+			color: #fff;
+		}
+	}
+}

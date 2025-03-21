@@ -1,7 +1,7 @@
 # todo
 
 1. r3f 슬라이드 완성
-2. 폭탄피하기 게임 완성
+2. 폭탄피하기, 원바운드, 물고기키우기 게임 완성
 3. 바닥 텍스처
 4. hdri haven under water map 추가
 5. <Suspense fallback={<Loader />}>
