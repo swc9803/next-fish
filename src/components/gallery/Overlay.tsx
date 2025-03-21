@@ -1,14 +1,13 @@
 "use client";
 
 import styles from "./Overlay.module.scss";
-import { atom, useAtom } from "jotai";
 import { JSX, useEffect, useState } from "react";
 import { modelArray } from "./Experience";
-
-export const slideAtom = atom(0);
+import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const Overlay = (): JSX.Element => {
-	const [slide, setSlide] = useAtom(slideAtom);
+	const slide = useGallerySlide((state) => state.slide);
+	const setSlide = useGallerySlide((state) => state.setSlide);
 	const [displaySlide, setDisplaySlide] = useState<number>(slide);
 	const [visible, setVisible] = useState<boolean>(false);
 
@@ -36,12 +35,12 @@ export const Overlay = (): JSX.Element => {
 			</svg>
 
 			<div className={styles.navigation}>
-				<button onClick={() => setSlide((prev) => (prev > 0 ? prev - 1 : modelArray.length - 1))} disabled={!visible}>
+				<button onClick={() => setSlide(slide > 0 ? slide - 1 : modelArray.length - 1)} disabled={!visible}>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 						<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
 					</svg>
 				</button>
-				<button onClick={() => setSlide((prev) => (prev < modelArray.length - 1 ? prev + 1 : 0))} disabled={!visible}>
+				<button onClick={() => setSlide(slide < modelArray.length - 1 ? slide + 1 : 0)} disabled={!visible}>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 						<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
 					</svg>

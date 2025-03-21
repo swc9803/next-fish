@@ -15,7 +15,5 @@
 # gallery
 
 use client 최소화
-슬라이드 카메라 이동 애니메이션 수정
-jotai 제거
 페이지 이동 시 메모리 해제
 gallery 원형으로 둘러쌓인 형태로 변경

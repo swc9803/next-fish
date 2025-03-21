@@ -2,13 +2,12 @@
 
 import { CameraControls, Environment, Grid, MeshDistortMaterial, RenderTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { useAtom } from "jotai";
 import { useControls } from "leva";
 import { JSX, useEffect, useRef } from "react";
-import { slideAtom } from "./Overlay";
 import { Scene } from "./Scene";
 
-// 📦 모델 배열
+import { useGallerySlide } from "@/store/useGallerySlide";
+
 export interface ModelInfo {
 	path: string;
 	mainColor: string;
@@ -69,7 +68,7 @@ const CameraHandler = ({ slideDistance }: CameraHandlerProps): JSX.Element => {
 	const viewport = useThree((state) => state.viewport);
 	const { camera } = useThree();
 	const cameraControls = useRef<CameraControls>(null);
-	const [slide] = useAtom(slideAtom);
+	const slide = useGallerySlide((state) => state.slide);
 	const lastSlide = useRef<number>(0);
 
 	const { dollyDistance } = useControls({
