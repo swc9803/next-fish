@@ -87,12 +87,6 @@ const CameraHandler = ({ slideDistance }: CameraHandlerProps): JSX.Element => {
 		},
 	});
 
-	const logCameraPosition = () => {
-		setTimeout(() => {
-			console.log(`x: ${camera.position.x.toFixed(2)}, y: ${camera.position.y.toFixed(2)}, z: ${camera.position.z.toFixed(2)}`);
-		}, 100);
-	};
-
 	const moveToSlide = async () => {
 		if (!cameraControls.current) return;
 
@@ -105,7 +99,6 @@ const CameraHandler = ({ slideDistance }: CameraHandlerProps): JSX.Element => {
 			0,
 			true
 		);
-		logCameraPosition();
 
 		await cameraControls.current.setLookAt(
 			(slide + 1) * (viewport.width + slideDistance),
@@ -116,10 +109,8 @@ const CameraHandler = ({ slideDistance }: CameraHandlerProps): JSX.Element => {
 			0,
 			true
 		);
-		logCameraPosition();
 
 		await cameraControls.current.setLookAt(slide * (viewport.width + slideDistance), 0, 5, slide * (viewport.width + slideDistance), 0, 0, true);
-		logCameraPosition();
 	};
 
 	useEffect(() => {

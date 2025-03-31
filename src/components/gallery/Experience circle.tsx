@@ -1,6 +1,7 @@
 "use client";
 
 import { CameraControls, Environment, Grid, MeshDistortMaterial, RenderTexture } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 import { useControls } from "leva";
 import { JSX, useEffect, useRef } from "react";
 import { Scene } from "./Scene";
@@ -25,38 +26,49 @@ export const modelArray: ModelInfo[] = [
 ];
 
 interface CameraHandlerProps {
-	radius: number;
+	cameraRadius: number;
+	slideDistance: number;
 }
 
-const CameraHandler = ({ radius }: CameraHandlerProps): JSX.Element => {
+const CameraHandler = ({ cameraRadius, slideDistance }: CameraHandlerProps): JSX.Element => {
 	const cameraControls = useRef<CameraControls>(null);
 	const slide = useGallerySlide((state) => state.slide);
-	const lastSlide = useRef<number>(0);
+	const lastSlide = useRef<number>(-1);
+	const { size } = useThree();
 
-	const moveToSlide = async () => {
+	const totalRadius = (slideDistance * modelArray.length) / (2 * Math.PI);
+
+	const moveToSlide = async (index: number) => {
 		if (!cameraControls.current) return;
 
-		const angle = (2 * Math.PI * slide) / modelArray.length;
-		const targetX = radius * Math.sin(angle);
-		const targetZ = radius * Math.cos(angle);
+		const angle = (2 * Math.PI * index) / modelArray.length;
+		const targetX = totalRadius * Math.sin(angle);
+		const targetZ = totalRadius * Math.cos(angle);
 
-		await cameraControls.current.setLookAt(0, 0, 0, targetX, 0, targetZ, true);
+		const cameraAngle = angle + Math.PI;
+		const cameraX = cameraRadius * Math.sin(cameraAngle);
+		const cameraZ = cameraRadius * Math.cos(cameraAngle);
+
+		await cameraControls.current.setLookAt(cameraX, 0, cameraZ, targetX, 0, targetZ, true);
 	};
 
 	useEffect(() => {
-		const timeout = setTimeout(() => {
-			const angle = (2 * Math.PI * slide) / modelArray.length;
-			const targetX = radius * Math.sin(angle);
-			const targetZ = radius * Math.cos(angle);
-			cameraControls.current?.setLookAt(0, 0, 0, targetX, 0, targetZ);
-		}, 100);
-
-		return () => clearTimeout(timeout);
-	}, []);
+		let f1: number, f2: number;
+		f1 = requestAnimationFrame(() => {
+			f2 = requestAnimationFrame(() => {
+				moveToSlide(slide);
+				lastSlide.current = slide;
+			});
+		});
+		return () => {
+			cancelAnimationFrame(f1);
+			cancelAnimationFrame(f2);
+		};
+	}, [cameraRadius, slideDistance, size.width, size.height]);
 
 	useEffect(() => {
 		if (lastSlide.current !== slide) {
-			moveToSlide();
+			moveToSlide(slide);
 			lastSlide.current = slide;
 		}
 	}, [slide]);
@@ -65,20 +77,24 @@ const CameraHandler = ({ radius }: CameraHandlerProps): JSX.Element => {
 };
 
 export const Experience = (): JSX.Element => {
-	const { radius } = useControls({
-		radius: { value: 10, min: 5, max: 30 },
+	const { viewport } = useThree();
+	const { cameraRadius, slideDistance } = useControls({
+		cameraRadius: { value: 5, min: 2, max: 20 },
+		slideDistance: { value: 4, min: 1, max: 10 },
 	});
+
+	const totalRadius = (slideDistance * modelArray.length) / (2 * Math.PI);
 
 	return (
 		<>
 			<ambientLight intensity={0.2} />
 			<Environment preset="city" />
-			<CameraHandler radius={radius} />
+			<CameraHandler cameraRadius={cameraRadius} slideDistance={slideDistance} />
 
 			{modelArray.map((model, index) => {
 				const angle = (2 * Math.PI * index) / modelArray.length;
-				const x = radius * Math.sin(angle);
-				const z = radius * Math.cos(angle);
+				const x = totalRadius * Math.sin(angle);
+				const z = totalRadius * Math.cos(angle);
 				const rotationY = angle + Math.PI;
 
 				return (
@@ -88,8 +104,8 @@ export const Experience = (): JSX.Element => {
 							<MeshDistortMaterial color={model.mainColor} speed={3} />
 						</mesh>
 
-						<mesh>
-							<planeGeometry args={[4, 3]} />
+						<mesh position={[0, 0, 0]}>
+							<planeGeometry args={[viewport.width, viewport.height]} />
 							<meshBasicMaterial toneMapped={false}>
 								<RenderTexture attach="map">
 									<Scene {...model} />

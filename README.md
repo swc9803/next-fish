@@ -17,4 +17,4 @@
 use client 최소화
 페이지 이동 시 메모리 해제
 gallery 원형으로 둘러쌓인 형태로 변경
-슬라이드 이동 시 카메라 돌리기 vs 모델 돌리기
+resize debounce
