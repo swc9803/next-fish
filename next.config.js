@@ -1,4 +1,5 @@
 const nextConfig = {
+	devIndicators: false,
 	transpilePackages: ["three"],
 	sassOptions: {},
 	reactStrictMode: false,
