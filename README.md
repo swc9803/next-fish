@@ -16,5 +16,6 @@
 
 use client 최소화
 페이지 이동 시 메모리 해제
-gallery 원형으로 둘러쌓인 형태로 변경
+
+gallery 슬라이드 위에서 확인
 resize debounce
