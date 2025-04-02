@@ -107,14 +107,6 @@ export const Experience = (): JSX.Element => {
 	const width = viewport.height * aspect;
 	const height = viewport.height;
 
-	const { x: gridX, z: gridZ } = (() => {
-		const angle = -(2 * Math.PI * 0) / modelArray.length;
-		return {
-			x: totalRadius * Math.sin(angle),
-			z: totalRadius * Math.cos(angle),
-		};
-	})();
-
 	return (
 		<>
 			<ambientLight intensity={0.2} />
@@ -147,7 +139,7 @@ export const Experience = (): JSX.Element => {
 			})}
 
 			<Grid
-				position={[gridX, -1.5, gridZ]}
+				position={[0, -1.5, 0]}
 				sectionSize={1}
 				sectionColor="purple"
 				sectionThickness={1}
