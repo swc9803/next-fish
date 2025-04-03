@@ -2,8 +2,8 @@
 
 // library
 import { Suspense, useRef, useState, useEffect, useMemo, JSX } from "react";
-import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
-import { useGLTF, Stats } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useGLTF, useTexture, Stats } from "@react-three/drei";
 import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, Color, FogExp2, MeshStandardMaterial, TextureLoader, RepeatWrapping } from "three";
 import gsap from "gsap";
 
@@ -156,7 +156,7 @@ interface PlaneProps {
 }
 
 const Plane = ({ planeRef }: PlaneProps) => {
-	const [colorMap, normalMap, roughnessMap] = useLoader(TextureLoader, [
+	const [colorMap, normalMap, roughnessMap] = useTexture([
 		// 1k
 		"/textures/sand/sand_02_diff_1k.jpg",
 		"/textures/sand/sand_02_nor_gl_1k.jpg",
@@ -167,7 +167,7 @@ const Plane = ({ planeRef }: PlaneProps) => {
 		// "/textures/sand2/sand_02_rough_2k.jpg",
 	]);
 
-	useEffect(() => {
+	useMemo(() => {
 		[colorMap, normalMap, roughnessMap].forEach((tex) => {
 			tex.wrapS = tex.wrapT = RepeatWrapping;
 			tex.repeat.set(20, 4); // planeGeometry args 비율에 맞춰 수정
@@ -193,12 +193,17 @@ interface SphereProps {
 	position: Vec3;
 }
 
-const Sphere = ({ sphereRef, position }: SphereProps) => (
-	<mesh ref={sphereRef} position={position} castShadow>
-		<sphereGeometry args={[1, 32, 32]} />
-		<meshStandardMaterial color="skyblue" />
-	</mesh>
-);
+const Sphere = ({ sphereRef, position }: SphereProps) => {
+	const geometry = useMemo(() => <sphereGeometry args={[1, 32, 32]} />, []);
+	const material = useMemo(() => <meshStandardMaterial color="skyblue" />, []);
+
+	return (
+		<mesh ref={sphereRef} position={position} castShadow>
+			{geometry}
+			{material}
+		</mesh>
+	);
+};
 
 interface ClickHandlerProps {
 	fishRef: RefAny;
