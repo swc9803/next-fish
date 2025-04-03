@@ -268,51 +268,67 @@ interface GridProps {
 const Grid = ({ fishRef }: GridProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const cellSize = 6;
-	const [activeCell, setActiveCell] = useState<number | null>(null);
+	const gridHalf = 3;
 
 	const cells: Vec3[] = [];
-	for (let x = -3; x <= 3; x++) {
-		for (let z = -3; z <= 3; z++) {
+	for (let x = -gridHalf; x <= gridHalf; x++) {
+		for (let z = -gridHalf; z <= gridHalf; z++) {
 			cells.push([x * cellSize, 0.1, z * cellSize]);
 		}
 	}
 
+	const meshRefs = useRef<Mesh[]>([]);
+
 	useEffect(() => {
 		const interval = setInterval(() => {
-			const randomIndex = Math.floor(Math.random() * cells.length);
-			setActiveCell(randomIndex);
+			const index = Math.floor(Math.random() * cells.length);
+			const mesh = meshRefs.current[index];
+			if (!mesh) return;
 
-			setTimeout(() => {
-				if (fishRef.current) {
-					const fishPos = fishRef.current.position as Vector3;
-					const cellPos = cells[randomIndex];
-					const radius = cellSize / 2 + (fishScale * cellSize) / 4;
+			const material = mesh.material as MeshStandardMaterial;
+			const color = material.color;
 
-					const isHit = Math.abs(fishPos.x - cellPos[0]) < radius && Math.abs(fishPos.z - cellPos[2]) < radius;
+			gsap.to(color, {
+				r: 1,
+				g: 0,
+				b: 0,
+				duration: 3,
+				ease: "power1.inOut",
+				onComplete: () => {
+					const fish = fishRef.current;
+					if (fish) {
+						const fishPos = fish.position as Vector3;
+						const cellPos = new Vector3(...cells[index]);
+						const radius = cellSize / 2 + (fishScale * cellSize) / 4;
 
-					if (isHit) {
-						console.log("hit");
+						const isHit = Math.abs(fishPos.x - cellPos.x) < radius && Math.abs(fishPos.z - cellPos.z) < radius;
+
+						if (isHit) console.log("hit");
 					}
-				}
-				setActiveCell(null);
-			}, 2000);
+					color.set("white");
+				},
+			});
 		}, 2500);
 
 		return () => clearInterval(interval);
 	}, [cells, fishRef, fishScale]);
 
-	return cells.map((pos, i) => (
-		<group key={i} position={pos}>
-			<mesh>
-				<boxGeometry args={[cellSize, 0.1, cellSize]} />
-				<meshStandardMaterial color={activeCell === i ? "red" : "white"} />
-			</mesh>
-			<lineSegments>
-				<edgesGeometry args={[new BoxGeometry(cellSize, 0.1, cellSize)]} />
-				<lineBasicMaterial color="black" />
-			</lineSegments>
-		</group>
-	));
+	return (
+		<>
+			{cells.map((pos, i) => (
+				<group key={i} position={pos}>
+					<mesh ref={(el) => el && (meshRefs.current[i] = el)}>
+						<boxGeometry args={[cellSize, 0.1, cellSize]} />
+						<meshStandardMaterial color="white" />
+					</mesh>
+					<lineSegments>
+						<edgesGeometry args={[new BoxGeometry(cellSize, 0.1, cellSize)]} />
+						<lineBasicMaterial color="black" />
+					</lineSegments>
+				</group>
+			))}
+		</>
+	);
 };
 
 const Experience = () => {
