@@ -1,10 +1,10 @@
 "use client";
 
 // library
-import { Suspense, useRef, useState, useEffect, JSX } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
-import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, Color, FogExp2, MeshStandardMaterial } from "three";
+import { Suspense, useRef, useState, useEffect, useMemo, JSX } from "react";
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
+import { useGLTF, Stats } from "@react-three/drei";
+import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, Color, FogExp2, MeshStandardMaterial, TextureLoader, RepeatWrapping } from "three";
 import gsap from "gsap";
 
 // store
@@ -155,12 +155,38 @@ interface PlaneProps {
 	planeRef: RefMesh;
 }
 
-const Plane = ({ planeRef }: PlaneProps) => (
-	<mesh ref={planeRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-		<planeGeometry args={[350, 70]} />
-		<meshPhongMaterial color={0x00bfff} />
-	</mesh>
-);
+const Plane = ({ planeRef }: PlaneProps) => {
+	const [colorMap, normalMap, roughnessMap] = useLoader(TextureLoader, [
+		// 1k
+		"/textures/sand/sand_02_diff_1k.jpg",
+		"/textures/sand/sand_02_nor_gl_1k.jpg",
+		"/textures/sand/sand_02_rough_1k.jpg",
+		// 2k
+		// "/textures/sand2/sand_02_diff_2k.jpg",
+		// "/textures/sand2/sand_02_nor_gl_2k.jpg",
+		// "/textures/sand2/sand_02_rough_2k.jpg",
+	]);
+
+	useEffect(() => {
+		[colorMap, normalMap, roughnessMap].forEach((tex) => {
+			tex.wrapS = tex.wrapT = RepeatWrapping;
+			tex.repeat.set(20, 4); // planeGeometry args 비율에 맞춰 수정
+		});
+	}, [colorMap, normalMap, roughnessMap]);
+
+	const geometry = useMemo(() => <planeGeometry args={[350, 70]} />, []);
+	const material = useMemo(
+		() => <meshStandardMaterial map={colorMap} normalMap={normalMap} roughnessMap={roughnessMap} roughness={1} metalness={0} />,
+		[colorMap, normalMap, roughnessMap]
+	);
+
+	return (
+		<mesh ref={planeRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+			{geometry}
+			{material}
+		</mesh>
+	);
+};
 
 interface SphereProps {
 	sphereRef: RefMesh;
@@ -342,6 +368,7 @@ const Experience = () => {
 	return (
 		<>
 			<Canvas shadows camera={{ position: [0, 17, 14], fov: 75 }}>
+				<Stats />
 				<BackgroundTransition darkMode={darkMode} />
 
 				<ambientLight color={0xffffff} intensity={0.8} />
