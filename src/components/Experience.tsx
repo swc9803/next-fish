@@ -42,9 +42,10 @@ const FishConfig = () => {
 interface FishModelProps {
 	fishRef: React.RefObject<Object3D>;
 	sphereRefs: React.RefObject<Mesh>[];
+	setIsInGrid: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
+const FishModel = ({ fishRef, sphereRefs, setIsInGrid }: FishModelProps) => {
 	const { scene } = useGLTF("/models/fish.glb");
 	const { camera } = useThree();
 	const { fishColor, fishScale } = useFishStore();
@@ -138,6 +139,8 @@ const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
 
 		const inGrid = Math.abs(fishPosition.x - gridCenter.x) < gridSizeX / 2 && Math.abs(fishPosition.z - gridCenter.z) < gridSizeZ / 2;
 
+		setIsInGrid(inGrid);
+
 		if (inGrid) {
 			camera.position.set(gridCenter.x, 60, gridCenter.z);
 			camera.lookAt(gridCenter);
@@ -218,9 +221,10 @@ const Sphere = ({ sphereRef, position }: SphereProps) => {
 interface ClickHandlerProps {
 	fishRef: RefAny;
 	planeRef: RefMesh;
+	isInGrid: boolean;
 }
 
-const ClickHandler = ({ fishRef, planeRef }: ClickHandlerProps): JSX.Element => {
+const ClickHandler = ({ fishRef, planeRef, isInGrid }: ClickHandlerProps): JSX.Element => {
 	const { camera, gl } = useThree();
 	const raycaster = useRef(new Raycaster());
 	const mouse = useRef(new Vector2());
@@ -258,6 +262,15 @@ const ClickHandler = ({ fishRef, planeRef }: ClickHandlerProps): JSX.Element => 
 
 			if (intersects.length > 0) {
 				const point = intersects[0].point;
+
+				const gridCenter = new Vector3(-50, 0, 0);
+				const gridSizeX = 6 * 7;
+				const gridSizeZ = 6 * 7;
+
+				const isPointInGrid = Math.abs(point.x - gridCenter.x) < gridSizeX / 2 && Math.abs(point.z - gridCenter.z) < gridSizeZ / 2;
+
+				if (isInGrid && !isPointInGrid) return;
+
 				const distance = fishRef.current.position.distanceTo(point);
 				const duration = distance / fishSpeed;
 
@@ -279,8 +292,10 @@ const ClickHandler = ({ fishRef, planeRef }: ClickHandlerProps): JSX.Element => 
 interface GridProps {
 	fishRef: RefAny;
 	setIsGameOver: React.Dispatch<React.SetStateAction<boolean>>;
+	setIsInGrid: React.Dispatch<React.SetStateAction<boolean>>;
 }
-const Grid = ({ fishRef, setIsGameOver }: GridProps) => {
+
+const Grid = ({ fishRef, setIsGameOver, setIsInGrid }: GridProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const cellSize = 6;
 	const gridHalf = 3;
@@ -325,6 +340,7 @@ const Grid = ({ fishRef, setIsGameOver }: GridProps) => {
 					if (fish && isHitDetected(fish, index, radius)) {
 						console.log("HIT");
 						setIsGameOver(true);
+						setIsInGrid(false);
 					}
 					color.set("white"); // temp
 				},
@@ -358,6 +374,7 @@ const Experience = () => {
 	const planeRef = useRef<Mesh>(null);
 	const darkMode = useFishStore((state) => state.darkMode);
 
+	const [isInGrid, setIsInGrid] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
 
 	const spherePositions: Vec3[] = [
@@ -411,16 +428,29 @@ const Experience = () => {
 				<BackgroundTransition darkMode={darkMode} />
 
 				<ambientLight color={0xffffff} intensity={0.8} />
-				<directionalLight color={0xf8f8ff} intensity={4} position={[2, 1, 3]} castShadow />
+				<directionalLight
+					color={0xf8f8ff}
+					intensity={4}
+					position={[2, 1, 3]}
+					castShadow
+					shadow-mapSize-width={2048}
+					shadow-mapSize-height={2048}
+					shadow-camera-left={-200}
+					shadow-camera-right={200}
+					shadow-camera-top={200}
+					shadow-camera-bottom={-200}
+					shadow-camera-near={1}
+					shadow-camera-far={500}
+				/>
 
 				<Suspense fallback={null}>
-					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} />
+					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} setIsInGrid={setIsInGrid} />
 					<Plane planeRef={planeRef} />
-					<Grid fishRef={fishRef} setIsGameOver={setIsGameOver} />
+					<Grid fishRef={fishRef} setIsGameOver={setIsGameOver} setIsInGrid={setIsInGrid} />
 					{sphereRefs.map((ref, i) => (
 						<Sphere key={i} sphereRef={ref} position={spherePositions[i]} />
 					))}
-					<ClickHandler fishRef={fishRef} planeRef={planeRef} />
+					<ClickHandler fishRef={fishRef} planeRef={planeRef} isInGrid={isInGrid} />
 				</Suspense>
 			</Canvas>
 
@@ -433,9 +463,9 @@ const Experience = () => {
 							fishRef.current.position.set(0, 1, 0);
 						}
 						setIsGameOver(false);
+						setIsInGrid(false);
 					}}
 					className="gameover_overlay"
-					style={{}}
 				>
 					<h1>YOU'RE COOKED</h1>
 					<p>화면을 클릭해 다시 시작하세요</p>
