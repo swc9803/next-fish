@@ -10,6 +10,7 @@ import gsap from "gsap";
 // store
 import { useFishStore } from "@/store/useFishStore";
 
+// types
 type RefMesh = React.RefObject<Mesh>;
 type RefAny = React.RefObject<Object3D>;
 type Vec3 = [number, number, number];
@@ -46,22 +47,22 @@ interface FishModelProps {
 const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
 	const { scene } = useGLTF("/models/fish.glb");
 	const { camera } = useThree();
-	const [isNearSphere, setIsNearSphere] = useState<boolean[]>([false, false, false, false]);
-	const [showHitBox, setShowHitBox] = useState(false);
-	const hitBoxRef = useRef<Mesh>(null);
-
 	const { fishColor, fishScale } = useFishStore();
 
+	const [showHitBox, setShowHitBox] = useState(false);
+	const [isNearSphere, setIsNearSphere] = useState<boolean[]>([false, false, false, false]);
+	const hitBoxRef = useRef<Mesh>(null);
 	const sphereTimelines = useRef<gsap.core.Timeline[]>([]);
 
-	// 테스트용 d 입력 시 hit box 노출
+	// D 키 눌러 히트박스 표시 토글
 	useEffect(() => {
-		const toggleHitBox = (e: KeyboardEvent) => {
-			if (e.key === "d") setShowHitBox((prev) => !prev);
+		const toggleDebug = (e: KeyboardEvent) => {
+			if (e.key.toLowerCase() === "d") {
+				setShowHitBox((prev) => !prev);
+			}
 		};
-
-		window.addEventListener("keydown", toggleHitBox);
-		return () => window.removeEventListener("keydown", toggleHitBox);
+		window.addEventListener("keydown", toggleDebug);
+		return () => window.removeEventListener("keydown", toggleDebug);
 	}, []);
 
 	useEffect(() => {
@@ -71,6 +72,7 @@ const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
 
 			if (child.name === "Mesh") {
 				const material = child.material;
+
 				if (Array.isArray(material)) {
 					material.forEach((mat) => {
 						if (mat instanceof MeshStandardMaterial && mat.color) {
@@ -94,19 +96,16 @@ const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
 		});
 	}, [sphereRefs]);
 
-	// 매 프레임마다 애니메이션, 카메라 위치 업데이트
 	useFrame(() => {
 		if (!fishRef.current) return;
 
 		fishRef.current.scale.set(fishScale, fishScale, fishScale);
+		const fishPosition = fishRef.current.position as Vector3;
 
-		// 히트박스 위치 동기화
 		if (hitBoxRef.current) {
-			hitBoxRef.current.position.copy(fishRef.current.position);
+			hitBoxRef.current.position.copy(fishPosition);
 			hitBoxRef.current.scale.set(fishScale * 2, fishScale * 2, fishScale * 2);
 		}
-
-		const fishPosition = fishRef.current.position as Vector3;
 
 		sphereRefs.forEach((sphereRef, index) => {
 			const sphere = sphereRef.current;
@@ -133,14 +132,25 @@ const FishModel = ({ fishRef, sphereRefs }: FishModelProps) => {
 			}
 		});
 
-		// 카메라 따라가기
-		camera.position.set(fishPosition.x, 17, fishPosition.z + 14);
-		camera.lookAt(fishPosition);
+		const gridCenter = new Vector3(-50, 0, 0);
+		const gridSizeX = 6 * 7;
+		const gridSizeZ = 6 * 7;
+
+		const inGrid = Math.abs(fishPosition.x - gridCenter.x) < gridSizeX / 2 && Math.abs(fishPosition.z - gridCenter.z) < gridSizeZ / 2;
+
+		if (inGrid) {
+			camera.position.set(gridCenter.x, 60, gridCenter.z);
+			camera.lookAt(gridCenter);
+		} else {
+			camera.position.set(fishPosition.x, 17, fishPosition.z + 14);
+			camera.lookAt(fishPosition);
+		}
 	});
 
 	return (
 		<>
 			<primitive ref={fishRef} object={scene} position={[0, 1, 0]} castShadow />
+
 			{showHitBox && (
 				<mesh ref={hitBoxRef}>
 					<boxGeometry args={[1, 1, 1]} />
@@ -285,6 +295,16 @@ const Grid = ({ fishRef }: GridProps) => {
 	const meshRefs = useRef<Mesh[]>([]);
 
 	useEffect(() => {
+		const groupOffset = new Vector3(-50, 0, 0);
+
+		const isHitDetected = (fish: Object3D, cellIndex: number, radius: number) => {
+			const fishPos = fish.position.clone();
+			const cellLocal = new Vector3(...cells[cellIndex]);
+			const cellWorld = cellLocal.add(groupOffset);
+			const distance = fishPos.distanceTo(cellWorld);
+			return distance < radius;
+		};
+
 		const interval = setInterval(() => {
 			const index = Math.floor(Math.random() * cells.length);
 			const mesh = meshRefs.current[index];
@@ -292,6 +312,8 @@ const Grid = ({ fishRef }: GridProps) => {
 
 			const material = mesh.material as MeshStandardMaterial;
 			const color = material.color;
+			const fish = fishRef.current;
+			const radius = cellSize * 1.5;
 
 			gsap.to(color, {
 				r: 1,
@@ -300,17 +322,11 @@ const Grid = ({ fishRef }: GridProps) => {
 				duration: 3,
 				ease: "power1.inOut",
 				onComplete: () => {
-					const fish = fishRef.current;
-					if (fish) {
-						const fishPos = fish.position as Vector3;
-						const cellPos = new Vector3(...cells[index]);
-						const radius = cellSize / 2 + (fishScale * cellSize) / 4;
-
-						const isHit = Math.abs(fishPos.x - cellPos.x) < radius && Math.abs(fishPos.z - cellPos.z) < radius;
-
-						if (isHit) console.log("hit");
+					if (fish && isHitDetected(fish, index, radius)) {
+						console.log("HIT");
 					}
-					color.set("white");
+					color.set("white"); // temp
+					// 죽음 메시지 출력, 다시 태어나기 위해 클릭 메세지
 				},
 			});
 		}, 2500);
@@ -319,7 +335,7 @@ const Grid = ({ fishRef }: GridProps) => {
 	}, [cells, fishRef, fishScale]);
 
 	return (
-		<>
+		<group position={[-50, 0, 0]}>
 			{cells.map((pos, i) => (
 				<group key={i} position={pos}>
 					<mesh ref={(el) => el && (meshRefs.current[i] = el)}>
@@ -332,7 +348,7 @@ const Grid = ({ fishRef }: GridProps) => {
 					</lineSegments>
 				</group>
 			))}
-		</>
+		</group>
 	);
 };
 
@@ -343,10 +359,10 @@ const Experience = () => {
 	const darkMode = useFishStore((state) => state.darkMode);
 
 	const spherePositions: Vec3[] = [
-		[30, 1, 0],
-		[-30, 1, 0],
-		[0, 1, 30],
-		[0, 1, -30],
+		[70, 1, 0],
+		[50, 1, 0],
+		[60, 1, 10],
+		[60, 1, -10],
 	];
 
 	// 다크모드 시 배경 트렌지션

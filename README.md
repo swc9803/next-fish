@@ -20,3 +20,5 @@ use client 최소화
 resize debounce
 useGLTF.preload("./textures/House.glb");
 <Suspense fallback={<Loader />}>
+
+수정 전, 수정 후 비교
