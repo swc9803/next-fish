@@ -42,10 +42,10 @@ const FishConfig = () => {
 interface FishModelProps {
 	fishRef: React.RefObject<Object3D>;
 	sphereRefs: React.RefObject<Mesh>[];
-	setIsInGrid: React.Dispatch<React.SetStateAction<boolean>>;
+	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const FishModel = ({ fishRef, sphereRefs, setIsInGrid }: FishModelProps) => {
+const FishModel = ({ fishRef, sphereRefs, setIsInBombZone }: FishModelProps) => {
 	const { scene } = useGLTF("/models/fish.glb");
 	const { camera } = useThree();
 	const { fishColor, fishScale } = useFishStore();
@@ -54,8 +54,9 @@ const FishModel = ({ fishRef, sphereRefs, setIsInGrid }: FishModelProps) => {
 	const [isNearSphere, setIsNearSphere] = useState<boolean[]>([false, false, false, false]);
 	const hitBoxRef = useRef<Mesh>(null);
 	const sphereTimelines = useRef<gsap.core.Timeline[]>([]);
-	const prevInGridRef = useRef(false);
 	const meshMaterials = useRef<MeshStandardMaterial[]>([]);
+	const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const lastInBombZone = useRef<boolean | null>(null);
 
 	useEffect(() => {
 		scene.traverse((child) => {
@@ -94,6 +95,7 @@ const FishModel = ({ fishRef, sphereRefs, setIsInGrid }: FishModelProps) => {
 		return () => window.removeEventListener("keydown", toggleDebug);
 	}, []);
 
+	// fish 움직임은 frame 필요하지만 inBombZone 까지 frame으로 필요?
 	useFrame(() => {
 		if (!fishRef.current) return;
 
@@ -134,19 +136,27 @@ const FishModel = ({ fishRef, sphereRefs, setIsInGrid }: FishModelProps) => {
 		const gridSizeX = 6 * 7;
 		const gridSizeZ = 6 * 7;
 
-		const inGrid = Math.abs(fishPosition.x - gridCenter.x) < gridSizeX / 2 && Math.abs(fishPosition.z - gridCenter.z) < gridSizeZ / 2;
+		const inBombZone = Math.abs(fishPosition.x - gridCenter.x) < gridSizeX / 2 && Math.abs(fishPosition.z - gridCenter.z) < gridSizeZ / 2;
 
-		if (prevInGridRef.current !== inGrid) {
-			prevInGridRef.current = inGrid;
-			setIsInGrid(inGrid);
-		}
-
-		if (inGrid) {
+		// 입장
+		if (inBombZone) {
 			camera.position.set(gridCenter.x, 60, gridCenter.z);
 			camera.lookAt(gridCenter);
 		} else {
 			camera.position.set(fishPosition.x, 17, fishPosition.z + 14);
 			camera.lookAt(fishPosition);
+		}
+
+		if (lastInBombZone.current !== inBombZone) {
+			lastInBombZone.current = inBombZone;
+
+			if (debounceTimeoutRef.current) {
+				clearTimeout(debounceTimeoutRef.current);
+			}
+
+			debounceTimeoutRef.current = setTimeout(() => {
+				setIsInBombZone(inBombZone);
+			}, 100);
 		}
 	});
 
@@ -220,11 +230,11 @@ const Sphere = ({ sphereRef, position }: SphereProps) => {
 interface ClickHandlerProps {
 	fishRef: RefAny;
 	planeRef: RefMesh;
-	isInGrid: boolean;
+	isInBombZone: boolean;
 	isGameOver: boolean;
 }
 
-const ClickHandler = ({ fishRef, planeRef, isInGrid, isGameOver }: ClickHandlerProps): JSX.Element => {
+const ClickHandler = ({ fishRef, planeRef, isInBombZone, isGameOver }: ClickHandlerProps): JSX.Element => {
 	const { camera, gl } = useThree();
 	const raycaster = useRef(new Raycaster());
 	const mouse = useRef(new Vector2());
@@ -278,7 +288,7 @@ const ClickHandler = ({ fishRef, planeRef, isInGrid, isGameOver }: ClickHandlerP
 				let targetZ = point.z;
 
 				// grid 외부 클릭 보정
-				if (isInGrid) {
+				if (isInBombZone) {
 					targetX = boundToGrid(point.x, gridCenter.x, gridSizeX);
 					targetZ = boundToGrid(point.z, gridCenter.z, gridSizeZ);
 				}
@@ -302,13 +312,14 @@ const ClickHandler = ({ fishRef, planeRef, isInGrid, isGameOver }: ClickHandlerP
 	return <></>;
 };
 
-interface GridProps {
+interface BombZoneProps {
 	fishRef: RefAny;
 	setIsGameOver: React.Dispatch<React.SetStateAction<boolean>>;
-	setIsInGrid: React.Dispatch<React.SetStateAction<boolean>>;
+	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;
+	isInBombZone: boolean;
 }
 
-const Grid = ({ fishRef, setIsGameOver, setIsInGrid }: GridProps) => {
+const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone }: BombZoneProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const cellSize = 6;
 	const gridHalf = 3;
@@ -323,6 +334,8 @@ const Grid = ({ fishRef, setIsGameOver, setIsInGrid }: GridProps) => {
 	const meshRefs = useRef<Mesh[]>([]);
 
 	useEffect(() => {
+		if (!isInBombZone) return;
+
 		const groupOffset = new Vector3(-50, 0, 0);
 
 		const isHitDetected = (fish: Object3D, cellIndex: number, radius: number) => {
@@ -351,17 +364,17 @@ const Grid = ({ fishRef, setIsGameOver, setIsInGrid }: GridProps) => {
 				ease: "power1.inOut",
 				onComplete: () => {
 					if (fish && isHitDetected(fish, index, radius)) {
-						console.log("HIT");
+						console.log("hit");
 						setIsGameOver(true);
-						setIsInGrid(false);
+						setIsInBombZone(false);
 					}
-					color.set("white"); // temp
+					color.set("white");
 				},
 			});
 		}, 2500);
 
 		return () => clearInterval(interval);
-	}, [cells, fishRef, fishScale]);
+	}, [cells, fishRef, fishScale, isInBombZone]);
 
 	return (
 		<group position={[-50, 0, 0]}>
@@ -387,7 +400,7 @@ const Experience = () => {
 	const planeRef = useRef<Mesh>(null);
 	const darkMode = useFishStore((state) => state.darkMode);
 
-	const [isInGrid, setIsInGrid] = useState(false);
+	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
 
 	const spherePositions: Vec3[] = [
@@ -457,13 +470,13 @@ const Experience = () => {
 				/>
 
 				<Suspense fallback={null}>
-					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} setIsInGrid={setIsInGrid} />
+					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} setIsInBombZone={setIsInBombZone} />
 					<Plane planeRef={planeRef} />
-					<Grid fishRef={fishRef} setIsGameOver={setIsGameOver} setIsInGrid={setIsInGrid} />
+					<BombZone fishRef={fishRef} setIsGameOver={setIsGameOver} setIsInBombZone={setIsInBombZone} isInBombZone={isInBombZone} />
 					{sphereRefs.map((ref, i) => (
 						<Sphere key={i} sphereRef={ref} position={spherePositions[i]} />
 					))}
-					<ClickHandler fishRef={fishRef} planeRef={planeRef} isInGrid={isInGrid} isGameOver={isGameOver} />
+					<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 				</Suspense>
 			</Canvas>
 
@@ -476,7 +489,7 @@ const Experience = () => {
 							fishRef.current.position.set(0, 1, 0);
 						}
 						setIsGameOver(false);
-						setIsInGrid(false);
+						setIsInBombZone(false);
 					}}
 					className="gameover_overlay"
 				>

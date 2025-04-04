@@ -21,4 +21,6 @@ resize debounce
 useGLTF.preload("./textures/House.glb");
 <Suspense fallback={<Loader />}>
 
+glsl 인트로 후 초기 카메라 조정
+
 수정 전, 수정 후 비교
