@@ -13,6 +13,11 @@
 	src: url("/fonts/NanumSquareB.woff2") format("woff2");
 	font-weight: 700;
 }
+@font-face {
+	font-family: "OptimusPrinceps";
+	src: url("/fonts/OptimusPrinceps.woff2") format("woff2");
+	font-weight: 400;
+}
 
 * {
 	box-sizing: border-box;
@@ -99,5 +104,45 @@ textarea {
 			border: 1px solid #fff;
 			color: #fff;
 		}
+	}
+}
+
+.gameover_overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+	background: rgba(0, 0, 0, 0.7);
+	animation: fadeIn 1.5s ease-out forwards;
+	user-select: none;
+	cursor: pointer;
+	opacity: 0;
+	z-index: 1;
+	h1 {
+		color: #4f0001;
+		font-family: "OptimusPrinceps";
+		font-size: 3.5rem;
+		text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+		letter-spacing: 0.05em;
+	}
+	p {
+		margin-top: 0.5rem;
+		color: #fff;
+		text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+		font-size: 1rem;
+	}
+}
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
 	}
 }

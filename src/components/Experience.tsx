@@ -278,9 +278,9 @@ const ClickHandler = ({ fishRef, planeRef }: ClickHandlerProps): JSX.Element => 
 
 interface GridProps {
 	fishRef: RefAny;
+	setIsGameOver: React.Dispatch<React.SetStateAction<boolean>>;
 }
-
-const Grid = ({ fishRef }: GridProps) => {
+const Grid = ({ fishRef, setIsGameOver }: GridProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const cellSize = 6;
 	const gridHalf = 3;
@@ -324,9 +324,9 @@ const Grid = ({ fishRef }: GridProps) => {
 				onComplete: () => {
 					if (fish && isHitDetected(fish, index, radius)) {
 						console.log("HIT");
+						setIsGameOver(true);
 					}
 					color.set("white"); // temp
-					// 죽음 메시지 출력, 다시 태어나기 위해 클릭 메세지
 				},
 			});
 		}, 2500);
@@ -357,6 +357,8 @@ const Experience = () => {
 	const fishRef = useRef<Object3D>(null);
 	const planeRef = useRef<Mesh>(null);
 	const darkMode = useFishStore((state) => state.darkMode);
+
+	const [isGameOver, setIsGameOver] = useState(false);
 
 	const spherePositions: Vec3[] = [
 		[70, 1, 0],
@@ -414,7 +416,7 @@ const Experience = () => {
 				<Suspense fallback={null}>
 					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} />
 					<Plane planeRef={planeRef} />
-					<Grid fishRef={fishRef} />
+					<Grid fishRef={fishRef} setIsGameOver={setIsGameOver} />
 					{sphereRefs.map((ref, i) => (
 						<Sphere key={i} sphereRef={ref} position={spherePositions[i]} />
 					))}
@@ -423,6 +425,22 @@ const Experience = () => {
 			</Canvas>
 
 			<FishConfig />
+
+			{isGameOver && (
+				<div
+					onClick={() => {
+						if (fishRef.current) {
+							fishRef.current.position.set(0, 1, 0);
+						}
+						setIsGameOver(false);
+					}}
+					className="gameover_overlay"
+					style={{}}
+				>
+					<h1>YOU'RE COOKED</h1>
+					<p>화면을 클릭해 다시 시작하세요</p>
+				</div>
+			)}
 		</>
 	);
 };
