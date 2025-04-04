@@ -54,38 +54,25 @@ const FishModel = ({ fishRef, sphereRefs, setIsInGrid }: FishModelProps) => {
 	const [isNearSphere, setIsNearSphere] = useState<boolean[]>([false, false, false, false]);
 	const hitBoxRef = useRef<Mesh>(null);
 	const sphereTimelines = useRef<gsap.core.Timeline[]>([]);
-
-	// D 키 눌러 히트박스 표시 토글
-	useEffect(() => {
-		const toggleDebug = (e: KeyboardEvent) => {
-			if (e.key.toLowerCase() === "d") {
-				setShowHitBox((prev) => !prev);
-			}
-		};
-		window.addEventListener("keydown", toggleDebug);
-		return () => window.removeEventListener("keydown", toggleDebug);
-	}, []);
+	const prevInGridRef = useRef(false);
+	const meshMaterials = useRef<MeshStandardMaterial[]>([]);
 
 	useEffect(() => {
 		scene.traverse((child) => {
-			if (!(child instanceof Mesh)) return;
-			child.castShadow = true;
-
-			if (child.name === "Mesh") {
-				const material = child.material;
-
-				if (Array.isArray(material)) {
-					material.forEach((mat) => {
-						if (mat instanceof MeshStandardMaterial && mat.color) {
-							mat.color.set(fishColor);
-						}
-					});
-				} else if (material instanceof MeshStandardMaterial && material.color) {
-					material.color.set(fishColor);
-				}
+			if (child instanceof Mesh && child.name === "Mesh") {
+				const mats = Array.isArray(child.material) ? child.material : [child.material];
+				mats.forEach((mat) => {
+					if (mat instanceof MeshStandardMaterial) {
+						meshMaterials.current.push(mat);
+					}
+				});
 			}
 		});
-	}, [fishColor, scene]);
+	}, [scene]);
+
+	useEffect(() => {
+		meshMaterials.current.forEach((mat) => mat.color.set(fishColor));
+	}, [fishColor]);
 
 	useEffect(() => {
 		sphereRefs.forEach((ref, i) => {
@@ -96,6 +83,16 @@ const FishModel = ({ fishRef, sphereRefs, setIsInGrid }: FishModelProps) => {
 			}
 		});
 	}, [sphereRefs]);
+
+	useEffect(() => {
+		const toggleDebug = (e: KeyboardEvent) => {
+			if (e.key.toLowerCase() === "d") {
+				setShowHitBox((prev) => !prev);
+			}
+		};
+		window.addEventListener("keydown", toggleDebug);
+		return () => window.removeEventListener("keydown", toggleDebug);
+	}, []);
 
 	useFrame(() => {
 		if (!fishRef.current) return;
@@ -139,7 +136,10 @@ const FishModel = ({ fishRef, sphereRefs, setIsInGrid }: FishModelProps) => {
 
 		const inGrid = Math.abs(fishPosition.x - gridCenter.x) < gridSizeX / 2 && Math.abs(fishPosition.z - gridCenter.z) < gridSizeZ / 2;
 
-		setIsInGrid(inGrid);
+		if (prevInGridRef.current !== inGrid) {
+			prevInGridRef.current = inGrid;
+			setIsInGrid(inGrid);
+		}
 
 		if (inGrid) {
 			camera.position.set(gridCenter.x, 60, gridCenter.z);
@@ -153,7 +153,6 @@ const FishModel = ({ fishRef, sphereRefs, setIsInGrid }: FishModelProps) => {
 	return (
 		<>
 			<primitive ref={fishRef} object={scene} position={[0, 1, 0]} castShadow />
-
 			{showHitBox && (
 				<mesh ref={hitBoxRef}>
 					<boxGeometry args={[1, 1, 1]} />
@@ -222,14 +221,20 @@ interface ClickHandlerProps {
 	fishRef: RefAny;
 	planeRef: RefMesh;
 	isInGrid: boolean;
+	isGameOver: boolean;
 }
 
-const ClickHandler = ({ fishRef, planeRef, isInGrid }: ClickHandlerProps): JSX.Element => {
+const ClickHandler = ({ fishRef, planeRef, isInGrid, isGameOver }: ClickHandlerProps): JSX.Element => {
 	const { camera, gl } = useThree();
 	const raycaster = useRef(new Raycaster());
 	const mouse = useRef(new Vector2());
 	const [isClicked, setIsClicked] = useState(false);
 	const fishSpeed = useFishStore((state) => state.fishSpeed);
+
+	const boundToGrid = (value: number, center: number, size: number) => {
+		const half = size / 2;
+		return Math.max(center - half + 1, Math.min(center + half - 1, value));
+	};
 
 	useEffect(() => {
 		const canvas = gl.domElement;
@@ -256,6 +261,8 @@ const ClickHandler = ({ fishRef, planeRef, isInGrid }: ClickHandlerProps): JSX.E
 	}, [gl]);
 
 	useFrame(() => {
+		if (isGameOver) return;
+
 		if (isClicked && fishRef.current && planeRef.current) {
 			raycaster.current.setFromCamera(mouse.current, camera);
 			const intersects = raycaster.current.intersectObject(planeRef.current);
@@ -267,25 +274,31 @@ const ClickHandler = ({ fishRef, planeRef, isInGrid }: ClickHandlerProps): JSX.E
 				const gridSizeX = 6 * 7;
 				const gridSizeZ = 6 * 7;
 
-				const isPointInGrid = Math.abs(point.x - gridCenter.x) < gridSizeX / 2 && Math.abs(point.z - gridCenter.z) < gridSizeZ / 2;
+				let targetX = point.x;
+				let targetZ = point.z;
 
-				if (isInGrid && !isPointInGrid) return;
+				// grid 외부 클릭 보정
+				if (isInGrid) {
+					targetX = boundToGrid(point.x, gridCenter.x, gridSizeX);
+					targetZ = boundToGrid(point.z, gridCenter.z, gridSizeZ);
+				}
 
-				const distance = fishRef.current.position.distanceTo(point);
+				const distance = fishRef.current.position.distanceTo(new Vector3(targetX, point.y, targetZ));
 				const duration = distance / fishSpeed;
 
-				const target = new Vector3(point.x, fishRef.current.position.y, point.z);
+				const target = new Vector3(targetX, fishRef.current.position.y, targetZ);
 				fishRef.current.lookAt(target);
 
 				gsap.killTweensOf(fishRef.current.position);
 				gsap.to(fishRef.current.position, {
-					x: point.x,
-					z: point.z,
+					x: targetX,
+					z: targetZ,
 					duration,
 				});
 			}
 		}
 	});
+
 	return <></>;
 };
 
@@ -450,7 +463,7 @@ const Experience = () => {
 					{sphereRefs.map((ref, i) => (
 						<Sphere key={i} sphereRef={ref} position={spherePositions[i]} />
 					))}
-					<ClickHandler fishRef={fishRef} planeRef={planeRef} isInGrid={isInGrid} />
+					<ClickHandler fishRef={fishRef} planeRef={planeRef} isInGrid={isInGrid} isGameOver={isGameOver} />
 				</Suspense>
 			</Canvas>
 
