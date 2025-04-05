@@ -15,6 +15,10 @@ type RefMesh = React.RefObject<Mesh>;
 type RefAny = React.RefObject<Object3D>;
 type Vec3 = [number, number, number];
 
+const GRID_CENTER = new Vector3(-50, 0, 0);
+const GRID_SIZE_X = 42;
+const GRID_SIZE_Z = 42;
+
 const FishConfig = () => {
 	const { fishColor, fishSpeed, fishScale, darkMode, setFishColor, setFishSpeed, setFishScale, toggleDarkMode } = useFishStore();
 
@@ -41,21 +45,17 @@ const FishConfig = () => {
 
 interface FishModelProps {
 	fishRef: React.RefObject<Object3D>;
-	sphereRefs: React.RefObject<Mesh>[];
 	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;
 	setCountdown: React.Dispatch<React.SetStateAction<number | null>>;
 }
-
-const FishModel = ({ fishRef, sphereRefs, setIsInBombZone, setCountdown }: FishModelProps) => {
+const FishModel = ({ fishRef, setIsInBombZone, setCountdown }: FishModelProps) => {
 	const { scene } = useGLTF("/models/fish.glb");
 	const { camera } = useThree();
 	const { fishColor, fishScale } = useFishStore();
 
 	const [isMobile, setIsMobile] = useState(false);
 	const [showHitBox, setShowHitBox] = useState(false);
-	const [isNearSphere, setIsNearSphere] = useState<boolean[]>([false, false, false, false]);
 	const hitBoxRef = useRef<Mesh>(null);
-	const sphereTimelines = useRef<gsap.core.Timeline[]>([]);
 	const meshMaterials = useRef<MeshStandardMaterial[]>([]);
 	const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const lastInBombZone = useRef<boolean | null>(null);
@@ -92,16 +92,6 @@ const FishModel = ({ fishRef, sphereRefs, setIsInBombZone, setCountdown }: FishM
 	}, [fishColor]);
 
 	useEffect(() => {
-		sphereRefs.forEach((ref, i) => {
-			if (ref.current) {
-				const tl = gsap.timeline({ paused: true });
-				tl.to(ref.current.scale, { x: 2, y: 2, z: 2, duration: 0.5 });
-				sphereTimelines.current[i] = tl;
-			}
-		});
-	}, [sphereRefs]);
-
-	useEffect(() => {
 		const toggleDebug = (e: KeyboardEvent) => {
 			if (e.key.toLowerCase() === "d") {
 				setShowHitBox((prev) => !prev);
@@ -129,45 +119,12 @@ const FishModel = ({ fishRef, sphereRefs, setIsInBombZone, setCountdown }: FishM
 			hitBox.scale.set(1, 1, 1);
 		}
 
-		sphereRefs.forEach((sphereRef, index) => {
-			const sphere = sphereRef.current;
-			if (!sphere) return;
-
-			const distance = fishPosition.distanceTo(sphere.position);
-			const isNear = isNearSphere[index];
-			const timeline = sphereTimelines.current[index];
-
-			if (distance < 5 && !isNear) {
-				timeline?.play();
-				if (!isNearSphere[index]) {
-					setIsNearSphere((prev) => {
-						const next = [...prev];
-						next[index] = true;
-						return next;
-					});
-				}
-			} else if (distance >= 5 && isNear) {
-				timeline?.reverse();
-				if (isNearSphere[index]) {
-					setIsNearSphere((prev) => {
-						const next = [...prev];
-						next[index] = false;
-						return next;
-					});
-				}
-			}
-		});
-
-		const gridCenter = new Vector3(-50, 0, 0);
-		const gridSizeX = 6 * 7;
-		const gridSizeZ = 6 * 7;
-
-		const inBombZone = Math.abs(fishPosition.x - gridCenter.x) < gridSizeX / 2 && Math.abs(fishPosition.z - gridCenter.z) < gridSizeZ / 2;
+		const inBombZone = Math.abs(fishPosition.x - GRID_CENTER.x) < GRID_SIZE_X / 2 && Math.abs(fishPosition.z - GRID_CENTER.z) < GRID_SIZE_Z / 2;
 
 		// 입장
 		if (inBombZone) {
-			camera.position.set(gridCenter.x, isMobile ? 40 : 30, gridCenter.z);
-			camera.lookAt(gridCenter);
+			camera.position.set(GRID_CENTER.x, isMobile ? 40 : 30, GRID_CENTER.z);
+			camera.lookAt(GRID_CENTER);
 		} else {
 			camera.position.set(fishPosition.x, 17, fishPosition.z + 14);
 			camera.lookAt(fishPosition);
@@ -218,7 +175,7 @@ const Plane = ({ planeRef }: PlaneProps) => {
 		// "/textures/sand2/sand_02_rough_2k.jpg",
 	]);
 
-	useMemo(() => {
+	useEffect(() => {
 		[colorMap, normalMap, roughnessMap].forEach((tex) => {
 			tex.wrapS = tex.wrapT = RepeatWrapping;
 			tex.repeat.set(20, 4); // planeGeometry args 비율에 맞춰 수정
@@ -233,23 +190,6 @@ const Plane = ({ planeRef }: PlaneProps) => {
 
 	return (
 		<mesh ref={planeRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-			{geometry}
-			{material}
-		</mesh>
-	);
-};
-
-interface SphereProps {
-	sphereRef: RefMesh;
-	position: Vec3;
-}
-
-const Sphere = ({ sphereRef, position }: SphereProps) => {
-	const geometry = useMemo(() => <sphereGeometry args={[1, 32, 32]} />, []);
-	const material = useMemo(() => <meshStandardMaterial color="skyblue" />, []);
-
-	return (
-		<mesh ref={sphereRef} position={position} castShadow>
 			{geometry}
 			{material}
 		</mesh>
@@ -288,14 +228,14 @@ const ClickHandler = ({ fishRef, planeRef, isInBombZone, isGameOver }: ClickHand
 			updateMousePosition(e);
 		};
 
-		canvas.addEventListener("mousedown", onMouseDown);
-		canvas.addEventListener("mousemove", updateMousePosition);
-		window.addEventListener("mouseup", () => setIsClicked(false));
+		canvas.addEventListener("pointerdown", onMouseDown);
+		canvas.addEventListener("pointermove", updateMousePosition);
+		window.addEventListener("pointerup", () => setIsClicked(false));
 
 		return () => {
-			canvas.removeEventListener("mousedown", onMouseDown);
-			canvas.removeEventListener("mousemove", updateMousePosition);
-			window.removeEventListener("mouseup", () => setIsClicked(false));
+			canvas.addEventListener("pointerdown", onMouseDown);
+			canvas.addEventListener("pointermove", updateMousePosition);
+			window.addEventListener("pointerup", () => setIsClicked(false));
 		};
 	}, [gl]);
 
@@ -309,17 +249,13 @@ const ClickHandler = ({ fishRef, planeRef, isInBombZone, isGameOver }: ClickHand
 			if (intersects.length > 0) {
 				const point = intersects[0].point;
 
-				const gridCenter = new Vector3(-50, 0, 0);
-				const gridSizeX = 6 * 7;
-				const gridSizeZ = 6 * 7;
-
 				let targetX = point.x;
 				let targetZ = point.z;
 
 				// grid 외부 클릭 보정
 				if (isInBombZone) {
-					targetX = boundToGrid(point.x, gridCenter.x, gridSizeX);
-					targetZ = boundToGrid(point.z, gridCenter.z, gridSizeZ);
+					targetX = boundToGrid(point.x, GRID_CENTER.x, GRID_SIZE_X);
+					targetZ = boundToGrid(point.z, GRID_CENTER.z, GRID_SIZE_Z);
 				}
 
 				const distance = fishRef.current.position.distanceTo(new Vector3(targetX, point.y, targetZ));
@@ -442,8 +378,68 @@ const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone, bombA
 	);
 };
 
+type GrowingSphereProps = {
+	position: Vec3;
+	onCollected: () => void;
+	fishRef: RefAny;
+};
+
+type BonusSphere = { id: string; position: Vec3 };
+const GrowingSphere = ({ position, onCollected, fishRef }: GrowingSphereProps) => {
+	const ref = useRef<Mesh>(null);
+	const [collected, setCollected] = useState(false);
+	const { fishScale, setFishScale } = useFishStore();
+
+	useEffect(() => {
+		if (!ref.current || collected) return;
+		const timeout = setTimeout(() => {
+			gsap.to(ref.current!.scale, {
+				x: 0,
+				y: 0,
+				z: 0,
+				duration: 0.5,
+				onComplete: onCollected,
+			});
+		}, 5000);
+		return () => clearTimeout(timeout);
+	}, [collected, ref.current]);
+
+	useFrame(() => {
+		if (collected || !ref.current || !fishRef.current) return;
+
+		const dist = ref.current.position.distanceTo(fishRef.current.position);
+		if (dist < 3) {
+			setCollected(true);
+			gsap.to(ref.current.scale, {
+				x: 2,
+				y: 2,
+				z: 2,
+				duration: 0.3,
+				onComplete: () => {
+					gsap.to(ref.current!.scale, {
+						x: 0,
+						y: 0,
+						z: 0,
+						duration: 0.5,
+						onComplete: () => {
+							onCollected();
+							setFishScale((prev) => Math.min(prev + 0.2, 5));
+						},
+					});
+				},
+			});
+		}
+	});
+
+	return (
+		<mesh ref={ref} position={position}>
+			<sphereGeometry args={[1, 32, 32]} />
+			<meshStandardMaterial color="limegreen" />
+		</mesh>
+	);
+};
+
 const Experience = () => {
-	const sphereRefs: RefMesh[] = [useRef(null), useRef(null), useRef(null), useRef(null)];
 	const fishRef = useRef<Object3D>(null);
 	const planeRef = useRef<Mesh>(null);
 	const darkMode = useFishStore((state) => state.darkMode);
@@ -453,13 +449,7 @@ const Experience = () => {
 	const [countdown, setCountdown] = useState<number | null>(null);
 	const [bombActive, setBombActive] = useState(false);
 	const [score, setScore] = useState(0);
-
-	const spherePositions: Vec3[] = [
-		[70, 1, 0],
-		[50, 1, 0],
-		[60, 1, 10],
-		[60, 1, -10],
-	];
+	const [bonusSpheres, setBonusSpheres] = useState<BonusSphere[]>([]);
 
 	// 다크모드 시 배경 트렌지션
 	const BackgroundTransition = ({ darkMode }: { darkMode: boolean }) => {
@@ -496,6 +486,24 @@ const Experience = () => {
 
 		return null;
 	};
+
+	// sphere 생성
+	useEffect(() => {
+		const interval = setInterval(() => {
+			const cellSize = 6;
+			const gridHalf = 3;
+			const x = (Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf) * cellSize - 50;
+			const z = (Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf) * cellSize;
+			const newSphere: BonusSphere = {
+				id: crypto.randomUUID(),
+				position: [x, 1, z],
+			};
+
+			setBonusSpheres((prev) => (prev.length === 0 ? [newSphere] : prev));
+		}, 3000);
+
+		return () => clearInterval(interval);
+	}, []);
 
 	// 폭탄 카운트다운
 	useEffect(() => {
@@ -550,7 +558,7 @@ const Experience = () => {
 				/>
 
 				<Suspense fallback={null}>
-					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} setIsInBombZone={setIsInBombZone} setCountdown={setCountdown} />{" "}
+					<FishModel fishRef={fishRef} setIsInBombZone={setIsInBombZone} setCountdown={setCountdown} />
 					<Plane planeRef={planeRef} />
 					<BombZone
 						fishRef={fishRef}
@@ -560,8 +568,13 @@ const Experience = () => {
 						bombActive={bombActive}
 						setScore={setScore}
 					/>
-					{sphereRefs.map((ref, i) => (
-						<Sphere key={i} sphereRef={ref} position={spherePositions[i]} />
+					{bonusSpheres.map(({ id, position }) => (
+						<GrowingSphere
+							key={id}
+							position={position}
+							fishRef={fishRef}
+							onCollected={() => setBonusSpheres((prev) => prev.filter((sphere) => sphere.id !== id))}
+						/>
 					))}
 					<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 				</Suspense>

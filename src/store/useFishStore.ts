@@ -10,7 +10,7 @@ interface FishStoreState {
 interface FishStoreActions {
 	setFishColor: (color: string) => void;
 	setFishSpeed: (speed: number) => void;
-	setFishScale: (scale: number) => void;
+	setFishScale: (scale: number | ((prev: number) => number)) => void;
 	toggleDarkMode: () => void;
 }
 
@@ -19,8 +19,11 @@ export const useFishStore = create<FishStoreState & FishStoreActions>((set) => (
 	fishSpeed: 50,
 	fishScale: 1,
 	darkMode: false,
-	setFishColor: (color: string) => set({ fishColor: color }),
-	setFishSpeed: (speed: number) => set({ fishSpeed: speed }),
-	setFishScale: (scale: number) => set({ fishScale: scale }),
+	setFishColor: (color) => set({ fishColor: color }),
+	setFishSpeed: (speed) => set({ fishSpeed: speed }),
+	setFishScale: (value) =>
+		set((state) => ({
+			fishScale: typeof value === "function" ? value(state.fishScale) : value,
+		})),
 	toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
 }));
