@@ -1,7 +1,7 @@
 "use client";
 
 // library
-import { Suspense, useRef, useState, useEffect, useMemo, JSX } from "react";
+import { Suspense, useRef, useState, useEffect, useMemo, JSX, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF, useTexture, Stats } from "@react-three/drei";
 import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, Color, FogExp2, MeshStandardMaterial, TextureLoader, RepeatWrapping } from "three";
@@ -43,13 +43,15 @@ interface FishModelProps {
 	fishRef: React.RefObject<Object3D>;
 	sphereRefs: React.RefObject<Mesh>[];
 	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;
+	setCountdown: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
-const FishModel = ({ fishRef, sphereRefs, setIsInBombZone }: FishModelProps) => {
+const FishModel = ({ fishRef, sphereRefs, setIsInBombZone, setCountdown }: FishModelProps) => {
 	const { scene } = useGLTF("/models/fish.glb");
 	const { camera } = useThree();
 	const { fishColor, fishScale } = useFishStore();
 
+	const [isMobile, setIsMobile] = useState(false);
 	const [showHitBox, setShowHitBox] = useState(false);
 	const [isNearSphere, setIsNearSphere] = useState<boolean[]>([false, false, false, false]);
 	const hitBoxRef = useRef<Mesh>(null);
@@ -58,18 +60,32 @@ const FishModel = ({ fishRef, sphereRefs, setIsInBombZone }: FishModelProps) => 
 	const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const lastInBombZone = useRef<boolean | null>(null);
 
+	// 모바일 검사
 	useEffect(() => {
+		const handleResize = () => {
+			setIsMobile(window.innerWidth <= 480);
+		};
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
+
+	useEffect(() => {
+		const materials: MeshStandardMaterial[] = [];
+
 		scene.traverse((child) => {
 			if (child instanceof Mesh && child.name === "Mesh") {
 				const mats = Array.isArray(child.material) ? child.material : [child.material];
 				mats.forEach((mat) => {
 					if (mat instanceof MeshStandardMaterial) {
-						meshMaterials.current.push(mat);
+						materials.push(mat);
 					}
 				});
 			}
 		});
-	}, [scene]);
+
+		meshMaterials.current = materials;
+	}, []);
 
 	useEffect(() => {
 		meshMaterials.current.forEach((mat) => mat.color.set(fishColor));
@@ -95,16 +111,22 @@ const FishModel = ({ fishRef, sphereRefs, setIsInBombZone }: FishModelProps) => 
 		return () => window.removeEventListener("keydown", toggleDebug);
 	}, []);
 
-	// fish 움직임은 frame 필요하지만 inBombZone 까지 frame으로 필요?
 	useFrame(() => {
 		if (!fishRef.current) return;
 
 		fishRef.current.scale.set(fishScale, fishScale, fishScale);
 		const fishPosition = fishRef.current.position as Vector3;
 
-		if (hitBoxRef.current) {
-			hitBoxRef.current.position.copy(fishPosition);
-			hitBoxRef.current.scale.set(fishScale * 2, fishScale * 2, fishScale * 2);
+		if (hitBoxRef.current && fishRef.current) {
+			const fish = fishRef.current;
+			const hitBox = hitBoxRef.current;
+			hitBox.position.copy(fish.position);
+
+			const offset = new Vector3(0, 0, -fishScale * 0.5);
+			offset.applyEuler(fish.rotation);
+			hitBox.position.add(offset);
+			hitBox.rotation.copy(fish.rotation);
+			hitBox.scale.set(1, 1, 1);
 		}
 
 		sphereRefs.forEach((sphereRef, index) => {
@@ -117,18 +139,22 @@ const FishModel = ({ fishRef, sphereRefs, setIsInBombZone }: FishModelProps) => 
 
 			if (distance < 5 && !isNear) {
 				timeline?.play();
-				setIsNearSphere((prev) => {
-					const next = [...prev];
-					next[index] = true;
-					return next;
-				});
+				if (!isNearSphere[index]) {
+					setIsNearSphere((prev) => {
+						const next = [...prev];
+						next[index] = true;
+						return next;
+					});
+				}
 			} else if (distance >= 5 && isNear) {
 				timeline?.reverse();
-				setIsNearSphere((prev) => {
-					const next = [...prev];
-					next[index] = false;
-					return next;
-				});
+				if (isNearSphere[index]) {
+					setIsNearSphere((prev) => {
+						const next = [...prev];
+						next[index] = false;
+						return next;
+					});
+				}
 			}
 		});
 
@@ -140,7 +166,7 @@ const FishModel = ({ fishRef, sphereRefs, setIsInBombZone }: FishModelProps) => 
 
 		// 입장
 		if (inBombZone) {
-			camera.position.set(gridCenter.x, 60, gridCenter.z);
+			camera.position.set(gridCenter.x, isMobile ? 40 : 30, gridCenter.z);
 			camera.lookAt(gridCenter);
 		} else {
 			camera.position.set(fishPosition.x, 17, fishPosition.z + 14);
@@ -156,6 +182,9 @@ const FishModel = ({ fishRef, sphereRefs, setIsInBombZone }: FishModelProps) => 
 
 			debounceTimeoutRef.current = setTimeout(() => {
 				setIsInBombZone(inBombZone);
+				if (inBombZone) {
+					setCountdown(3);
+				}
 			}, 100);
 		}
 	});
@@ -165,7 +194,7 @@ const FishModel = ({ fishRef, sphereRefs, setIsInBombZone }: FishModelProps) => 
 			<primitive ref={fishRef} object={scene} position={[0, 1, 0]} castShadow />
 			{showHitBox && (
 				<mesh ref={hitBoxRef}>
-					<boxGeometry args={[1, 1, 1]} />
+					<boxGeometry args={[fishScale * 1.5, 1, fishScale * 5]} />
 					<meshBasicMaterial color="red" wireframe transparent opacity={0.5} />
 				</mesh>
 			)}
@@ -317,9 +346,11 @@ interface BombZoneProps {
 	setIsGameOver: React.Dispatch<React.SetStateAction<boolean>>;
 	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;
 	isInBombZone: boolean;
+	bombActive: boolean;
+	setScore: React.Dispatch<React.SetStateAction<number>>;
 }
 
-const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone }: BombZoneProps) => {
+const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone, bombActive, setScore }: BombZoneProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const cellSize = 6;
 	const gridHalf = 3;
@@ -334,16 +365,31 @@ const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone }: Bom
 	const meshRefs = useRef<Mesh[]>([]);
 
 	useEffect(() => {
-		if (!isInBombZone) return;
+		if (!bombActive) return;
 
 		const groupOffset = new Vector3(-50, 0, 0);
 
-		const isHitDetected = (fish: Object3D, cellIndex: number, radius: number) => {
+		const isHitDetected = (fish: Object3D, cellIndex: number) => {
 			const fishPos = fish.position.clone();
 			const cellLocal = new Vector3(...cells[cellIndex]);
 			const cellWorld = cellLocal.add(groupOffset);
-			const distance = fishPos.distanceTo(cellWorld);
-			return distance < radius;
+			const fishDir = new Vector3(0, 0, 1).applyEuler(fish.rotation).normalize();
+
+			const toCell = new Vector3().subVectors(cellWorld, fishPos);
+
+			const hitWidth = fishScale * 2;
+			const hitLength = fishScale * 5;
+
+			const halfWidth = hitWidth / 2;
+			const halfLength = hitLength / 2;
+
+			const forwardDist = Math.abs(toCell.dot(fishDir));
+			const rightDir = new Vector3().crossVectors(fishDir, new Vector3(0, 1, 0));
+			const sideDist = Math.abs(toCell.dot(rightDir));
+
+			const cellHalf = cellSize / 2;
+
+			return forwardDist < cellHalf + halfLength && sideDist < cellHalf + halfWidth;
 		};
 
 		const interval = setInterval(() => {
@@ -363,11 +409,13 @@ const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone }: Bom
 				duration: 3,
 				ease: "power1.inOut",
 				onComplete: () => {
-					if (fish && isHitDetected(fish, index, radius)) {
-						console.log("hit");
+					if (fish && !isHitDetected(fish, index)) {
+						setScore((prev) => prev + 1);
+					} else if (fish && isHitDetected(fish, index)) {
 						setIsGameOver(true);
 						setIsInBombZone(false);
 					}
+
 					color.set("white");
 				},
 			});
@@ -402,6 +450,9 @@ const Experience = () => {
 
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
+	const [countdown, setCountdown] = useState<number | null>(null);
+	const [bombActive, setBombActive] = useState(false);
+	const [score, setScore] = useState(0);
 
 	const spherePositions: Vec3[] = [
 		[70, 1, 0],
@@ -422,7 +473,6 @@ const Experience = () => {
 				scene.fog = new FogExp2(new Color(darkMode ? "#111111" : "#00bfff"), 0.02);
 			}
 		}, []);
-
 		useEffect(() => {
 			const targetBg = new Color(darkMode ? "#0b0b0b" : "#0c6ceb");
 			const targetFog = new Color(darkMode ? "#111111" : "#00bfff");
@@ -447,6 +497,36 @@ const Experience = () => {
 		return null;
 	};
 
+	// 폭탄 카운트다운
+	useEffect(() => {
+		if (countdown === null) return;
+		const interval = setInterval(() => {
+			setCountdown((prev) => {
+				if (prev === 1) {
+					clearInterval(interval);
+					setCountdown(null);
+					setBombActive(true);
+					return null;
+				}
+				return (prev ?? 0) - 1;
+			});
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, [countdown]);
+
+	// 게임 오버 시
+	const resetGame = useCallback(() => {
+		if (fishRef.current) {
+			fishRef.current.position.set(0, 1, 0);
+		}
+		setIsGameOver(false);
+		setIsInBombZone(false);
+		setBombActive(false);
+		setScore(0);
+		setCountdown(null);
+	}, []);
+
 	return (
 		<>
 			<Canvas shadows camera={{ position: [0, 17, 14], fov: 75 }}>
@@ -470,9 +550,16 @@ const Experience = () => {
 				/>
 
 				<Suspense fallback={null}>
-					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} setIsInBombZone={setIsInBombZone} />
+					<FishModel fishRef={fishRef} sphereRefs={sphereRefs} setIsInBombZone={setIsInBombZone} setCountdown={setCountdown} />{" "}
 					<Plane planeRef={planeRef} />
-					<BombZone fishRef={fishRef} setIsGameOver={setIsGameOver} setIsInBombZone={setIsInBombZone} isInBombZone={isInBombZone} />
+					<BombZone
+						fishRef={fishRef}
+						setIsGameOver={setIsGameOver}
+						setIsInBombZone={setIsInBombZone}
+						isInBombZone={isInBombZone}
+						bombActive={bombActive}
+						setScore={setScore}
+					/>
 					{sphereRefs.map((ref, i) => (
 						<Sphere key={i} sphereRef={ref} position={spherePositions[i]} />
 					))}
@@ -482,17 +569,13 @@ const Experience = () => {
 
 			<FishConfig />
 
+			<div className="hud">
+				{countdown !== null && <div className="countdown">폭탄 시작까지: {countdown}</div>}
+				{bombActive && <div className="score">피한 폭탄 수: {score}</div>}
+			</div>
+
 			{isGameOver && (
-				<div
-					onClick={() => {
-						if (fishRef.current) {
-							fishRef.current.position.set(0, 1, 0);
-						}
-						setIsGameOver(false);
-						setIsInBombZone(false);
-					}}
-					className="gameover_overlay"
-				>
+				<div onClick={resetGame} className="gameover_overlay">
 					<h1>YOU'RE COOKED</h1>
 					<p>화면을 클릭해 다시 시작하세요</p>
 				</div>
