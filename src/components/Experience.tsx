@@ -4,16 +4,26 @@
 import { Suspense, useRef, useState, useEffect, useMemo, JSX, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF, useTexture, Stats } from "@react-three/drei";
-import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, Color, FogExp2, MeshStandardMaterial, TextureLoader, RepeatWrapping } from "three";
+import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, Color, FogExp2, MeshStandardMaterial, RepeatWrapping } from "three";
 import gsap from "gsap";
 
 // store
 import { useFishStore } from "@/store/useFishStore";
 
+// utils
+import { isWebPSupported } from "@/utils/isWebPSupported";
+
 // types
 type RefMesh = React.RefObject<Mesh>;
 type RefAny = React.RefObject<Object3D>;
 type Vec3 = [number, number, number];
+
+// preload
+if (typeof window !== "undefined") {
+	const ext = isWebPSupported() ? "webp" : "jpg";
+	useTexture.preload([`/textures/sand/sand_02_diff_1k.${ext}`, `/textures/sand/sand_02_nor_gl_1k.${ext}`, `/textures/sand/sand_02_rough_1k.${ext}`]);
+}
+useGLTF.preload("/models/fish.glb");
 
 const GRID_CENTER = new Vector3(-50, 0, 0);
 const GRID_SIZE_X = 42;
@@ -164,18 +174,14 @@ interface PlaneProps {
 }
 
 const Plane = ({ planeRef }: PlaneProps) => {
+	const ext = useMemo(() => (isWebPSupported() ? "webp" : "jpg"), []);
 	const [colorMap, normalMap, roughnessMap] = useTexture([
-		// 1k
-		"/textures/sand/sand_02_diff_1k.jpg",
-		"/textures/sand/sand_02_nor_gl_1k.jpg",
-		"/textures/sand/sand_02_rough_1k.jpg",
-		// 2k
-		// "/textures/sand2/sand_02_diff_2k.jpg",
-		// "/textures/sand2/sand_02_nor_gl_2k.jpg",
-		// "/textures/sand2/sand_02_rough_2k.jpg",
+		`/textures/sand/sand_02_diff_1k.${ext}`,
+		`/textures/sand/sand_02_nor_gl_1k.${ext}`,
+		`/textures/sand/sand_02_rough_1k.${ext}`,
 	]);
 
-	useEffect(() => {
+	useMemo(() => {
 		[colorMap, normalMap, roughnessMap].forEach((tex) => {
 			tex.wrapS = tex.wrapT = RepeatWrapping;
 			tex.repeat.set(20, 4); // planeGeometry args 비율에 맞춰 수정
