@@ -3,7 +3,7 @@
 // library
 import { Suspense, useRef, useState, useEffect, useMemo, JSX, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF, useTexture, Stats } from "@react-three/drei";
+import { useGLTF, useTexture, useVideoTexture, Stats } from "@react-three/drei";
 import { Vector2, Vector3, Raycaster, BoxGeometry, Mesh, Object3D, Color, FogExp2, MeshStandardMaterial, RepeatWrapping } from "three";
 import gsap from "gsap";
 
@@ -169,10 +169,19 @@ const FishModel = ({ fishRef, setIsInBombZone, setCountdown }: FishModelProps) =
 	);
 };
 
+const VideoOverlay = () => {
+	const videoTexture = useVideoTexture("/videos/caustics.mp4");
+	return (
+		<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} renderOrder={10}>
+			<planeGeometry args={[350, 70]} />
+			<meshBasicMaterial map={videoTexture} transparent opacity={0.3} depthWrite={false} depthTest={false} />
+		</mesh>
+	);
+};
+
 interface PlaneProps {
 	planeRef: RefMesh;
 }
-
 const Plane = ({ planeRef }: PlaneProps) => {
 	const ext = useMemo(() => (isWebPSupported() ? "webp" : "jpg"), []);
 	const [colorMap, normalMap, roughnessMap] = useTexture([
@@ -208,75 +217,83 @@ interface ClickHandlerProps {
 	isInBombZone: boolean;
 	isGameOver: boolean;
 }
-
 const ClickHandler = ({ fishRef, planeRef, isInBombZone, isGameOver }: ClickHandlerProps): JSX.Element => {
 	const { camera, gl } = useThree();
 	const raycaster = useRef(new Raycaster());
 	const mouse = useRef(new Vector2());
 	const [isClicked, setIsClicked] = useState(false);
 	const fishSpeed = useFishStore((state) => state.fishSpeed);
+	const fishScaleRef = useRef(useFishStore.getState().fishScale);
 
-	const boundToGrid = (value: number, center: number, size: number) => {
-		const half = size / 2;
-		return Math.max(center - half + 1, Math.min(center + half - 1, value));
+	// plane, grid 클릭 제한
+	const clampToBounds = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+	const getClampedPlaneCoords = (x: number, z: number) => {
+		const halfPlaneX = 350 / 2;
+		const halfPlaneZ = 70 / 2;
+		const margin = fishScaleRef.current * 2.5;
+
+		return {
+			x: clampToBounds(x, -halfPlaneX + margin, halfPlaneX - margin),
+			z: clampToBounds(z, -halfPlaneZ + margin, halfPlaneZ - margin),
+		};
 	};
 
 	useEffect(() => {
 		const canvas = gl.domElement;
 
-		const updateMousePosition = (e: MouseEvent) => {
+		const updateMouse = (e: MouseEvent) => {
 			mouse.current.x = (e.clientX / canvas.clientWidth) * 2 - 1;
 			mouse.current.y = -(e.clientY / canvas.clientHeight) * 2 + 1;
 		};
 
-		const onMouseDown = (e: MouseEvent) => {
+		const onPointerDown = (e: MouseEvent) => {
 			setIsClicked(true);
-			updateMousePosition(e);
+			updateMouse(e);
 		};
 
-		canvas.addEventListener("pointerdown", onMouseDown);
-		canvas.addEventListener("pointermove", updateMousePosition);
+		canvas.addEventListener("pointerdown", onPointerDown);
+		canvas.addEventListener("pointermove", updateMouse);
 		window.addEventListener("pointerup", () => setIsClicked(false));
 
 		return () => {
-			canvas.addEventListener("pointerdown", onMouseDown);
-			canvas.addEventListener("pointermove", updateMousePosition);
-			window.addEventListener("pointerup", () => setIsClicked(false));
+			canvas.removeEventListener("pointerdown", onPointerDown);
+			canvas.removeEventListener("pointermove", updateMouse);
+			window.removeEventListener("pointerup", () => setIsClicked(false));
 		};
 	}, [gl]);
 
 	useFrame(() => {
-		if (isGameOver) return;
+		if (isGameOver || !isClicked || !fishRef.current || !planeRef.current) return;
 
-		if (isClicked && fishRef.current && planeRef.current) {
-			raycaster.current.setFromCamera(mouse.current, camera);
-			const intersects = raycaster.current.intersectObject(planeRef.current);
+		raycaster.current.setFromCamera(mouse.current, camera);
+		const intersects = raycaster.current.intersectObject(planeRef.current);
 
-			if (intersects.length > 0) {
-				const point = intersects[0].point;
+		if (intersects.length > 0) {
+			const point = intersects[0].point;
+			let targetX = point.x;
+			let targetZ = point.z;
 
-				let targetX = point.x;
-				let targetZ = point.z;
-
-				// grid 외부 클릭 보정
-				if (isInBombZone) {
-					targetX = boundToGrid(point.x, GRID_CENTER.x, GRID_SIZE_X);
-					targetZ = boundToGrid(point.z, GRID_CENTER.z, GRID_SIZE_Z);
-				}
-
-				const distance = fishRef.current.position.distanceTo(new Vector3(targetX, point.y, targetZ));
-				const duration = distance / fishSpeed;
-
-				const target = new Vector3(targetX, fishRef.current.position.y, targetZ);
-				fishRef.current.lookAt(target);
-
-				gsap.killTweensOf(fishRef.current.position);
-				gsap.to(fishRef.current.position, {
-					x: targetX,
-					z: targetZ,
-					duration,
-				});
+			if (isInBombZone) {
+				targetX = clampToBounds(point.x, GRID_CENTER.x - GRID_SIZE_X / 2 + 1, GRID_CENTER.x + GRID_SIZE_X / 2 - 1);
+				targetZ = clampToBounds(point.z, GRID_CENTER.z - GRID_SIZE_Z / 2 + 1, GRID_CENTER.z + GRID_SIZE_Z / 2 - 1);
+			} else {
+				const clamped = getClampedPlaneCoords(point.x, point.z);
+				targetX = clamped.x;
+				targetZ = clamped.z;
 			}
+
+			const distance = fishRef.current.position.distanceTo(new Vector3(targetX, point.y, targetZ));
+			const duration = distance / fishSpeed;
+
+			const target = new Vector3(targetX, fishRef.current.position.y, targetZ);
+			fishRef.current.lookAt(target);
+
+			gsap.killTweensOf(fishRef.current.position);
+			gsap.to(fishRef.current.position, {
+				x: targetX,
+				z: targetZ,
+				duration,
+			});
 		}
 	});
 
@@ -291,7 +308,6 @@ interface BombZoneProps {
 	bombActive: boolean;
 	setScore: React.Dispatch<React.SetStateAction<number>>;
 }
-
 const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone, bombActive, setScore }: BombZoneProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const cellSize = 6;
@@ -389,7 +405,6 @@ type GrowingSphereProps = {
 	onCollected: () => void;
 	fishRef: RefAny;
 };
-
 type BonusSphere = { id: string; position: Vec3 };
 const GrowingSphere = ({ position, onCollected, fishRef }: GrowingSphereProps) => {
 	const ref = useRef<Mesh>(null);
@@ -564,6 +579,7 @@ const Experience = () => {
 				/>
 
 				<Suspense fallback={null}>
+					<VideoOverlay />
 					<FishModel fishRef={fishRef} setIsInBombZone={setIsInBombZone} setCountdown={setCountdown} />
 					<Plane planeRef={planeRef} />
 					<BombZone
