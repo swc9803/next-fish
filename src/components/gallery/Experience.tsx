@@ -1,10 +1,8 @@
 "use client";
 
 import { useRef, useEffect, JSX } from "react";
-import { CameraControls, Environment, Grid, MeshDistortMaterial, RenderTexture } from "@react-three/drei";
+import { CameraControls, Environment, Grid, MeshDistortMaterial, MeshReflectorMaterial, RenderTexture, useTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-
-import { Scene } from "./Scene";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
 
@@ -16,15 +14,17 @@ export interface ModelInfo {
 	price: number;
 	range: number;
 }
-
 export const modelArray: ModelInfo[] = [
-	{ path: "models/gallery/cybertruck_scene.glb", mainColor: "#ff0000", name: "car name 1", description: "1 빨강", price: 72000, range: 660 },
-	{ path: "models/gallery/model3_scene.glb", mainColor: "#ffa500", name: "car name 2", description: "2 주황", price: 29740, range: 576 },
-	{ path: "models/gallery/chest.glb", mainColor: "#ffff00", name: "car name 3", description: "3 노랑", price: 150000, range: 800 },
-	{ path: "models/gallery/cybertruck_scene.glb", mainColor: "#008000", name: "car name 4", description: "4 초록", price: 95000, range: 500 },
-	{ path: "models/gallery/cybertruck_scene.glb", mainColor: "#0000ff", name: "car name 5", description: "5 파랑", price: 120000, range: 700 },
-	{ path: "models/gallery/cybertruck_scene.glb", mainColor: "#800080", name: "car name 6", description: "6 보라", price: 20000, range: 400 },
+	{ path: "images/gallery1.png", mainColor: "#ff0000", name: "car name 1", description: "1 빨강", price: 72000, range: 660 },
+	{ path: "images/gallery2.png", mainColor: "#ffa500", name: "car name 2", description: "2 주황", price: 29740, range: 576 },
+	{ path: "images/gallery3.png", mainColor: "#ffff00", name: "car name 3", description: "3 노랑", price: 150000, range: 800 },
+	{ path: "images/gallery4.png", mainColor: "#008000", name: "car name 4", description: "4 초록", price: 95000, range: 500 },
+	{ path: "images/gallery5.png", mainColor: "#0000ff", name: "car name 5", description: "5 파랑", price: 120000, range: 700 },
+	{ path: "images/gallery6.png", mainColor: "#800080", name: "car name 6", description: "6 보라", price: 20000, range: 400 },
 ];
+modelArray.forEach((model) => {
+	useTexture.preload(model.path);
+});
 
 interface CameraHandlerProps {
 	cameraRadius: number;
@@ -106,6 +106,8 @@ export const Experience = (): JSX.Element => {
 	const totalRadius = (slideDistance * modelArray.length) / (2 * Math.PI);
 	const width = viewport.height * aspect;
 	const height = viewport.height;
+	const texturePaths = modelArray.map((model) => model.path);
+	const textures = useTexture(texturePaths);
 
 	return (
 		<>
@@ -128,28 +130,26 @@ export const Experience = (): JSX.Element => {
 
 						<mesh position={[0, 0, 0]}>
 							<planeGeometry args={[width, height]} />
-							<meshBasicMaterial toneMapped={false}>
-								<RenderTexture attach="map">
-									<Scene {...model} />
-								</RenderTexture>
-							</meshBasicMaterial>
+							<meshBasicMaterial map={textures[index]} toneMapped={false} />
 						</mesh>
 					</group>
 				);
 			})}
-
-			<Grid
-				position={[0, -1.5, 0]}
-				sectionSize={1}
-				sectionColor="purple"
-				sectionThickness={1}
-				cellSize={0.5}
-				cellColor="#6f6f6f"
-				cellThickness={0.6}
-				infiniteGrid
-				fadeDistance={50}
-				fadeStrength={5}
-			/>
+			<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]}>
+				<planeGeometry args={[50, 50]} />
+				<MeshReflectorMaterial
+					blur={[300, 100]}
+					resolution={2048}
+					mixBlur={1}
+					mixStrength={80}
+					roughness={1}
+					depthScale={1.2}
+					minDepthThreshold={0.4}
+					maxDepthThreshold={1.4}
+					color="#050505"
+					metalness={0.5}
+				/>
+			</mesh>
 		</>
 	);
 };
