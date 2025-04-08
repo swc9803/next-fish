@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, JSX } from "react";
-import { CameraControls, Environment, Grid, MeshDistortMaterial, MeshReflectorMaterial, RenderTexture, useTexture } from "@react-three/drei";
+import { CameraControls, Environment, MeshDistortMaterial, MeshReflectorMaterial, useTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
@@ -34,6 +34,7 @@ interface CameraHandlerProps {
 const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.Element => {
 	const cameraControls = useRef<CameraControls>(null);
 	const slide = useGallerySlide((state) => state.slide);
+	const freemode = useGallerySlide((state) => state.freemode);
 	const lastSlide = useRef<number>(-1);
 	const hasInitialized = useRef(false);
 	const zoomOutRadius = cameraRadius + 2;
@@ -54,7 +55,7 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 		cameraControls.current!.setLookAt(from.x, 0, from.z, lookAt.x, 0, lookAt.z, true).then(() => new Promise((res) => setTimeout(res, wait)));
 
 	const moveToSlide = async (index: number, isInitial = false) => {
-		if (!cameraControls.current) return;
+		if (!cameraControls.current || freemode) return;
 
 		const { x: targetX, z: targetZ, angle } = getPosition(index, totalRadius);
 		const close = getCameraPosition(targetX, targetZ, angle, cameraRadius);
@@ -79,21 +80,42 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 	};
 
 	useEffect(() => {
-		if (!hasInitialized.current) {
+		if (!hasInitialized.current && !freemode) {
 			hasInitialized.current = true;
 			moveToSlide(slide, true);
 			lastSlide.current = slide;
 		}
-	}, []);
+	}, [freemode]);
 
 	useEffect(() => {
-		if (lastSlide.current !== slide) {
+		if (lastSlide.current !== slide && !freemode) {
 			moveToSlide(slide);
 			lastSlide.current = slide;
 		}
-	}, [slide]);
+	}, [slide, freemode]);
 
-	return <CameraControls ref={cameraControls} touches={{ one: 0, two: 0, three: 0 }} mouseButtons={{ left: 0, middle: 0, right: 0, wheel: 0 }} />;
+	useEffect(() => {
+		if (freemode && cameraControls.current) {
+			cameraControls.current.setLookAt(0, 0, cameraRadius * 2.5, 0, 0, 0, true);
+		}
+	}, [freemode]);
+
+	return (
+		<CameraControls
+			ref={cameraControls}
+			touches={{ one: freemode ? 1 : 0, two: 0, three: 0 }}
+			mouseButtons={{
+				left: freemode ? 1 : 0,
+				middle: 0,
+				right: 0,
+				wheel: 0,
+			}}
+			minPolarAngle={Math.PI / 2}
+			maxPolarAngle={Math.PI / 2}
+			minAzimuthAngle={-Infinity}
+			maxAzimuthAngle={Infinity}
+		/>
+	);
 };
 
 export const Experience = (): JSX.Element => {

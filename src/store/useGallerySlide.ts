@@ -1,11 +1,15 @@
 import { create } from "zustand";
 
-interface GalleryStoreState {
+interface GallerySlideState {
 	slide: number;
-	setSlide: (value: number) => void;
+	setSlide: (slide: number) => void;
+	freemode: boolean;
+	setFreemode: (freemode: boolean) => void;
 }
 
-export const useGallerySlide = create<GalleryStoreState>((set) => ({
+export const useGallerySlide = create<GallerySlideState>((set) => ({
 	slide: 0,
-	setSlide: (value) => set({ slide: value }),
+	setSlide: (slide) => set({ slide }),
+	freemode: false,
+	setFreemode: (freemode) => set({ freemode }),
 }));

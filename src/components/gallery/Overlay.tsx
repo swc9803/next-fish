@@ -10,6 +10,8 @@ export const Overlay = (): JSX.Element => {
 	const setSlide = useGallerySlide((state) => state.setSlide);
 	const [displaySlide, setDisplaySlide] = useState<number>(slide);
 	const [visible, setVisible] = useState<boolean>(false);
+	const freemode = useGallerySlide((state) => state.freemode);
+	const setFreemode = useGallerySlide((state) => state.setFreemode);
 
 	useEffect(() => {
 		const timeout = setTimeout(() => setVisible(true), 1000);
@@ -34,17 +36,23 @@ export const Overlay = (): JSX.Element => {
 				/>
 			</svg>
 
-			<div className={styles.navigation}>
-				<button onClick={() => setSlide(slide > 0 ? slide - 1 : modelArray.length - 1)} disabled={!visible} aria-label="이전 슬라이드 버튼">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-						<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
-					</svg>
-				</button>
-				<button onClick={() => setSlide(slide < modelArray.length - 1 ? slide + 1 : 0)} disabled={!visible} aria-label="다음 슬라이드 버튼">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-						<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-					</svg>
-				</button>
+			{!freemode && (
+				<div className={styles.navigation}>
+					<button onClick={() => setSlide(slide > 0 ? slide - 1 : modelArray.length - 1)} disabled={!visible} aria-label="이전 슬라이드 버튼">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
+						</svg>
+					</button>
+					<button onClick={() => setSlide(slide < modelArray.length - 1 ? slide + 1 : 0)} disabled={!visible} aria-label="다음 슬라이드 버튼">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+						</svg>
+					</button>
+				</div>
+			)}
+
+			<div className={styles.freemodeToggle}>
+				<button onClick={() => setFreemode(!freemode)}>{freemode ? "슬라이드 모드" : "자유 모드"}</button>
 			</div>
 
 			<div className={styles.content}>

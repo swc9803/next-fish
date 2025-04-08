@@ -11,7 +11,7 @@
 # gallery
 
 https://codesandbox.io/p/sandbox/lx2h8?file=%2Fsrc%2FApp.js%3A103%2C1
-바닥 이미지 반사 및 카메라 자유모드 추가
+카메라 자유모드 최적화 필요
 
 # 확인 할 것
 
