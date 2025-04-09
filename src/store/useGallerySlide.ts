@@ -5,6 +5,8 @@ interface GallerySlideState {
 	setSlide: (slide: number) => void;
 	freemode: boolean;
 	setFreemode: (freemode: boolean) => void;
+	focusIndex: number | null;
+	setFocusIndex: (index: number | null) => void;
 }
 
 export const useGallerySlide = create<GallerySlideState>((set) => ({
@@ -12,4 +14,6 @@ export const useGallerySlide = create<GallerySlideState>((set) => ({
 	setSlide: (slide) => set({ slide }),
 	freemode: false,
 	setFreemode: (freemode) => set({ freemode }),
+	focusIndex: null,
+	setFocusIndex: (index) => set({ focusIndex: index }),
 }));

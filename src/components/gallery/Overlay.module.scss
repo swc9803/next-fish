@@ -100,3 +100,26 @@
 		}
 	}
 }
+
+.backButton {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	z-index: 10;
+	button {
+		display: flex;
+		align-items: center;
+		background: rgba(255, 255, 255, 0.85);
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 8px;
+		cursor: pointer;
+		pointer-events: auto;
+		font-weight: bold;
+		svg {
+			width: 20px;
+			height: 20px;
+			margin-right: 6px;
+		}
+	}
+}

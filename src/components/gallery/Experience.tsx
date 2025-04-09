@@ -34,10 +34,35 @@ interface CameraHandlerProps {
 const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.Element => {
 	const cameraControls = useRef<CameraControls>(null);
 	const slide = useGallerySlide((state) => state.slide);
-	const freemode = useGallerySlide((state) => state.freemode);
 	const lastSlide = useRef<number>(-1);
 	const hasInitialized = useRef(false);
 	const zoomOutRadius = cameraRadius + 2;
+	const freemode = useGallerySlide((state) => state.freemode);
+	const focusIndex = useGallerySlide((state) => state.focusIndex);
+	const setFocusIndex = useGallerySlide((state) => state.setFocusIndex);
+
+	useEffect(() => {
+		console.log("🔍 [CameraHandler] freemode:", freemode);
+		console.log("🔍 [CameraHandler] focusIndex:", focusIndex);
+	}, [freemode, focusIndex]);
+	useEffect(() => {
+		if (cameraControls.current) {
+			console.log("🎮 [CameraControls] 실제 상태 확인", {
+				left: cameraControls.current.mouseButtons.left,
+				touch: cameraControls.current.touches.one,
+			});
+		}
+	}, [freemode, focusIndex]);
+
+	useEffect(() => {
+		if (freemode && focusIndex !== null && cameraControls.current) {
+			console.log("🎯 [CameraHandler] focusIndex 줌인 시작");
+
+			const { x: targetX, z: targetZ, angle } = getPosition(focusIndex, totalRadius);
+			const close = getCameraPosition(targetX, targetZ, angle, cameraRadius);
+			cameraControls.current.setLookAt(close.x, 0, close.z, targetX, 0, targetZ, true);
+		}
+	}, [focusIndex, freemode]);
 
 	const getPosition = (index: number, radius: number) => {
 		const angle = -(2 * Math.PI * index) / modelArray.length;
@@ -95,17 +120,31 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 	}, [slide, freemode]);
 
 	useEffect(() => {
-		if (freemode && cameraControls.current) {
+		if (freemode && focusIndex === null && cameraControls.current) {
+			console.log("📦 [CameraHandler] 자유모드 복귀 → 줌아웃");
 			cameraControls.current.setLookAt(0, 0, cameraRadius * 2.5, 0, 0, 0, true);
 		}
-	}, [freemode]);
+	}, [freemode, focusIndex]);
+	console.log("📦 [CameraHandler] 자유모드 복귀 → 줌아웃", {
+		freemode,
+		focusIndex,
+	});
+
+	const isInteractive = freemode && focusIndex === null;
+	console.log("🔧 mouseButtons:", {
+		left: isInteractive ? 1 : 0,
+	});
 
 	return (
 		<CameraControls
 			ref={cameraControls}
-			touches={{ one: freemode ? 1 : 0, two: 0, three: 0 }}
+			touches={{
+				one: isInteractive ? 1 : 0,
+				two: 0,
+				three: 0,
+			}}
 			mouseButtons={{
-				left: freemode ? 1 : 0,
+				left: isInteractive ? 1 : 0,
 				middle: 0,
 				right: 0,
 				wheel: 0,
@@ -143,8 +182,20 @@ export const Experience = (): JSX.Element => {
 				const z = totalRadius * Math.cos(angle);
 				const rotationY = angle + Math.PI;
 
+				const freemode = useGallerySlide((state) => state.freemode);
+				const setFocusIndex = useGallerySlide((state) => state.setFocusIndex);
+
 				return (
-					<group key={index} position={[x, 0, z]} rotation={[0, rotationY, 0]}>
+					<group
+						key={index}
+						position={[x, 0, z]}
+						rotation={[0, rotationY, 0]}
+						onClick={() => {
+							if (freemode) {
+								setFocusIndex(index);
+							}
+						}}
+					>
 						<mesh position-y={3}>
 							<boxGeometry />
 							<MeshDistortMaterial color={model.mainColor} speed={3} />

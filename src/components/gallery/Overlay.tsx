@@ -7,11 +7,14 @@ import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const Overlay = (): JSX.Element => {
 	const slide = useGallerySlide((state) => state.slide);
-	const setSlide = useGallerySlide((state) => state.setSlide);
 	const [displaySlide, setDisplaySlide] = useState<number>(slide);
+
 	const [visible, setVisible] = useState<boolean>(false);
+	const setSlide = useGallerySlide((state) => state.setSlide);
 	const freemode = useGallerySlide((state) => state.freemode);
 	const setFreemode = useGallerySlide((state) => state.setFreemode);
+	const focusIndex = useGallerySlide((state) => state.focusIndex);
+	const setFocusIndex = useGallerySlide((state) => state.setFocusIndex);
 
 	useEffect(() => {
 		const timeout = setTimeout(() => setVisible(true), 1000);
@@ -27,6 +30,11 @@ export const Overlay = (): JSX.Element => {
 		return () => clearTimeout(timeout);
 	}, [slide]);
 
+	useEffect(() => {
+		console.log("🔍 [Overlay] freemode:", freemode);
+		console.log("🔍 [Overlay] focusIndex:", focusIndex);
+	}, [freemode, focusIndex]);
+
 	return (
 		<div className={`${styles.overlay} ${visible ? "" : styles.hidden}`}>
 			<svg className={styles.logo} viewBox="0 0 342 35" xmlns="http://www.w3.org/2000/svg">
@@ -36,7 +44,28 @@ export const Overlay = (): JSX.Element => {
 				/>
 			</svg>
 
-			{!freemode && (
+			{/* 뒤로가기 버튼 */}
+			{(freemode || focusIndex !== null) && (
+				<div className={styles.backButton}>
+					<button
+						onClick={() => {
+							console.log("🔘 뒤로가기 버튼 클릭됨");
+
+							setFocusIndex(null);
+							setFreemode(true);
+						}}
+						aria-label="뒤로가기 버튼"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+							<path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12M6 12l4-4M6 12l4 4" />
+						</svg>
+						<span>뒤로가기</span>
+					</button>
+				</div>
+			)}
+
+			{/* 슬라이드 모드일 때만 네비게이션 버튼 표시 */}
+			{!freemode && focusIndex === null && (
 				<div className={styles.navigation}>
 					<button onClick={() => setSlide(slide > 0 ? slide - 1 : modelArray.length - 1)} disabled={!visible} aria-label="이전 슬라이드 버튼">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
