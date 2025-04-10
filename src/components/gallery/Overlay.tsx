@@ -2,7 +2,7 @@
 
 import styles from "./Overlay.module.scss";
 import { JSX, useEffect, useState } from "react";
-import { modelArray } from "./Experience";
+import { slideArray } from "./Experience";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const Overlay = (): JSX.Element | null => {
@@ -73,12 +73,12 @@ export const Overlay = (): JSX.Element | null => {
 			{/* 슬라이드 모드 네비게이션 */}
 			{!freemode && (
 				<div className={styles.navigation}>
-					<button onClick={() => setSlide(slide > 0 ? slide - 1 : modelArray.length - 1)} aria-label="이전 슬라이드 버튼" disabled={isSliding}>
+					<button onClick={() => setSlide(slide > 0 ? slide - 1 : slideArray.length - 1)} aria-label="이전 슬라이드 버튼" disabled={isSliding}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
 						</svg>
 					</button>
-					<button onClick={() => setSlide(slide < modelArray.length - 1 ? slide + 1 : 0)} aria-label="다음 슬라이드 버튼" disabled={isSliding}>
+					<button onClick={() => setSlide(slide < slideArray.length - 1 ? slide + 1 : 0)} aria-label="다음 슬라이드 버튼" disabled={isSliding}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
 						</svg>
@@ -91,15 +91,15 @@ export const Overlay = (): JSX.Element | null => {
 			</div>
 
 			<div className={styles.content}>
-				<h1>{modelArray[activeSlideIndex].name}</h1>
-				<p>{modelArray[activeSlideIndex].description}</p>
+				<h1>{slideArray[activeSlideIndex].name}</h1>
+				<p>{slideArray[activeSlideIndex].description}</p>
 				<div className={styles.info}>
 					<div className={styles["info-block"]}>
 						<div className={styles["info-content"]}>
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 								<path d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
 							</svg>
-							<p>${modelArray[activeSlideIndex].price.toLocaleString()}</p>
+							<p>${slideArray[activeSlideIndex].price.toLocaleString()}</p>
 						</div>
 						<p className={styles["info-text"]}>After Federal Tax Credit</p>
 					</div>

@@ -6,7 +6,7 @@ import { useThree } from "@react-three/fiber";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
 
-export interface ModelInfo {
+export interface slideInfo {
 	path: string;
 	mainColor: string;
 	name: string;
@@ -14,7 +14,7 @@ export interface ModelInfo {
 	price: number;
 	range: number;
 }
-export const modelArray: ModelInfo[] = [
+export const slideArray: slideInfo[] = [
 	{ path: "images/gallery1.png", mainColor: "#ff0000", name: "car name 1", description: "1 빨강", price: 72000, range: 660 },
 	{ path: "images/gallery2.png", mainColor: "#ffa500", name: "car name 2", description: "2 주황", price: 29740, range: 576 },
 	{ path: "images/gallery3.png", mainColor: "#ffff00", name: "car name 3", description: "3 노랑", price: 150000, range: 800 },
@@ -23,20 +23,20 @@ export const modelArray: ModelInfo[] = [
 	{ path: "images/gallery6.png", mainColor: "#800080", name: "car name 6", description: "6 보라", price: 20000, range: 400 },
 ];
 
-modelArray.forEach((model) => useTexture.preload(model.path));
+slideArray.forEach((slide) => useTexture.preload(slide.path));
 
-const getPosition = (index: number, radius: number) => {
-	const angle = -(2 * Math.PI * index) / modelArray.length;
+const getPosition = (slideIndex: number, radius: number) => {
+	const angleInRadians = -(2 * Math.PI * slideIndex) / slideArray.length;
 	return {
-		x: radius * Math.sin(angle),
-		z: radius * Math.cos(angle),
-		angle,
+		x: radius * Math.sin(angleInRadians),
+		z: radius * Math.cos(angleInRadians),
+		angleInRadians,
 	};
 };
 
-const getCameraPosition = (x: number, z: number, angle: number, radius: number) => ({
-	x: x + radius * Math.sin(angle + Math.PI),
-	z: z + radius * Math.cos(angle + Math.PI),
+const getCameraPosition = (targetX: number, targetZ: number, angleInRadians: number, radius: number) => ({
+	x: targetX + radius * Math.sin(angleInRadians + Math.PI),
+	z: targetZ + radius * Math.cos(angleInRadians + Math.PI),
 });
 
 interface CameraHandlerProps {
@@ -44,75 +44,75 @@ interface CameraHandlerProps {
 	totalRadius: number;
 }
 const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.Element => {
-	const cameraControls = useRef<CameraControls>(null);
+	const cameraControlsRef = useRef<CameraControls>(null);
 
 	const { slide, freemode, focusIndex, setLastFocusTarget, lastFocusTarget, setIsSliding } = useGallerySlide();
 
-	const lastSlide = useRef<number>(-1);
-	const hasInitialized = useRef(false);
+	const lastSlideIndexRef = useRef<number>(-1);
+	const hasInitializedRef = useRef(false);
 	const zoomOutRadius = cameraRadius + 2;
 
-	const moveToSlide = async (index: number, isInitial = false) => {
-		if (!cameraControls.current || freemode) return;
+	const moveToSlide = async (targetIndex: number, isInitial = false) => {
+		if (!cameraControlsRef.current || freemode) return;
 
 		setIsSliding(true);
-		const { x, z, angle } = getPosition(index, totalRadius);
-		const close = getCameraPosition(x, z, angle, cameraRadius);
-		const far = getCameraPosition(x, z, angle, zoomOutRadius);
+		const { x: targetX, z: targetZ, angleInRadians: targetAngle } = getPosition(targetIndex, totalRadius);
+		const closeCameraPos = getCameraPosition(targetX, targetZ, targetAngle, cameraRadius);
+		const farCameraPos = getCameraPosition(targetX, targetZ, targetAngle, zoomOutRadius);
 
 		if (isInitial) {
-			cameraControls.current.setLookAt(close.x, 0, close.z, x, 0, z, false);
+			cameraControlsRef.current.setLookAt(closeCameraPos.x, 0, closeCameraPos.z, targetX, 0, targetZ, false);
 			requestAnimationFrame(() => {
-				cameraControls.current?.setLookAt(close.x, 0, close.z, x, 0, z, true);
+				cameraControlsRef.current?.setLookAt(closeCameraPos.x, 0, closeCameraPos.z, targetX, 0, targetZ, true);
 				setIsSliding(false);
 			});
 			return;
 		}
 
-		const { x: lx, z: lz, angle: la } = getPosition(lastSlide.current, totalRadius);
-		const lastFar = getCameraPosition(lx, lz, la, zoomOutRadius);
+		const { x: lastTargetX, z: lastTargetZ, angleInRadians: lastAngle } = getPosition(lastSlideIndexRef.current, totalRadius);
+		const lastFarCameraPos = getCameraPosition(lastTargetX, lastTargetZ, lastAngle, zoomOutRadius);
 
 		// 줌 아웃
-		await cameraControls.current.setLookAt(lastFar.x, 0, lastFar.z, lx, 0, lz, true);
+		await cameraControlsRef.current.setLookAt(lastFarCameraPos.x, 0, lastFarCameraPos.z, lastTargetX, 0, lastTargetZ, true);
 		// 회전
-		await cameraControls.current.setLookAt(far.x, 0, far.z, x, 0, z, true);
+		await cameraControlsRef.current.setLookAt(farCameraPos.x, 0, farCameraPos.z, targetX, 0, targetZ, true);
 		// 줌 인
-		await cameraControls.current.setLookAt(close.x, 0, close.z, x, 0, z, true);
+		await cameraControlsRef.current.setLookAt(closeCameraPos.x, 0, closeCameraPos.z, targetX, 0, targetZ, true);
 		setIsSliding(false);
 	};
 
 	useEffect(() => {
-		if (!hasInitialized.current && !freemode) {
-			hasInitialized.current = true;
+		if (!hasInitializedRef.current && !freemode) {
+			hasInitializedRef.current = true;
 			moveToSlide(slide, true);
-			lastSlide.current = slide;
+			lastSlideIndexRef.current = slide;
 		}
 	}, [freemode]);
 
 	useEffect(() => {
-		if (!freemode && lastSlide.current !== slide) {
+		if (!freemode && lastSlideIndexRef.current !== slide) {
 			moveToSlide(slide);
-			lastSlide.current = slide;
+			lastSlideIndexRef.current = slide;
 		}
 	}, [slide, freemode]);
 
 	useEffect(() => {
-		if (freemode && focusIndex !== null && cameraControls.current) {
-			const { x, z, angle } = getPosition(focusIndex, totalRadius);
-			const close = getCameraPosition(x, z, angle, cameraRadius);
-			setLastFocusTarget({ x, z });
-			cameraControls.current.setLookAt(close.x, 0, close.z, x, 0, z, true);
+		if (freemode && focusIndex !== null && cameraControlsRef.current) {
+			const { x: focusX, z: focusZ, angleInRadians: focusAngle } = getPosition(focusIndex, totalRadius);
+			const focusCameraPos = getCameraPosition(focusX, focusZ, focusAngle, cameraRadius);
+			setLastFocusTarget({ x: focusX, z: focusZ });
+			cameraControlsRef.current.setLookAt(focusCameraPos.x, 0, focusCameraPos.z, focusX, 0, focusZ, true);
 		}
 	}, [freemode, focusIndex]);
 
 	useEffect(() => {
-		if (freemode && focusIndex === null && cameraControls.current && lastFocusTarget) {
-			const { x, z } = lastFocusTarget;
-			const angle = Math.atan2(x, z);
-			const dist = cameraRadius * 2.5;
-			const camX = x + dist * Math.sin(angle + Math.PI);
-			const camZ = z + dist * Math.cos(angle + Math.PI);
-			cameraControls.current.setLookAt(camX, 0, camZ, 0, 0, 0, true);
+		if (freemode && focusIndex === null && cameraControlsRef.current && lastFocusTarget) {
+			const { x: lastFocusX, z: lastFocusZ } = lastFocusTarget;
+			const focusAngle = Math.atan2(lastFocusX, lastFocusZ);
+			const focusDistance = cameraRadius * 2.5;
+			const cameraX = lastFocusX + focusDistance * Math.sin(focusAngle + Math.PI);
+			const cameraZ = lastFocusZ + focusDistance * Math.cos(focusAngle + Math.PI);
+			cameraControlsRef.current.setLookAt(cameraX, 0, cameraZ, 0, 0, 0, true);
 		}
 	}, [freemode, focusIndex, cameraRadius, lastFocusTarget]);
 
@@ -120,7 +120,7 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 
 	return (
 		<CameraControls
-			ref={cameraControls}
+			ref={cameraControlsRef}
 			mouseButtons={{
 				left: isInteractive ? 1 : 0, // 1 = rotate
 				middle: 0,
@@ -144,13 +144,13 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 
 export const Experience = (): JSX.Element => {
 	const { viewport, camera, size } = useThree();
-	const aspect = size.width / size.height;
-	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
-	const cameraRadius = viewport.height / (2 * Math.tan(fov / 2));
-	const slideDistance = viewport.width * 2.8;
-	const totalRadius = (slideDistance * modelArray.length) / (2 * Math.PI);
+	const aspectRatio = size.width / size.height;
+	const fieldOfView = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
+	const cameraRadius = viewport.height / (2 * Math.tan(fieldOfView / 2));
+	const slideSpacing = viewport.width * 2.8;
+	const totalRadius = (slideSpacing * slideArray.length) / (2 * Math.PI);
 
-	const textures = useTexture(modelArray.map((m) => m.path));
+	const textures = useTexture(slideArray.map((m) => m.path));
 	const { freemode, setFocusIndex } = useGallerySlide();
 
 	return (
@@ -159,18 +159,18 @@ export const Experience = (): JSX.Element => {
 			<Environment preset="city" />
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
 
-			{modelArray.map((model, index) => {
-				const { x, z, angle } = getPosition(index, totalRadius);
-				const rotationY = angle + Math.PI;
+			{slideArray.map((slide, index) => {
+				const { x: slideX, z: slideZ, angleInRadians: slideAngle } = getPosition(index, totalRadius);
+				const slideRotationY = slideAngle + Math.PI;
 
 				return (
-					<group key={index} position={[x, 0, z]} rotation={[0, rotationY, 0]} onClick={() => freemode && setFocusIndex(index)}>
+					<group key={index} position={[slideX, 0, slideZ]} rotation={[0, slideRotationY, 0]} onClick={() => freemode && setFocusIndex(index)}>
 						<mesh position-y={3}>
 							<boxGeometry />
-							<MeshDistortMaterial color={model.mainColor} speed={3} />
+							<MeshDistortMaterial color={slide.mainColor} speed={3} />
 						</mesh>
 						<mesh>
-							<planeGeometry args={[viewport.height * aspect, viewport.height]} />
+							<planeGeometry args={[viewport.height * aspectRatio, viewport.height]} />
 							<meshBasicMaterial map={textures[index]} toneMapped={false} />
 						</mesh>
 					</group>
