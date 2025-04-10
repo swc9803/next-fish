@@ -41,10 +41,15 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 	const focusIndex = useGallerySlide((state) => state.focusIndex);
 	const setFocusIndex = useGallerySlide((state) => state.setFocusIndex);
 
+	const setLastFocusTarget = useGallerySlide((state) => state.setLastFocusTarget);
+	const lastFocusTarget = useGallerySlide((state) => state.lastFocusTarget);
+
 	useEffect(() => {
 		if (freemode && focusIndex !== null && cameraControls.current) {
 			const { x: targetX, z: targetZ, angle } = getPosition(focusIndex, totalRadius);
 			const close = getCameraPosition(targetX, targetZ, angle, cameraRadius);
+
+			setLastFocusTarget({ x: targetX, z: targetZ });
 			cameraControls.current.setLookAt(close.x, 0, close.z, targetX, 0, targetZ, true);
 		}
 	}, [focusIndex, freemode]);
@@ -112,10 +117,16 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 	}, [slide, freemode]);
 
 	useEffect(() => {
-		if (freemode && focusIndex === null && cameraControls.current) {
-			cameraControls.current.setLookAt(0, 0, cameraRadius * 2.5, 0, 0, 0, true);
+		if (freemode && focusIndex === null && cameraControls.current && lastFocusTarget) {
+			const { x: targetX, z: targetZ } = lastFocusTarget;
+			const angle = Math.atan2(targetX, targetZ);
+			const distance = cameraRadius * 2.5;
+			const cameraX = targetX + distance * Math.sin(angle + Math.PI);
+			const cameraZ = targetZ + distance * Math.cos(angle + Math.PI);
+
+			cameraControls.current.setLookAt(cameraX, 0, cameraZ, 0, 0, 0, true);
 		}
-	}, [freemode, focusIndex]);
+	}, [freemode, focusIndex, cameraRadius, lastFocusTarget]);
 
 	const isInteractive = freemode && focusIndex === null;
 
