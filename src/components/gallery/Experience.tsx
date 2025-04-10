@@ -46,7 +46,7 @@ interface CameraHandlerProps {
 const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.Element => {
 	const cameraControls = useRef<CameraControls>(null);
 
-	const { slide, freemode, focusIndex, setFocusIndex, setLastFocusTarget, lastFocusTarget, setIsSliding } = useGallerySlide();
+	const { slide, freemode, focusIndex, setLastFocusTarget, lastFocusTarget, setIsSliding } = useGallerySlide();
 
 	const lastSlide = useRef<number>(-1);
 	const hasInitialized = useRef(false);

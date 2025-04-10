@@ -6,14 +6,7 @@ import { modelArray } from "./Experience";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const Overlay = (): JSX.Element | null => {
-	const slide = useGallerySlide((state) => state.slide);
-	const setSlide = useGallerySlide((state) => state.setSlide);
-
-	const freemode = useGallerySlide((state) => state.freemode);
-	const setFreemode = useGallerySlide((state) => state.setFreemode);
-
-	const focusIndex = useGallerySlide((state) => state.focusIndex);
-	const setFocusIndex = useGallerySlide((state) => state.setFocusIndex);
+	const { slide, setSlide, freemode, setFreemode, focusIndex, setFocusIndex, isSliding } = useGallerySlide();
 
 	const [visible, setVisible] = useState(false);
 	const [fadeIn, setFadeIn] = useState(false);
@@ -29,30 +22,24 @@ export const Overlay = (): JSX.Element | null => {
 	}, [slide, freemode]);
 
 	useEffect(() => {
-		if (freemode && focusIndex !== null) {
+		if (!freemode) return;
+
+		if (focusIndex !== null) {
 			setShouldRender(true);
 			setFadeIn(false);
 			const timeout = setTimeout(() => setFadeIn(true), 50);
 			return () => clearTimeout(timeout);
 		}
 
-		if (freemode && focusIndex === null) {
-			setFadeIn(false);
-			const timeout = setTimeout(() => {
-				setShouldRender(false);
-			}, 500);
-			return () => clearTimeout(timeout);
-		}
+		setFadeIn(false);
+		const timeout = setTimeout(() => setShouldRender(false), 500);
+		return () => clearTimeout(timeout);
 	}, [freemode, focusIndex]);
 
 	const activeSlideIndex = focusIndex !== null ? focusIndex : slide;
 
-	const showInSlide = !freemode && visible;
-	const showInZoom = freemode && focusIndex !== null && fadeIn;
-
-	const overlayClass = `${styles.overlay} ${showInSlide || showInZoom ? styles.visible : ""}`;
-
-	const isSliding = useGallerySlide((state) => state.isSliding);
+	const showOverlay = (!freemode && visible) || (freemode && focusIndex !== null && fadeIn);
+	const overlayClass = `${styles.overlay} ${showOverlay ? styles.visible : ""}`;
 
 	if (!shouldRender && freemode) return null;
 
