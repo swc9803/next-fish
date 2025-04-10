@@ -52,6 +52,8 @@ export const Overlay = (): JSX.Element | null => {
 
 	const overlayClass = `${styles.overlay} ${showInSlide || showInZoom ? styles.visible : ""}`;
 
+	const isSliding = useGallerySlide((state) => state.isSliding);
+
 	if (!shouldRender && freemode) return null;
 
 	return (
@@ -84,12 +86,12 @@ export const Overlay = (): JSX.Element | null => {
 			{/* 슬라이드 모드 네비게이션 */}
 			{!freemode && (
 				<div className={styles.navigation}>
-					<button onClick={() => setSlide(slide > 0 ? slide - 1 : modelArray.length - 1)} aria-label="이전 슬라이드 버튼">
+					<button onClick={() => setSlide(slide > 0 ? slide - 1 : modelArray.length - 1)} aria-label="이전 슬라이드 버튼" disabled={isSliding}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
 						</svg>
 					</button>
-					<button onClick={() => setSlide(slide < modelArray.length - 1 ? slide + 1 : 0)} aria-label="다음 슬라이드 버튼">
+					<button onClick={() => setSlide(slide < modelArray.length - 1 ? slide + 1 : 0)} aria-label="다음 슬라이드 버튼" disabled={isSliding}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
 						</svg>

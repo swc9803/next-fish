@@ -64,8 +64,12 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 	const animateStep = (from: { x: number; z: number }, to: { x: number; z: number }, lookAt: { x: number; z: number }, wait = 0) =>
 		cameraControls.current!.setLookAt(from.x, 0, from.z, lookAt.x, 0, lookAt.z, true).then(() => new Promise((res) => setTimeout(res, wait)));
 
+	const setIsSliding = useGallerySlide((state) => state.setIsSliding);
+
 	const moveToSlide = async (index: number, isInitial = false) => {
 		if (!cameraControls.current || freemode) return;
+
+		setIsSliding(true);
 
 		const { x: targetX, z: targetZ, angle } = getPosition(index, totalRadius);
 		const close = getCameraPosition(targetX, targetZ, angle, cameraRadius);
@@ -75,6 +79,7 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 			cameraControls.current.setLookAt(close.x, 0, close.z, targetX, 0, targetZ, false);
 			requestAnimationFrame(() => {
 				cameraControls.current?.setLookAt(close.x, 0, close.z, targetX, 0, targetZ, true);
+				setIsSliding(false);
 			});
 		} else {
 			const { x: lastTargetX, z: lastTargetZ, angle: lastAngle } = getPosition(lastSlide.current, totalRadius);
@@ -86,6 +91,8 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 			await animateStep(far, far, { x: targetX, z: targetZ }, 200);
 			// 줌 인
 			await animateStep(close, close, { x: targetX, z: targetZ });
+
+			setIsSliding(false);
 		}
 	};
 
