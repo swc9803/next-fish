@@ -42,22 +42,7 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 	const setFocusIndex = useGallerySlide((state) => state.setFocusIndex);
 
 	useEffect(() => {
-		console.log("🔍 [CameraHandler] freemode:", freemode);
-		console.log("🔍 [CameraHandler] focusIndex:", focusIndex);
-	}, [freemode, focusIndex]);
-	useEffect(() => {
-		if (cameraControls.current) {
-			console.log("🎮 [CameraControls] 실제 상태 확인", {
-				left: cameraControls.current.mouseButtons.left,
-				touch: cameraControls.current.touches.one,
-			});
-		}
-	}, [freemode, focusIndex]);
-
-	useEffect(() => {
 		if (freemode && focusIndex !== null && cameraControls.current) {
-			console.log("🎯 [CameraHandler] focusIndex 줌인 시작");
-
 			const { x: targetX, z: targetZ, angle } = getPosition(focusIndex, totalRadius);
 			const close = getCameraPosition(targetX, targetZ, angle, cameraRadius);
 			cameraControls.current.setLookAt(close.x, 0, close.z, targetX, 0, targetZ, true);
@@ -121,19 +106,11 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 
 	useEffect(() => {
 		if (freemode && focusIndex === null && cameraControls.current) {
-			console.log("📦 [CameraHandler] 자유모드 복귀 → 줌아웃");
 			cameraControls.current.setLookAt(0, 0, cameraRadius * 2.5, 0, 0, 0, true);
 		}
 	}, [freemode, focusIndex]);
-	console.log("📦 [CameraHandler] 자유모드 복귀 → 줌아웃", {
-		freemode,
-		focusIndex,
-	});
 
 	const isInteractive = freemode && focusIndex === null;
-	console.log("🔧 mouseButtons:", {
-		left: isInteractive ? 1 : 0,
-	});
 
 	return (
 		<CameraControls
@@ -153,6 +130,10 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 			maxPolarAngle={Math.PI / 2}
 			minAzimuthAngle={-Infinity}
 			maxAzimuthAngle={Infinity}
+			azimuthRotateSpeed={-0.5}
+			polarRotateSpeed={-0.5}
+			draggingSmoothTime={0.25}
+			dollySpeed={0.3}
 		/>
 	);
 };
