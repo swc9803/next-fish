@@ -22,83 +22,63 @@ export const modelArray: ModelInfo[] = [
 	{ path: "images/gallery5.png", mainColor: "#0000ff", name: "car name 5", description: "5 파랑", price: 120000, range: 700 },
 	{ path: "images/gallery6.png", mainColor: "#800080", name: "car name 6", description: "6 보라", price: 20000, range: 400 },
 ];
-modelArray.forEach((model) => {
-	useTexture.preload(model.path);
+
+modelArray.forEach((model) => useTexture.preload(model.path));
+
+const getPosition = (index: number, radius: number) => {
+	const angle = -(2 * Math.PI * index) / modelArray.length;
+	return {
+		x: radius * Math.sin(angle),
+		z: radius * Math.cos(angle),
+		angle,
+	};
+};
+
+const getCameraPosition = (x: number, z: number, angle: number, radius: number) => ({
+	x: x + radius * Math.sin(angle + Math.PI),
+	z: z + radius * Math.cos(angle + Math.PI),
 });
 
 interface CameraHandlerProps {
 	cameraRadius: number;
 	totalRadius: number;
 }
-
 const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.Element => {
 	const cameraControls = useRef<CameraControls>(null);
-	const slide = useGallerySlide((state) => state.slide);
+
+	const { slide, freemode, focusIndex, setFocusIndex, setLastFocusTarget, lastFocusTarget, setIsSliding } = useGallerySlide();
+
 	const lastSlide = useRef<number>(-1);
 	const hasInitialized = useRef(false);
 	const zoomOutRadius = cameraRadius + 2;
-	const freemode = useGallerySlide((state) => state.freemode);
-	const focusIndex = useGallerySlide((state) => state.focusIndex);
-	const setFocusIndex = useGallerySlide((state) => state.setFocusIndex);
-
-	const setLastFocusTarget = useGallerySlide((state) => state.setLastFocusTarget);
-	const lastFocusTarget = useGallerySlide((state) => state.lastFocusTarget);
-
-	useEffect(() => {
-		if (freemode && focusIndex !== null && cameraControls.current) {
-			const { x: targetX, z: targetZ, angle } = getPosition(focusIndex, totalRadius);
-			const close = getCameraPosition(targetX, targetZ, angle, cameraRadius);
-
-			setLastFocusTarget({ x: targetX, z: targetZ });
-			cameraControls.current.setLookAt(close.x, 0, close.z, targetX, 0, targetZ, true);
-		}
-	}, [focusIndex, freemode]);
-
-	const getPosition = (index: number, radius: number) => {
-		const angle = -(2 * Math.PI * index) / modelArray.length;
-		const x = radius * Math.sin(angle);
-		const z = radius * Math.cos(angle);
-		return { x, z, angle };
-	};
-
-	const getCameraPosition = (targetX: number, targetZ: number, angle: number, radius: number) => ({
-		x: targetX + radius * Math.sin(angle + Math.PI),
-		z: targetZ + radius * Math.cos(angle + Math.PI),
-	});
-
-	const animateStep = (from: { x: number; z: number }, to: { x: number; z: number }, lookAt: { x: number; z: number }, wait = 0) =>
-		cameraControls.current!.setLookAt(from.x, 0, from.z, lookAt.x, 0, lookAt.z, true).then(() => new Promise((res) => setTimeout(res, wait)));
-
-	const setIsSliding = useGallerySlide((state) => state.setIsSliding);
 
 	const moveToSlide = async (index: number, isInitial = false) => {
 		if (!cameraControls.current || freemode) return;
 
 		setIsSliding(true);
-
-		const { x: targetX, z: targetZ, angle } = getPosition(index, totalRadius);
-		const close = getCameraPosition(targetX, targetZ, angle, cameraRadius);
-		const far = getCameraPosition(targetX, targetZ, angle, zoomOutRadius);
+		const { x, z, angle } = getPosition(index, totalRadius);
+		const close = getCameraPosition(x, z, angle, cameraRadius);
+		const far = getCameraPosition(x, z, angle, zoomOutRadius);
 
 		if (isInitial) {
-			cameraControls.current.setLookAt(close.x, 0, close.z, targetX, 0, targetZ, false);
+			cameraControls.current.setLookAt(close.x, 0, close.z, x, 0, z, false);
 			requestAnimationFrame(() => {
-				cameraControls.current?.setLookAt(close.x, 0, close.z, targetX, 0, targetZ, true);
+				cameraControls.current?.setLookAt(close.x, 0, close.z, x, 0, z, true);
 				setIsSliding(false);
 			});
-		} else {
-			const { x: lastTargetX, z: lastTargetZ, angle: lastAngle } = getPosition(lastSlide.current, totalRadius);
-			const lastFar = getCameraPosition(lastTargetX, lastTargetZ, lastAngle, zoomOutRadius);
-
-			// 줌 아웃
-			await animateStep(lastFar, lastFar, { x: lastTargetX, z: lastTargetZ }, 200);
-			// 회전
-			await animateStep(far, far, { x: targetX, z: targetZ }, 200);
-			// 줌 인
-			await animateStep(close, close, { x: targetX, z: targetZ });
-
-			setIsSliding(false);
+			return;
 		}
+
+		const { x: lx, z: lz, angle: la } = getPosition(lastSlide.current, totalRadius);
+		const lastFar = getCameraPosition(lx, lz, la, zoomOutRadius);
+
+		// 줌 아웃
+		await cameraControls.current.setLookAt(lastFar.x, 0, lastFar.z, lx, 0, lz, true);
+		// 회전
+		await cameraControls.current.setLookAt(far.x, 0, far.z, x, 0, z, true);
+		// 줌 인
+		await cameraControls.current.setLookAt(close.x, 0, close.z, x, 0, z, true);
+		setIsSliding(false);
 	};
 
 	useEffect(() => {
@@ -110,21 +90,29 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 	}, [freemode]);
 
 	useEffect(() => {
-		if (lastSlide.current !== slide && !freemode) {
+		if (!freemode && lastSlide.current !== slide) {
 			moveToSlide(slide);
 			lastSlide.current = slide;
 		}
 	}, [slide, freemode]);
 
 	useEffect(() => {
-		if (freemode && focusIndex === null && cameraControls.current && lastFocusTarget) {
-			const { x: targetX, z: targetZ } = lastFocusTarget;
-			const angle = Math.atan2(targetX, targetZ);
-			const distance = cameraRadius * 2.5;
-			const cameraX = targetX + distance * Math.sin(angle + Math.PI);
-			const cameraZ = targetZ + distance * Math.cos(angle + Math.PI);
+		if (freemode && focusIndex !== null && cameraControls.current) {
+			const { x, z, angle } = getPosition(focusIndex, totalRadius);
+			const close = getCameraPosition(x, z, angle, cameraRadius);
+			setLastFocusTarget({ x, z });
+			cameraControls.current.setLookAt(close.x, 0, close.z, x, 0, z, true);
+		}
+	}, [freemode, focusIndex]);
 
-			cameraControls.current.setLookAt(cameraX, 0, cameraZ, 0, 0, 0, true);
+	useEffect(() => {
+		if (freemode && focusIndex === null && cameraControls.current && lastFocusTarget) {
+			const { x, z } = lastFocusTarget;
+			const angle = Math.atan2(x, z);
+			const dist = cameraRadius * 2.5;
+			const camX = x + dist * Math.sin(angle + Math.PI);
+			const camZ = z + dist * Math.cos(angle + Math.PI);
+			cameraControls.current.setLookAt(camX, 0, camZ, 0, 0, 0, true);
 		}
 	}, [freemode, focusIndex, cameraRadius, lastFocusTarget]);
 
@@ -133,21 +121,19 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 	return (
 		<CameraControls
 			ref={cameraControls}
-			touches={{
-				one: isInteractive ? 1 : 0,
-				two: 0,
-				three: 0,
-			}}
 			mouseButtons={{
-				left: isInteractive ? 1 : 0,
+				left: isInteractive ? 1 : 0, // 1 = rotate
 				middle: 0,
 				right: 0,
 				wheel: 0,
 			}}
+			touches={{
+				one: isInteractive ? 32 : 0, // 32 = touch rotate
+				two: 0,
+				three: 0,
+			}}
 			minPolarAngle={Math.PI / 2}
 			maxPolarAngle={Math.PI / 2}
-			minAzimuthAngle={-Infinity}
-			maxAzimuthAngle={Infinity}
 			azimuthRotateSpeed={-0.5}
 			polarRotateSpeed={-0.5}
 			draggingSmoothTime={0.25}
@@ -160,14 +146,12 @@ export const Experience = (): JSX.Element => {
 	const { viewport, camera, size } = useThree();
 	const aspect = size.width / size.height;
 	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
-
 	const cameraRadius = viewport.height / (2 * Math.tan(fov / 2));
 	const slideDistance = viewport.width * 2.8;
 	const totalRadius = (slideDistance * modelArray.length) / (2 * Math.PI);
-	const width = viewport.height * aspect;
-	const height = viewport.height;
-	const texturePaths = modelArray.map((model) => model.path);
-	const textures = useTexture(texturePaths);
+
+	const textures = useTexture(modelArray.map((m) => m.path));
+	const { freemode, setFocusIndex } = useGallerySlide();
 
 	return (
 		<>
@@ -176,32 +160,17 @@ export const Experience = (): JSX.Element => {
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
 
 			{modelArray.map((model, index) => {
-				const angle = -(2 * Math.PI * index) / modelArray.length;
-				const x = totalRadius * Math.sin(angle);
-				const z = totalRadius * Math.cos(angle);
+				const { x, z, angle } = getPosition(index, totalRadius);
 				const rotationY = angle + Math.PI;
 
-				const freemode = useGallerySlide((state) => state.freemode);
-				const setFocusIndex = useGallerySlide((state) => state.setFocusIndex);
-
 				return (
-					<group
-						key={index}
-						position={[x, 0, z]}
-						rotation={[0, rotationY, 0]}
-						onClick={() => {
-							if (freemode) {
-								setFocusIndex(index);
-							}
-						}}
-					>
+					<group key={index} position={[x, 0, z]} rotation={[0, rotationY, 0]} onClick={() => freemode && setFocusIndex(index)}>
 						<mesh position-y={3}>
 							<boxGeometry />
 							<MeshDistortMaterial color={model.mainColor} speed={3} />
 						</mesh>
-
-						<mesh position={[0, 0, 0]}>
-							<planeGeometry args={[width, height]} />
+						<mesh>
+							<planeGeometry args={[viewport.height * aspect, viewport.height]} />
 							<meshBasicMaterial map={textures[index]} toneMapped={false} />
 						</mesh>
 					</group>
