@@ -87,7 +87,14 @@ export const Overlay = (): JSX.Element | null => {
 			)}
 
 			<div className={styles.freemodeToggle}>
-				<button onClick={() => setFreemode(!freemode)}>{freemode ? "슬라이드 모드" : "자유 모드"}로 변경</button>
+				<button
+					onClick={() => {
+						setFocusIndex(null);
+						setFreemode(!freemode);
+					}}
+				>
+					{freemode ? "슬라이드 모드" : "자유 모드"}로 변경
+				</button>
 			</div>
 
 			<div className={styles.content}>
