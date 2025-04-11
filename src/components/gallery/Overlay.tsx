@@ -1,7 +1,7 @@
 "use client";
 
 import styles from "./Overlay.module.scss";
-import { JSX, useEffect, useState } from "react";
+import { JSX, useEffect, useRef, useState } from "react";
 import { slideArray } from "./Experience";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
@@ -13,10 +13,25 @@ export const Overlay = (): JSX.Element | null => {
 
 	const [shouldRender, setShouldRender] = useState(true);
 
+	const prevFreemodeRef = useRef(freemode);
+
 	useEffect(() => {
+		const prevFreemode = prevFreemodeRef.current;
+		prevFreemodeRef.current = freemode;
+
+		const cameFromFreeMode = !freemode && prevFreemode;
+
+		// 자유모드에서 슬라이드 모드로 변경 시 visible 유지
+		if (!freemode && cameFromFreeMode) {
+			return;
+		}
+
+		// 슬라이드 전환 시 ui 숨기는 모션
 		if (!freemode) {
 			setVisible(false);
-			const timeout = setTimeout(() => setVisible(true), 2600);
+			const timeout = setTimeout(() => {
+				setVisible(true);
+			}, 2600);
 			return () => clearTimeout(timeout);
 		}
 	}, [slide, freemode]);
