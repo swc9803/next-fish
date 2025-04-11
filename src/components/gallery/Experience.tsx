@@ -201,17 +201,37 @@ export const Experience = (): JSX.Element => {
 							}
 						}}
 					>
+						{/* 슬라이드 장식 */}
 						<mesh position-y={3}>
 							<boxGeometry />
 							<MeshDistortMaterial color={slide.mainColor} speed={3} />
 						</mesh>
-						<mesh>
-							<planeGeometry args={[viewport.height * aspectRatio, viewport.height]} />
-							<meshBasicMaterial map={textures[index]} toneMapped={false} />
-						</mesh>
+
+						{/* 슬라이드 이미지 + 테두리 */}
+						<group>
+							{/* 바깥쪽 테두리 */}
+							<mesh position={[0, 0, -0.03]}>
+								<planeGeometry args={[viewport.height * aspectRatio + 0.25, viewport.height + 0.2]} />
+								<meshBasicMaterial color="#111111" toneMapped={false} />
+							</mesh>
+
+							{/* 안쪽 테두리 */}
+							<mesh position={[0, 0, -0.02]}>
+								<planeGeometry args={[viewport.height * aspectRatio + 0.075, viewport.height + 0.075]} />
+								<meshBasicMaterial color="#ffffff" toneMapped={false} />
+							</mesh>
+
+							{/* 이미지 */}
+							<mesh position={[0, 0, -0.01]}>
+								<planeGeometry args={[viewport.height * aspectRatio, viewport.height]} />
+								<meshBasicMaterial map={textures[index]} toneMapped={false} />
+							</mesh>
+						</group>
 					</group>
 				);
 			})}
+
+			{/* 바닥 */}
 			<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]}>
 				<planeGeometry args={[50, 50]} />
 				<MeshReflectorMaterial
@@ -223,10 +243,14 @@ export const Experience = (): JSX.Element => {
 					depthScale={1.2}
 					minDepthThreshold={0.4}
 					maxDepthThreshold={1.4}
-					color="#050505"
+					color="#111111"
 					metalness={0.5}
 				/>
 			</mesh>
+
+			{/* 배경 */}
+			<color attach="background" args={["#222222"]} />
+			{/* <fog attach="fog" args={["#191920", 0, 50]} /> */}
 		</>
 	);
 };
