@@ -25,7 +25,7 @@ export const slideArray: slideInfo[] = [
 
 slideArray.forEach((slide) => useTexture.preload(slide.path));
 
-const getPosition = (slideIndex: number, radius: number) => {
+const getSlidePosition = (slideIndex: number, radius: number) => {
 	const angleInRadians = -(2 * Math.PI * slideIndex) / slideArray.length;
 	return {
 		x: radius * Math.sin(angleInRadians),
@@ -41,21 +41,12 @@ interface CameraHandlerProps {
 const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.Element => {
 	const cameraControlsRef = useRef<CameraControls>(null);
 	const prevFreemodeRef = useRef<boolean>(false);
-
-	const { slide, freemode, focusIndex, setLastFocusTarget, lastFocusTarget, setIsSliding } = useGallerySlide();
-	const zoomOutRadius = cameraRadius + 2;
-
 	const hasInitializedRef = useRef(false);
 	const lastSlideIndexRef = useRef<number>(-1);
 
-	const getPosition = (slideIndex: number, radius: number) => {
-		const angleInRadians = -(2 * Math.PI * slideIndex) / 6;
-		return {
-			x: radius * Math.sin(angleInRadians),
-			z: radius * Math.cos(angleInRadians),
-			angleInRadians,
-		};
-	};
+	const { slide, freemode, focusIndex, setLastFocusTarget, lastFocusTarget, setIsSliding } = useGallerySlide();
+
+	const zoomOutRadius = cameraRadius + 2;
 
 	const getCameraPosition = (targetX: number, targetZ: number, angleInRadians: number, radius: number) => ({
 		x: targetX + radius * Math.sin(angleInRadians + Math.PI),
@@ -67,7 +58,7 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 
 		setIsSliding(true);
 
-		const { x: targetX, z: targetZ, angleInRadians: targetAngle } = getPosition(targetIndex, totalRadius);
+		const { x: targetX, z: targetZ, angleInRadians: targetAngle } = getSlidePosition(targetIndex, totalRadius);
 		const closeCameraPos = getCameraPosition(targetX, targetZ, targetAngle, cameraRadius);
 		const farCameraPos = getCameraPosition(targetX, targetZ, targetAngle, zoomOutRadius);
 
@@ -82,7 +73,7 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 			return;
 		}
 
-		const { x: lastTargetX, z: lastTargetZ, angleInRadians: lastAngle } = getPosition(lastSlideIndexRef.current, totalRadius);
+		const { x: lastTargetX, z: lastTargetZ, angleInRadians: lastAngle } = getSlidePosition(lastSlideIndexRef.current, totalRadius);
 		const lastFarCameraPos = getCameraPosition(lastTargetX, lastTargetZ, lastAngle, zoomOutRadius);
 
 		// 줌 아웃
@@ -94,23 +85,18 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 		setIsSliding(false);
 	};
 
+	// 초기 로드 시
 	useEffect(() => {
 		if (!hasInitializedRef.current && !freemode && focusIndex === null) {
 			if (slide === 0) {
 				moveToSlide(slide, true);
 			}
-
 			lastSlideIndexRef.current = slide;
 			hasInitializedRef.current = true;
 		}
 	}, [freemode, focusIndex]);
 
-	useEffect(() => {
-		if (!freemode && focusIndex !== null) {
-			lastSlideIndexRef.current = focusIndex;
-		}
-	}, [freemode, focusIndex]);
-
+	// 슬라이드 모드에서 이동
 	useEffect(() => {
 		if (!freemode && lastSlideIndexRef.current !== slide) {
 			moveToSlide(slide);
@@ -118,31 +104,41 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 		}
 	}, [slide, freemode]);
 
+	// 자유모드에서 슬라이드 클릭 시 이동
 	useEffect(() => {
-		if (freemode && focusIndex !== null && cameraControlsRef.current) {
-			const { x: focusX, z: focusZ, angleInRadians: focusAngle } = getPosition(focusIndex, totalRadius);
-			const focusCameraPos = getCameraPosition(focusX, focusZ, focusAngle, cameraRadius);
-			setLastFocusTarget({ x: focusX, z: focusZ });
-			cameraControlsRef.current.setLookAt(focusCameraPos.x, 0, focusCameraPos.z, focusX, 0, focusZ, true);
-		}
-	}, [freemode, focusIndex]);
+		if (!freemode || focusIndex === null || !cameraControlsRef.current) return;
 
+		const { x: focusX, z: focusZ, angleInRadians: focusAngle } = getSlidePosition(focusIndex, totalRadius);
+		const focusCameraPos = getCameraPosition(focusX, focusZ, focusAngle, cameraRadius);
+
+		setLastFocusTarget({ x: focusX, z: focusZ });
+		cameraControlsRef.current.setLookAt(focusCameraPos.x, 0, focusCameraPos.z, focusX, 0, focusZ, true);
+
+		if (slide === focusIndex) {
+			lastSlideIndexRef.current = slide;
+		}
+	}, [freemode, focusIndex, slide]);
+
+	// 자유모드 변경 시 줌아웃
 	useEffect(() => {
-		const wasFreemode = prevFreemodeRef.current;
-		const isNowFreemode = freemode;
+		const prevWasFreemode = prevFreemodeRef.current;
+		const currentIsFreemode = freemode;
 		prevFreemodeRef.current = freemode;
 
-		const justEnteredFreemode = !wasFreemode && isNowFreemode;
-		const shouldZoomOutToCenter = justEnteredFreemode || (freemode && focusIndex === null);
+		const enteredFreemodeNow = !prevWasFreemode && currentIsFreemode;
+		const needZoomOutToOverview = enteredFreemodeNow || (freemode && focusIndex === null);
 
-		if (shouldZoomOutToCenter && cameraControlsRef.current) {
-			const { x: lastFocusX, z: lastFocusZ } = lastFocusTarget ?? { x: 0, z: 0 };
-			const focusAngle = Math.atan2(lastFocusX, lastFocusZ);
-			const focusDistance = cameraRadius * 2.5;
-			const cameraX = lastFocusX + focusDistance * Math.sin(focusAngle + Math.PI);
-			const cameraZ = lastFocusZ + focusDistance * Math.cos(focusAngle + Math.PI);
+		if (needZoomOutToOverview && cameraControlsRef.current) {
+			const { x: focusX, z: focusZ } = lastFocusTarget ?? { x: 0, z: 0 };
+			const angle = Math.atan2(focusX, focusZ);
+			const distance = cameraRadius * 2.5;
+			const camX = focusX + distance * Math.sin(angle + Math.PI);
+			const camZ = focusZ + distance * Math.cos(angle + Math.PI);
 
-			cameraControlsRef.current.setLookAt(cameraX, 0, cameraZ, 0, 0, 0, true);
+			cameraControlsRef.current.setLookAt(camX, 0, camZ, 0, 0, 0, true);
+		}
+		if (!freemode && focusIndex !== null) {
+			lastSlideIndexRef.current = focusIndex;
 		}
 	}, [freemode, focusIndex, cameraRadius, lastFocusTarget]);
 
@@ -190,7 +186,7 @@ export const Experience = (): JSX.Element => {
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
 
 			{slideArray.map((slide, index) => {
-				const { x: slideX, z: slideZ, angleInRadians: slideAngle } = getPosition(index, totalRadius);
+				const { x: slideX, z: slideZ, angleInRadians: slideAngle } = getSlidePosition(index, totalRadius);
 				const slideRotationY = slideAngle + Math.PI;
 
 				return (
