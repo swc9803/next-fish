@@ -179,7 +179,7 @@ export const Experience = (): JSX.Element => {
 	const totalRadius = (slideSpacing * slideArray.length) / (2 * Math.PI);
 
 	const textures = useTexture(slideArray.map((m) => m.path));
-	const { freemode, setFocusIndex, setSlide } = useGallerySlide();
+	const { freemode, focusIndex, setFocusIndex, setSlide } = useGallerySlide();
 
 	return (
 		<>
@@ -195,18 +195,61 @@ export const Experience = (): JSX.Element => {
 				const { x: slideX, z: slideZ, angleInRadians: slideAngle } = getSlidePosition(index, totalRadius);
 				const slideRotationY = slideAngle + Math.PI;
 
-				const [hovered, setHovered] = useState(false);
+				const [isHovered, setIsHovered] = useState(false);
+				const glowCooldownRef = useRef<number>(0);
 				const lightRef = useRef<PointLight>(null);
+
+				const shouldGlow = (hovered: boolean, freemode: boolean, focusIndex: number | null, index: number): boolean => {
+					const isSlideMode = !freemode;
+					const isFocusedInFreeMode = freemode && focusIndex === index;
+					const isHoverInZoomOut = hovered && freemode && focusIndex === null;
+					return isSlideMode || isFocusedInFreeMode || isHoverInZoomOut;
+				};
+
+				useEffect(() => {
+					const glowState = shouldGlow(isHovered, freemode, focusIndex, index);
+
+					if (!glowState && isHovered) {
+						setIsHovered(false);
+					}
+
+					if (glowState && !isHovered) {
+						setIsHovered(true);
+					}
+				}, [freemode, focusIndex, index, isHovered]);
 
 				useFrame(() => {
 					if (!lightRef.current) return;
-					const targetIntensity = hovered ? 3 : 0;
+
+					const glow = shouldGlow(isHovered, freemode, focusIndex, index);
+					const targetIntensity = glow ? 3 : 0;
+
 					lightRef.current.intensity += (targetIntensity - lightRef.current.intensity) * 0.1;
 
 					if (Math.abs(lightRef.current.intensity) < 0.01) {
 						lightRef.current.intensity = 0;
 					}
 				});
+
+				const mouseEnterSlide = () => {
+					if (!freemode || focusIndex !== null) return;
+					if (isHovered) return;
+
+					const now = performance.now();
+					if (now - glowCooldownRef.current < 600) return;
+					glowCooldownRef.current = now;
+
+					console.log("enter");
+					setIsHovered(true);
+				};
+
+				const mouseLeaveSlide = () => {
+					if (!freemode || focusIndex !== null) return;
+					if (!isHovered) return;
+
+					console.log("leave");
+					setIsHovered(false);
+				};
 
 				return (
 					<group
@@ -219,17 +262,11 @@ export const Experience = (): JSX.Element => {
 								setSlide(index);
 							}
 						}}
-						onPointerOver={() => {
-							console.log("enter");
-							setHovered(true);
-						}}
-						onPointerOut={() => {
-							console.log("leave");
-							setHovered(false);
-						}}
+						onPointerOver={mouseEnterSlide}
+						onPointerOut={mouseLeaveSlide}
 					>
 						{/* hover 시 후광 */}
-						<pointLight position={[0, 0, -1]} intensity={3} color={slide.mainColor} />
+						<pointLight ref={lightRef} position={[0, 0, -1]} intensity={0} color={slide.mainColor} />
 
 						{/* 슬라이드 장식 */}
 						<mesh position-y={3}>
