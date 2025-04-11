@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useEffect, JSX } from "react";
+import { useRef, useEffect, JSX, useState } from "react";
 import { CameraControls, Environment, MeshDistortMaterial, MeshReflectorMaterial, useTexture } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import type { PointLight } from "three";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
 
@@ -185,9 +187,26 @@ export const Experience = (): JSX.Element => {
 			<Environment preset="city" />
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
 
+			<EffectComposer>
+				<Bloom intensity={1.5} luminanceThreshold={0.2} luminanceSmoothing={0.9} />
+			</EffectComposer>
+
 			{slideArray.map((slide, index) => {
 				const { x: slideX, z: slideZ, angleInRadians: slideAngle } = getSlidePosition(index, totalRadius);
 				const slideRotationY = slideAngle + Math.PI;
+
+				const [hovered, setHovered] = useState(false);
+				const lightRef = useRef<PointLight>(null);
+
+				useFrame(() => {
+					if (!lightRef.current) return;
+					const targetIntensity = hovered ? 3 : 0;
+					lightRef.current.intensity += (targetIntensity - lightRef.current.intensity) * 0.1;
+
+					if (Math.abs(lightRef.current.intensity) < 0.01) {
+						lightRef.current.intensity = 0;
+					}
+				});
 
 				return (
 					<group
@@ -200,7 +219,18 @@ export const Experience = (): JSX.Element => {
 								setSlide(index);
 							}
 						}}
+						onPointerOver={() => {
+							console.log("enter");
+							setHovered(true);
+						}}
+						onPointerOut={() => {
+							console.log("leave");
+							setHovered(false);
+						}}
 					>
+						{/* hover 시 후광 */}
+						<pointLight position={[0, 0, -1]} intensity={3} color={slide.mainColor} />
+
 						{/* 슬라이드 장식 */}
 						<mesh position-y={3}>
 							<boxGeometry />
