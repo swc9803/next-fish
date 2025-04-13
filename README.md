@@ -22,5 +22,4 @@ resize debounce
 
 수정 전, 수정 후 비교
 
-leave enter가 동일한 상태로 반복되는 문제
 초기 로드시 enter가 0번 슬라이드가 아님

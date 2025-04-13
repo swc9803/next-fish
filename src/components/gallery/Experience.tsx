@@ -46,7 +46,7 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 	const hasInitializedRef = useRef(false);
 	const lastSlideIndexRef = useRef<number>(-1);
 
-	const { slide, freemode, focusIndex, setLastFocusTarget, lastFocusTarget, setIsSliding } = useGallerySlide();
+	const { slide, freemode, focusIndex, setLastFocusTarget, lastFocusTarget, setIsSliding, setIsZoom } = useGallerySlide();
 
 	const zoomOutRadius = cameraRadius + 2;
 
@@ -78,12 +78,17 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 		const { x: lastTargetX, z: lastTargetZ, angleInRadians: lastAngle } = getSlidePosition(lastSlideIndexRef.current, totalRadius);
 		const lastFarCameraPos = getCameraPosition(lastTargetX, lastTargetZ, lastAngle, zoomOutRadius);
 
+		setIsZoom(true);
+
 		// 줌 아웃
 		await cameraControlsRef.current.setLookAt(lastFarCameraPos.x, 0, lastFarCameraPos.z, lastTargetX, 0, lastTargetZ, true);
 		// 회전
 		await cameraControlsRef.current.setLookAt(farCameraPos.x, 0, farCameraPos.z, targetX, 0, targetZ, true);
 		// 줌 인
 		await cameraControlsRef.current.setLookAt(closeCameraPos.x, 0, closeCameraPos.z, targetX, 0, targetZ, true);
+
+		setIsZoom(false);
+
 		setIsSliding(false);
 	};
 
@@ -179,7 +184,7 @@ export const Experience = (): JSX.Element => {
 	const totalRadius = (slideSpacing * slideArray.length) / (2 * Math.PI);
 
 	const textures = useTexture(slideArray.map((m) => m.path));
-	const { freemode, focusIndex, setFocusIndex, setSlide } = useGallerySlide();
+	const { freemode, focusIndex, setFocusIndex, setSlide, isZoom } = useGallerySlide();
 
 	return (
 		<>
@@ -199,29 +204,24 @@ export const Experience = (): JSX.Element => {
 				const glowCooldownRef = useRef<number>(0);
 				const lightRef = useRef<PointLight>(null);
 
-				const shouldGlow = (hovered: boolean, freemode: boolean, focusIndex: number | null, index: number): boolean => {
-					const isSlideMode = !freemode;
-					const isFocusedInFreeMode = freemode && focusIndex === index;
-					const isHoverInZoomOut = hovered && freemode && focusIndex === null;
-					return isSlideMode || isFocusedInFreeMode || isHoverInZoomOut;
+				const shouldGlow = (hovered: boolean, freemode: boolean, focusIndex: number | null, index: number, isZoom: boolean): boolean => {
+					if (isZoom) return false;
+					if (freemode && focusIndex === index) return true;
+					if (hovered && freemode && focusIndex === null) return true;
+					if (!freemode) return true;
+					return false;
 				};
 
 				useEffect(() => {
-					const glowState = shouldGlow(isHovered, freemode, focusIndex, index);
+					const glowState = shouldGlow(isHovered, freemode, focusIndex, index, isZoom);
 
-					if (!glowState && isHovered) {
-						setIsHovered(false);
-					}
-
-					if (glowState && !isHovered) {
-						setIsHovered(true);
-					}
+					setIsHovered(glowState);
 				}, [freemode, focusIndex, index, isHovered]);
 
 				useFrame(() => {
 					if (!lightRef.current) return;
 
-					const glow = shouldGlow(isHovered, freemode, focusIndex, index);
+					const glow = shouldGlow(isHovered, freemode, focusIndex, index, isZoom);
 					const targetIntensity = glow ? 3 : 0;
 
 					lightRef.current.intensity += (targetIntensity - lightRef.current.intensity) * 0.1;
@@ -231,23 +231,24 @@ export const Experience = (): JSX.Element => {
 					}
 				});
 
+				const isHoveredRef = useRef(false);
 				const mouseEnterSlide = () => {
 					if (!freemode || focusIndex !== null) return;
-					if (isHovered) return;
+					if (isHoveredRef.current) return;
 
 					const now = performance.now();
 					if (now - glowCooldownRef.current < 600) return;
 					glowCooldownRef.current = now;
 
-					console.log("enter");
+					isHoveredRef.current = true;
 					setIsHovered(true);
 				};
 
 				const mouseLeaveSlide = () => {
 					if (!freemode || focusIndex !== null) return;
-					if (!isHovered) return;
+					if (!isHoveredRef.current) return;
 
-					console.log("leave");
+					isHoveredRef.current = false;
 					setIsHovered(false);
 				};
 

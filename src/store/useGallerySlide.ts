@@ -15,6 +15,9 @@ interface GallerySlideState {
 
 	lastFocusTarget: { x: number; z: number } | null;
 	setLastFocusTarget: (pos: { x: number; z: number }) => void;
+
+	isZoom: boolean;
+	setIsZoom: (v: boolean) => void;
 }
 
 export const useGallerySlide = create<GallerySlideState>((set) => ({
@@ -32,4 +35,7 @@ export const useGallerySlide = create<GallerySlideState>((set) => ({
 
 	lastFocusTarget: null,
 	setLastFocusTarget: (pos) => set({ lastFocusTarget: pos }),
+
+	isZoom: false,
+	setIsZoom: (v) => set({ isZoom: v }),
 }));
