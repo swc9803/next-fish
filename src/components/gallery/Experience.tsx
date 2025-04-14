@@ -196,11 +196,12 @@ export const Experience = (): JSX.Element => {
 
 	const bloomRefs = useRef<Object3D[]>([]);
 	const lightRefs = useRef<Light[]>([]);
+	const HOVER_LIGHT_INTENSITY = 30;
 
-	useEffect(() => {
-		bloomRefs.current = bloomRefs.current.filter((ref) => ref);
-		lightRefs.current = lightRefs.current.filter((ref) => ref);
-	}, [hoverStates]);
+	const groupRef = useRef<Group>(null);
+	if (groupRef.current && !bloomRefs.current.includes(groupRef.current)) {
+		bloomRefs.current.push(groupRef.current);
+	}
 
 	return (
 		<>
@@ -218,7 +219,6 @@ export const Experience = (): JSX.Element => {
 
 				const glowCooldownRef = useRef<number>(0);
 				const lightRef = useRef<PointLight>(null);
-				const groupRef = useRef<Group>(null);
 				const { setHoverState } = useGallerySlide.getState();
 
 				useEffect(() => {
@@ -237,15 +237,18 @@ export const Experience = (): JSX.Element => {
 				}, [hoverStates[index]]);
 
 				useFrame(() => {
-					if (!lightRef.current) return;
+					const light = lightRef.current;
+					if (!light) return;
 
-					const target = hoverStates[index] === "enter" ? 30 : 0;
-					const current = lightRef.current.intensity;
-					lightRef.current.intensity += (target - current) * 0.1;
+					const target = hoverStates[index] === "enter" ? HOVER_LIGHT_INTENSITY : 0;
+					const delta = target - light.intensity;
 
-					if (Math.abs(lightRef.current.intensity) < 0.01) {
-						lightRef.current.intensity = 0;
+					if (Math.abs(delta) < 0.01) {
+						light.intensity = target;
+						return;
 					}
+
+					light.intensity += delta * 0.1;
 				});
 
 				const mouseEnterSlide = () => {

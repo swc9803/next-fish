@@ -26,3 +26,5 @@ resize debounce
 hook.js:608 SelectiveBloom requires lights to work. Error Component Stack
 
 resize debounce 추가 및 최적화
+overlay 디자인 수정 및 visible 타이밍 수정
+slide 별도 컴포넌트화
