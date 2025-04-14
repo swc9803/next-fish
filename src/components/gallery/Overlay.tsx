@@ -11,20 +11,18 @@ export const Overlay = (): JSX.Element | null => {
 	const [visible, setVisible] = useState(false);
 	const [fadeIn, setFadeIn] = useState(false);
 
-	const [shouldRender, setShouldRender] = useState(true);
+	const [isOverlayVisible, setIsOverlayVisible] = useState(true);
 
-	const prevFreemodeRef = useRef(freemode);
+	const prevModeRef = useRef(freemode);
 
 	useEffect(() => {
-		const prevFreemode = prevFreemodeRef.current;
-		prevFreemodeRef.current = freemode;
+		const prevFreemode = prevModeRef.current;
+		prevModeRef.current = freemode;
 
 		const cameFromFreeMode = !freemode && prevFreemode;
 
 		// 자유모드에서 슬라이드 모드로 변경 시 visible 유지
-		if (!freemode && cameFromFreeMode) {
-			return;
-		}
+		if (!freemode && cameFromFreeMode) return;
 
 		// 슬라이드 전환 시 ui 숨기는 모션
 		if (!freemode) {
@@ -40,14 +38,14 @@ export const Overlay = (): JSX.Element | null => {
 		if (!freemode) return;
 
 		if (focusIndex !== null) {
-			setShouldRender(true);
+			setIsOverlayVisible(true);
 			setFadeIn(false);
 			const timeout = setTimeout(() => setFadeIn(true), 50);
 			return () => clearTimeout(timeout);
 		}
 
 		setFadeIn(false);
-		const timeout = setTimeout(() => setShouldRender(false), 500);
+		const timeout = setTimeout(() => setIsOverlayVisible(false), 500);
 		return () => clearTimeout(timeout);
 	}, [freemode, focusIndex]);
 
@@ -56,7 +54,7 @@ export const Overlay = (): JSX.Element | null => {
 	const showOverlay = (!freemode && visible) || (freemode && focusIndex !== null && fadeIn);
 	const overlayClass = `${styles.overlay} ${showOverlay ? styles.visible : ""}`;
 
-	if (!shouldRender && freemode) return null;
+	if (!isOverlayVisible && freemode) return null;
 
 	return (
 		<div className={overlayClass}>
