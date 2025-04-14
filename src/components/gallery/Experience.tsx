@@ -203,15 +203,35 @@ export const Experience = (): JSX.Element => {
 		bloomRefs.current.push(groupRef.current);
 	}
 
+	// layer 1025 오류
+	useEffect(() => {
+		const timeout = setTimeout(() => {
+			bloomRefs.current.forEach((obj, idx) => {
+				if (obj.layers.mask > 31) {
+					console.warn(` bloom object[${idx}] has invalid layer: ${obj.layers.mask}`);
+				}
+			});
+			lightRefs.current.forEach((light, idx) => {
+				if (light.layers.mask > 31) {
+					console.warn(`light[${idx}] has invalid layer: ${light.layers.mask}`);
+				}
+			});
+		}, 1000);
+
+		return () => clearTimeout(timeout);
+	}, []);
+
 	return (
 		<>
 			<ambientLight intensity={0.2} />
 			<Environment preset="city" />
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
 
-			<EffectComposer>
-				<SelectiveBloom intensity={1.5} luminanceThreshold={0} luminanceSmoothing={0.9} selection={bloomRefs.current} lights={lightRefs.current} />
-			</EffectComposer>
+			{lightRefs.current.length > 0 && (
+				<EffectComposer>
+					<SelectiveBloom intensity={1.5} luminanceThreshold={0} luminanceSmoothing={0.9} selection={bloomRefs.current} lights={lightRefs.current} />
+				</EffectComposer>
+			)}
 
 			{slideArray.map((slide, index) => {
 				const { x: slideX, z: slideZ, angleInRadians: slideAngle } = getSlidePosition(index, totalRadius);

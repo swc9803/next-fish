@@ -23,7 +23,7 @@ resize debounce
 수정 전, 수정 후 비교
 
 경고
-hook.js:608 SelectiveBloom requires lights to work. Error Component Stack
+Layer out of range, resetting to 2 Error Component Stack
 
 resize debounce 추가 및 최적화
 overlay 디자인 수정 및 visible 타이밍 수정
