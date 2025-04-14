@@ -22,4 +22,7 @@ resize debounce
 
 수정 전, 수정 후 비교
 
-초기 로드시 enter가 0번 슬라이드가 아님
+경고
+hook.js:608 SelectiveBloom requires lights to work. Error Component Stack
+
+resize debounce 추가 및 최적화

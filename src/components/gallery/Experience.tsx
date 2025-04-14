@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useEffect, JSX, useState } from "react";
+import { useRef, useEffect, JSX } from "react";
 import { CameraControls, Environment, MeshDistortMaterial, MeshReflectorMaterial, useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
-import type { PointLight } from "three";
+import { EffectComposer, SelectiveBloom } from "@react-three/postprocessing";
+import type { Object3D, Light, PointLight, Group } from "three";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
 
@@ -192,7 +192,15 @@ export const Experience = (): JSX.Element => {
 	const totalRadius = (slideSpacing * slideArray.length) / (2 * Math.PI);
 
 	const textures = useTexture(slideArray.map((m) => m.path));
-	const { freemode, focusIndex, setFocusIndex, setSlide, isZoom, hoverStates } = useGallerySlide();
+	const { freemode, focusIndex, setFocusIndex, setSlide, hoverStates } = useGallerySlide();
+
+	const bloomRefs = useRef<Object3D[]>([]);
+	const lightRefs = useRef<Light[]>([]);
+
+	useEffect(() => {
+		bloomRefs.current = bloomRefs.current.filter((ref) => ref);
+		lightRefs.current = lightRefs.current.filter((ref) => ref);
+	}, [hoverStates]);
 
 	return (
 		<>
@@ -201,7 +209,7 @@ export const Experience = (): JSX.Element => {
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
 
 			<EffectComposer>
-				<Bloom intensity={1.5} luminanceThreshold={0.2} luminanceSmoothing={0.9} />
+				<SelectiveBloom intensity={1.5} luminanceThreshold={0} luminanceSmoothing={0.9} selection={bloomRefs.current} lights={lightRefs.current} />
 			</EffectComposer>
 
 			{slideArray.map((slide, index) => {
@@ -210,24 +218,36 @@ export const Experience = (): JSX.Element => {
 
 				const glowCooldownRef = useRef<number>(0);
 				const lightRef = useRef<PointLight>(null);
+				const groupRef = useRef<Group>(null);
 				const { setHoverState } = useGallerySlide.getState();
 
-				const glow = (() => {
-					if (isZoom) return false;
-					if (freemode && focusIndex === index) return true;
-					if (hoverStates[index] === "enter" && freemode && focusIndex === null) return true;
-					if (!freemode) return true;
-					return false;
-				})();
+				useEffect(() => {
+					if (groupRef.current) {
+						const alreadyIncluded = bloomRefs.current.includes(groupRef.current);
+						if (hoverStates[index] === "enter") {
+							if (!alreadyIncluded) bloomRefs.current.push(groupRef.current);
+						} else {
+							bloomRefs.current = bloomRefs.current.filter((ref) => ref !== groupRef.current);
+						}
+					}
+					if (lightRef.current) {
+						const alreadyLight = lightRefs.current.includes(lightRef.current);
+						if (!alreadyLight) lightRefs.current.push(lightRef.current);
+					}
+				}, [hoverStates[index]]);
 
 				useFrame(() => {
 					if (!lightRef.current) return;
-					const targetIntensity = glow ? 3 : 0;
-					lightRef.current.intensity += (targetIntensity - lightRef.current.intensity) * 0.1;
+
+					const target = hoverStates[index] === "enter" ? 30 : 0;
+					const current = lightRef.current.intensity;
+					lightRef.current.intensity += (target - current) * 0.1;
+
 					if (Math.abs(lightRef.current.intensity) < 0.01) {
 						lightRef.current.intensity = 0;
 					}
 				});
+
 				const mouseEnterSlide = () => {
 					if (!freemode || focusIndex !== null) return;
 
@@ -257,8 +277,8 @@ export const Experience = (): JSX.Element => {
 						onPointerOver={mouseEnterSlide}
 						onPointerOut={mouseLeaveSlide}
 					>
-						{/* hover 시 후광 */}
-						<pointLight ref={lightRef} position={[0, 0, -1]} intensity={0} color={slide.mainColor} />
+						{/* bloom 조명 */}
+						<pointLight ref={lightRef} position={[0, 0, -1]} intensity={0} distance={5} color={"#ffffff"} />
 
 						{/* 슬라이드 장식 */}
 						<mesh position-y={3}>
