@@ -198,12 +198,6 @@ export const Experience = (): JSX.Element => {
 	const lightRefs = useRef<Light[]>([]);
 	const HOVER_LIGHT_INTENSITY = 30;
 
-	const groupRef = useRef<Group>(null);
-	if (groupRef.current && !bloomRefs.current.includes(groupRef.current)) {
-		bloomRefs.current.push(groupRef.current);
-	}
-
-	// layer 1025 오류
 	useEffect(() => {
 		const timeout = setTimeout(() => {
 			bloomRefs.current.forEach((obj, idx) => {
@@ -238,21 +232,21 @@ export const Experience = (): JSX.Element => {
 				const slideRotationY = slideAngle + Math.PI;
 
 				const glowCooldownRef = useRef<number>(0);
+				const groupRef = useRef<Group>(null);
 				const lightRef = useRef<PointLight>(null);
+
 				const { setHoverState } = useGallerySlide.getState();
 
 				useEffect(() => {
 					if (groupRef.current) {
-						const alreadyIncluded = bloomRefs.current.includes(groupRef.current);
-						if (hoverStates[index] === "enter") {
-							if (!alreadyIncluded) bloomRefs.current.push(groupRef.current);
-						} else {
-							bloomRefs.current = bloomRefs.current.filter((ref) => ref !== groupRef.current);
+						if (!bloomRefs.current.includes(groupRef.current)) {
+							bloomRefs.current.push(groupRef.current);
 						}
 					}
 					if (lightRef.current) {
-						const alreadyLight = lightRefs.current.includes(lightRef.current);
-						if (!alreadyLight) lightRefs.current.push(lightRef.current);
+						if (!lightRefs.current.includes(lightRef.current)) {
+							lightRefs.current.push(lightRef.current);
+						}
 					}
 				}, [hoverStates[index]]);
 
