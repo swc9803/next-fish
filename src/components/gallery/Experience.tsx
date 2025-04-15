@@ -3,7 +3,6 @@
 import { useRef, useEffect, JSX } from "react";
 import { CameraControls, Environment, MeshDistortMaterial, MeshReflectorMaterial, useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { EffectComposer, SelectiveBloom } from "@react-three/postprocessing";
 import type { PointLight, Group } from "three";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
@@ -262,18 +261,6 @@ export const Experience = (): JSX.Element => {
 			<ambientLight intensity={0.2} />
 			<Environment preset="city" />
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
-
-			{lightRef.current && bloomRef.current && (
-				<EffectComposer>
-					<SelectiveBloom
-						intensity={1.5}
-						luminanceThreshold={0}
-						luminanceSmoothing={0.9}
-						selection={[bloomRef.current]}
-						lights={[lightRef.current]}
-					/>
-				</EffectComposer>
-			)}
 
 			<group ref={bloomRef}>
 				<pointLight ref={lightRef} position={[0, 0, -1]} intensity={30} distance={5} color="#ffffff" />
