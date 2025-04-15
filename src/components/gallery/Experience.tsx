@@ -219,7 +219,14 @@ export const Experience = (): JSX.Element => {
 
 		const isSlideMode = !freemode;
 
-		let interpolatedIndex: number;
+		let lightTargetIndex: number;
+
+		const slideLength = slideArray.length;
+
+		const getShortestDirection = (from: number, to: number) => {
+			const diff = ((to - from + slideLength / 2) % slideLength) - slideLength / 2;
+			return diff < -slideLength / 2 ? diff + slideLength : diff;
+		};
 
 		if (isSlideMode && slideMoveStartTime.current !== null) {
 			const now = performance.now();
@@ -227,23 +234,23 @@ export const Experience = (): JSX.Element => {
 			const t = Math.min(elapsed / SLIDE_MODE_LIGHT_MOVE_DURATION, 1);
 			const easedT = easeInOut(t);
 
-			interpolatedIndex = slideFromIndex.current + (slideToIndex.current - slideFromIndex.current) * easedT;
+			const diff = getShortestDirection(slideFromIndex.current, slideToIndex.current);
+			lightTargetIndex = (slideFromIndex.current + diff * easedT + slideLength) % slideLength;
 
 			if (t === 1) {
 				slideMoveStartTime.current = null;
 			}
-			currentLightIndex.current = interpolatedIndex;
+			currentLightIndex.current = lightTargetIndex;
 		} else {
 			const ease = 1 - Math.pow(0.001, delta / FREE_MODE_LIGHT_MOVE_DURATION);
-			currentLightIndex.current += (targetLightIndex.current - currentLightIndex.current) * ease;
-			interpolatedIndex = currentLightIndex.current;
+			const diff = getShortestDirection(currentLightIndex.current, targetLightIndex.current);
+			currentLightIndex.current = (currentLightIndex.current + diff * ease + slideLength) % slideLength;
+			lightTargetIndex = currentLightIndex.current;
 		}
 
-		if (interpolatedIndex < 0 || interpolatedIndex >= slideArray.length) {
-			return;
-		}
+		if (lightTargetIndex < 0 || lightTargetIndex >= slideArray.length) return;
 
-		const angle = -(2 * Math.PI * interpolatedIndex) / slideArray.length;
+		const angle = -(2 * Math.PI * lightTargetIndex) / slideArray.length;
 		const x = totalRadius * Math.sin(angle);
 		const z = totalRadius * Math.cos(angle);
 
