@@ -25,7 +25,7 @@ resize debounce
 
 경고
 Layer out of range, resetting to 2 Error Component Stack
-하나의 bloom > 하나의 pointLight
+bloom 제거?
 
 resize debounce 추가 및 최적화
 overlay 디자인 수정 및 visible 타이밍 수정

@@ -4,7 +4,7 @@ import { useRef, useEffect, JSX } from "react";
 import { CameraControls, Environment, MeshDistortMaterial, MeshReflectorMaterial, useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { EffectComposer, SelectiveBloom } from "@react-three/postprocessing";
-import type { Object3D, Light, PointLight, Group } from "three";
+import type { PointLight, Group } from "three";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
 
@@ -88,19 +88,13 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 		await cameraControlsRef.current.setLookAt(closeCameraPos.x, 0, closeCameraPos.z, targetX, 0, targetZ, true);
 
 		setIsZoom(false);
-
 		setIsSliding(false);
 	};
 
-	// 초기 로드 시
 	useEffect(() => {
 		if (!hasInitializedRef.current && !freemode && focusIndex === null) {
 			if (slide === 0) {
 				moveToSlide(slide, true);
-
-				// 초기 로드 시 0번째 슬라이드 상태 enter로 변경
-				const { setHoverState } = useGallerySlide.getState();
-				setHoverState(0, "enter");
 			}
 			lastSlideIndexRef.current = slide;
 			hasInitializedRef.current = true;
@@ -139,11 +133,7 @@ const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps): JSX.E
 		const enteredFreemodeNow = !prevWasFreemode && currentIsFreemode;
 		const needZoomOutToOverview = enteredFreemodeNow || (freemode && focusIndex === null);
 
-		const { resetAllHoverStates } = useGallerySlide.getState();
-
 		if (needZoomOutToOverview && cameraControlsRef.current) {
-			resetAllHoverStates();
-
 			const { x: focusX, z: focusZ } = lastFocusTarget ?? { x: 0, z: 0 };
 			const angle = Math.atan2(focusX, focusZ);
 			const distance = cameraRadius * 2.5;
@@ -192,28 +182,80 @@ export const Experience = (): JSX.Element => {
 	const totalRadius = (slideSpacing * slideArray.length) / (2 * Math.PI);
 
 	const textures = useTexture(slideArray.map((m) => m.path));
-	const { freemode, focusIndex, setFocusIndex, setSlide, hoverStates } = useGallerySlide();
+	const { freemode, focusIndex, setFocusIndex, setSlide, slide } = useGallerySlide();
 
-	const bloomRefs = useRef<Object3D[]>([]);
-	const lightRefs = useRef<Light[]>([]);
-	const HOVER_LIGHT_INTENSITY = 30;
+	const slideMoveStartTime = useRef<number | null>(null);
+	const slideFromIndex = useRef<number>(0);
+	const slideToIndex = useRef<number>(0);
+
+	const bloomRef = useRef<Group>(null);
+	const lightRef = useRef<PointLight>(null);
+
+	const hoverIndex = useRef<number | null>(null);
+	const targetLightIndex = useRef<number>(0);
+	const currentLightIndex = useRef<number>(0);
+
+	const FREE_MODE_LIGHT_MOVE_DURATION = 1;
+	const SLIDE_MODE_LIGHT_MOVE_DURATION = 2;
+	function easeInOut(t: number): number {
+		return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+	}
 
 	useEffect(() => {
-		const timeout = setTimeout(() => {
-			bloomRefs.current.forEach((obj, idx) => {
-				if (obj.layers.mask > 31) {
-					console.warn(` bloom object[${idx}] has invalid layer: ${obj.layers.mask}`);
-				}
-			});
-			lightRefs.current.forEach((light, idx) => {
-				if (light.layers.mask > 31) {
-					console.warn(`light[${idx}] has invalid layer: ${light.layers.mask}`);
-				}
-			});
-		}, 1000);
+		if (freemode) {
+			if (hoverIndex.current !== null) {
+				targetLightIndex.current = hoverIndex.current;
+			}
+		} else {
+			slideMoveStartTime.current = performance.now();
+			slideFromIndex.current = currentLightIndex.current;
+			slideToIndex.current = slide;
 
-		return () => clearTimeout(timeout);
-	}, []);
+			targetLightIndex.current = slide;
+		}
+	}, [freemode, slide]);
+
+	useFrame((_, delta) => {
+		if (!bloomRef.current || !lightRef.current) return;
+
+		const isSlideMode = !freemode;
+
+		let interpolatedIndex: number;
+
+		if (isSlideMode && slideMoveStartTime.current !== null) {
+			const now = performance.now();
+			const elapsed = (now - slideMoveStartTime.current) / 1000;
+			const t = Math.min(elapsed / SLIDE_MODE_LIGHT_MOVE_DURATION, 1);
+			const easedT = easeInOut(t);
+
+			interpolatedIndex = slideFromIndex.current + (slideToIndex.current - slideFromIndex.current) * easedT;
+
+			if (t === 1) {
+				slideMoveStartTime.current = null;
+			}
+			currentLightIndex.current = interpolatedIndex;
+		} else {
+			const ease = 1 - Math.pow(0.001, delta / FREE_MODE_LIGHT_MOVE_DURATION);
+			currentLightIndex.current += (targetLightIndex.current - currentLightIndex.current) * ease;
+			interpolatedIndex = currentLightIndex.current;
+		}
+
+		if (interpolatedIndex < 0 || interpolatedIndex >= slideArray.length) {
+			return;
+		}
+
+		const angle = -(2 * Math.PI * interpolatedIndex) / slideArray.length;
+		const x = totalRadius * Math.sin(angle);
+		const z = totalRadius * Math.cos(angle);
+
+		const easePos = isSlideMode ? 0.2 : 1 - Math.pow(0.001, delta / FREE_MODE_LIGHT_MOVE_DURATION);
+
+		bloomRef.current.position.x += (x - bloomRef.current.position.x) * easePos;
+		bloomRef.current.position.z += (z - bloomRef.current.position.z) * easePos;
+
+		const targetY = angle + Math.PI;
+		bloomRef.current.rotation.y += (targetY - bloomRef.current.rotation.y) * easePos;
+	});
 
 	return (
 		<>
@@ -221,64 +263,25 @@ export const Experience = (): JSX.Element => {
 			<Environment preset="city" />
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
 
-			{lightRefs.current.length > 0 && (
+			{lightRef.current && bloomRef.current && (
 				<EffectComposer>
-					<SelectiveBloom intensity={1.5} luminanceThreshold={0} luminanceSmoothing={0.9} selection={bloomRefs.current} lights={lightRefs.current} />
+					<SelectiveBloom
+						intensity={1.5}
+						luminanceThreshold={0}
+						luminanceSmoothing={0.9}
+						selection={[bloomRef.current]}
+						lights={[lightRef.current]}
+					/>
 				</EffectComposer>
 			)}
+
+			<group ref={bloomRef}>
+				<pointLight ref={lightRef} position={[0, 0, -1]} intensity={30} distance={5} color="#ffffff" />
+			</group>
 
 			{slideArray.map((slide, index) => {
 				const { x: slideX, z: slideZ, angleInRadians: slideAngle } = getSlidePosition(index, totalRadius);
 				const slideRotationY = slideAngle + Math.PI;
-
-				const glowCooldownRef = useRef<number>(0);
-				const groupRef = useRef<Group>(null);
-				const lightRef = useRef<PointLight>(null);
-
-				const { setHoverState } = useGallerySlide.getState();
-
-				useEffect(() => {
-					if (groupRef.current) {
-						if (!bloomRefs.current.includes(groupRef.current)) {
-							bloomRefs.current.push(groupRef.current);
-						}
-					}
-					if (lightRef.current) {
-						if (!lightRefs.current.includes(lightRef.current)) {
-							lightRefs.current.push(lightRef.current);
-						}
-					}
-				}, [hoverStates[index]]);
-
-				useFrame(() => {
-					const light = lightRef.current;
-					if (!light) return;
-
-					const target = hoverStates[index] === "enter" ? HOVER_LIGHT_INTENSITY : 0;
-					const delta = target - light.intensity;
-
-					if (Math.abs(delta) < 0.01) {
-						light.intensity = target;
-						return;
-					}
-
-					light.intensity += delta * 0.1;
-				});
-
-				const mouseEnterSlide = () => {
-					if (!freemode || focusIndex !== null) return;
-
-					const now = performance.now();
-					if (now - glowCooldownRef.current < 600) return;
-					glowCooldownRef.current = now;
-
-					setHoverState(index, "enter");
-				};
-
-				const mouseLeaveSlide = () => {
-					if (!freemode || focusIndex !== null) return;
-					setHoverState(index, "leave");
-				};
 
 				return (
 					<group
@@ -291,33 +294,30 @@ export const Experience = (): JSX.Element => {
 								setSlide(index);
 							}
 						}}
-						onPointerOver={mouseEnterSlide}
-						onPointerOut={mouseLeaveSlide}
+						onPointerOver={() => {
+							if (!freemode || focusIndex !== null) return;
+							hoverIndex.current = index;
+							targetLightIndex.current = index;
+						}}
+						onPointerOut={() => {
+							if (!freemode || focusIndex !== null) return;
+							hoverIndex.current = null;
+						}}
 					>
-						{/* bloom 조명 */}
-						<pointLight ref={lightRef} position={[0, 0, -1]} intensity={0} distance={5} color={"#ffffff"} />
-
-						{/* 슬라이드 장식 */}
 						<mesh position-y={3}>
 							<boxGeometry />
 							<MeshDistortMaterial color={slide.mainColor} speed={3} />
 						</mesh>
 
-						{/* 슬라이드 이미지 + 테두리 */}
 						<group>
-							{/* 바깥쪽 테두리 */}
 							<mesh position={[0, 0, -0.03]}>
 								<planeGeometry args={[viewport.height * aspectRatio + 0.25, viewport.height + 0.2]} />
 								<meshBasicMaterial color="#111111" toneMapped={false} />
 							</mesh>
-
-							{/* 안쪽 테두리 */}
 							<mesh position={[0, 0, -0.02]}>
 								<planeGeometry args={[viewport.height * aspectRatio + 0.075, viewport.height + 0.075]} />
 								<meshBasicMaterial color="#ffffff" toneMapped={false} />
 							</mesh>
-
-							{/* 이미지 */}
 							<mesh position={[0, 0, -0.01]}>
 								<planeGeometry args={[viewport.height * aspectRatio, viewport.height]} />
 								<meshBasicMaterial map={textures[index]} toneMapped={false} />
@@ -327,7 +327,6 @@ export const Experience = (): JSX.Element => {
 				);
 			})}
 
-			{/* 바닥 */}
 			<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]}>
 				<planeGeometry args={[50, 50]} />
 				<MeshReflectorMaterial
@@ -344,9 +343,7 @@ export const Experience = (): JSX.Element => {
 				/>
 			</mesh>
 
-			{/* 배경 */}
 			<color attach="background" args={["#222222"]} />
-			{/* <fog attach="fog" args={["#191920", 0, 50]} /> */}
 		</>
 	);
 };
