@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef } from "react";
 import { useTexture } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
-import { useThree } from "@react-three/fiber";
 
 interface SlidesProps {
 	totalRadius: number;
@@ -23,6 +22,9 @@ export const Slides = ({ totalRadius, aspectRatio }: SlidesProps) => {
 			{slideArray.map((slide, index) => {
 				const { x: slideX, z: slideZ, angleInRadians: slideAngle } = getSlidePosition(index, totalRadius);
 				const slideRotationY = slideAngle + Math.PI;
+
+				const slideWidth = viewport.width;
+				const slideHeight = viewport.width * (9 / 16);
 
 				return (
 					<group
@@ -47,15 +49,15 @@ export const Slides = ({ totalRadius, aspectRatio }: SlidesProps) => {
 
 						<group>
 							<mesh position={[0, 0, -0.03]}>
-								<planeGeometry args={[viewport.height * aspectRatio + 0.25, viewport.height + 0.2]} />
+								<planeGeometry args={[slideWidth + 0.15, slideHeight + 0.1]} />
 								<meshBasicMaterial color="#111111" toneMapped={false} />
 							</mesh>
 							<mesh position={[0, 0, -0.02]}>
-								<planeGeometry args={[viewport.height * aspectRatio + 0.075, viewport.height + 0.075]} />
+								<planeGeometry args={[slideWidth + 0.05, slideHeight + 0.05]} />
 								<meshBasicMaterial color="#ffffff" toneMapped={false} />
 							</mesh>
 							<mesh position={[0, 0, -0.01]}>
-								<planeGeometry args={[viewport.height * aspectRatio, viewport.height]} />
+								<planeGeometry args={[slideWidth, slideHeight]} />
 								<meshBasicMaterial map={textures[index]} toneMapped={false} />
 							</mesh>
 						</group>

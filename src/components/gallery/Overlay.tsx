@@ -1,7 +1,7 @@
 "use client";
 
 import styles from "./Overlay.module.scss";
-import { JSX, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, JSX } from "react";
 import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
