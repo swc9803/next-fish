@@ -2,7 +2,7 @@
 
 import styles from "./Overlay.module.scss";
 import { JSX, useEffect, useRef, useState } from "react";
-import { slideArray } from "./Experience";
+import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const Overlay = (): JSX.Element | null => {
