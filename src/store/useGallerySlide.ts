@@ -18,6 +18,9 @@ interface GallerySlideState {
 
 	isZoom: boolean;
 	setIsZoom: (v: boolean) => void;
+
+	hoverIndex: number | null;
+	setHoverIndex: (index: number | null) => void;
 }
 
 export const useGallerySlide = create<GallerySlideState>((set) => ({
@@ -38,4 +41,7 @@ export const useGallerySlide = create<GallerySlideState>((set) => ({
 
 	isZoom: false,
 	setIsZoom: (v) => set({ isZoom: v }),
+
+	hoverIndex: null,
+	setHoverIndex: (index) => set({ hoverIndex: index }),
 }));
