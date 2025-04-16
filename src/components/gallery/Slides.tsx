@@ -38,7 +38,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 					>
 						<mesh position-y={3}>
 							<boxGeometry />
-							<meshStandardMaterial color={slide.mainColor} />
+							<meshLambertMaterial color={slide.mainColor} />
 						</mesh>
 
 						<group>
@@ -48,7 +48,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 							</mesh>
 							<mesh position={[0, 0, -0.02]}>
 								<planeGeometry args={[slideWidth + 0.05, slideHeight + 0.05]} />
-								<meshBasicMaterial color="#ffffff" toneMapped={false} />
+								<meshLambertMaterial color="#ffffff" toneMapped={false} />
 							</mesh>
 							<mesh position={[0, 0, -0.01]}>
 								<planeGeometry args={[slideWidth, slideHeight]} />
