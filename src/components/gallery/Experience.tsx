@@ -11,8 +11,7 @@ import { CameraHandler } from "./CameraHandler";
 import { Ground } from "./Ground";
 
 export const Experience = (): JSX.Element => {
-	const { viewport, camera, size } = useThree();
-	const aspectRatio = size.width / size.height;
+	const { viewport, camera } = useThree();
 	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
 	const cameraRadius = viewport.height / (2 * Math.tan(fov / 2));
 	const slideSpacing = viewport.width * 2.8;
@@ -25,7 +24,7 @@ export const Experience = (): JSX.Element => {
 
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
 			<HoverLight totalRadius={totalRadius} cameraRadius={cameraRadius} />
-			<Slides totalRadius={totalRadius} aspectRatio={aspectRatio} cameraRadius={cameraRadius} />
+			<Slides totalRadius={totalRadius} cameraRadius={cameraRadius} />
 
 			<Ground />
 

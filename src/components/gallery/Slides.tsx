@@ -7,11 +7,10 @@ import { slideArray, getSlidePosition } from "@/utils/slideUtils";
 
 interface SlidesProps {
 	totalRadius: number;
-	aspectRatio: number;
 	cameraRadius: number;
 }
 
-export const Slides = ({ totalRadius, aspectRatio }: SlidesProps) => {
+export const Slides = ({ totalRadius }: SlidesProps) => {
 	const { viewport } = useThree();
 	const textures = useTexture(slideArray.map((m) => m.path));
 
