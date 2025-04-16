@@ -5,19 +5,19 @@ import { JSX } from "react";
 
 export const Ground = (): JSX.Element => {
 	return (
-		<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]}>
-			<planeGeometry args={[50, 50]} />
+		<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.1, 0]}>
+			<circleGeometry args={[20, 32]} />
 			<MeshReflectorMaterial
-				blur={[300, 100]}
-				resolution={2048}
-				mixBlur={1}
-				mixStrength={80}
+				blur={[100, 50]}
+				resolution={512}
+				mixBlur={0.8}
+				mixStrength={15}
 				roughness={1}
-				depthScale={1.2}
+				depthScale={0.9}
 				minDepthThreshold={0.4}
-				maxDepthThreshold={1.4}
+				maxDepthThreshold={1.2}
 				color="#111111"
-				metalness={0.5}
+				metalness={0.2}
 			/>
 		</mesh>
 	);
