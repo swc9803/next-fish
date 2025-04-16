@@ -1,19 +1,17 @@
 "use client";
 
 import { useTexture } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
 
 interface SlidesProps {
 	totalRadius: number;
-	cameraRadius: number;
+	slideWidth: number;
+	slideHeight: number;
 }
 
-export const Slides = ({ totalRadius }: SlidesProps) => {
-	const { viewport } = useThree();
+export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) => {
 	const textures = useTexture(slideArray.map((m) => m.path));
-
 	const { freemode, focusIndex, setFocusIndex, setSlide, setHoverIndex } = useGallerySlide();
 
 	return (
@@ -21,9 +19,6 @@ export const Slides = ({ totalRadius }: SlidesProps) => {
 			{slideArray.map((slide, index) => {
 				const { x: slideX, z: slideZ, angleInRadians: slideAngle } = getSlidePosition(index, totalRadius);
 				const slideRotationY = slideAngle + Math.PI;
-
-				const slideWidth = viewport.width;
-				const slideHeight = viewport.width * (9 / 16);
 
 				return (
 					<group
