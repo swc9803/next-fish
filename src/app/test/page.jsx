@@ -23,52 +23,29 @@ const ImageRevealMaterial = shaderMaterial(
 	}
 );
 
+// material을 앱 외부에서 미리 생성
+const glslMaterial = new ImageRevealMaterial();
+
 export default function App() {
-	const [isRevealed, setIsRevealed] = useState(true);
 	const [cubeTexture, setCubeTexture] = useState(null);
 	const revealProgressRef = useRef(1);
 	const targetRef = useRef(1);
 
-	const toggleReveal = () => {
-		targetRef.current = isRevealed ? 0 : 1;
-		setIsRevealed(!isRevealed);
-	};
+	useEffect(() => {
+		if (cubeTexture) {
+			targetRef.current = 0;
+		}
+	}, [cubeTexture]);
 
 	return (
-		<>
-			<Canvas style={{ width: "100vw", height: "100vh" }}>
-				<ambientLight intensity={0.5} />
-				<directionalLight position={[10, 10, 5]} />
+		<Canvas>
+			<RevealContents revealProgressRef={revealProgressRef} targetRef={targetRef} contentsTexture={cubeTexture} />
 
-				<CubeSceneTexture onTextureReady={setCubeTexture} />
+			<ambientLight intensity={0.5} />
+			<directionalLight position={[10, 10, 5]} />
 
-				{cubeTexture && <RevealImage imageTexture={cubeTexture} revealProgressRef={revealProgressRef} targetRef={targetRef} />}
-			</Canvas>
-
-			<div
-				style={{
-					position: "absolute",
-					bottom: 30,
-					left: "50%",
-					transform: "translateX(-50%)",
-					zIndex: 10,
-				}}
-			>
-				<button
-					onClick={toggleReveal}
-					style={{
-						padding: "10px 20px",
-						background: "#000",
-						color: "#fff",
-						border: "none",
-						borderRadius: "6px",
-						cursor: "pointer",
-					}}
-				>
-					Show / Hide
-				</button>
-			</div>
-		</>
+			<CubeSceneTexture onTextureReady={setCubeTexture} />
+		</Canvas>
 	);
 }
 
@@ -103,30 +80,50 @@ function CubeSceneTexture({ onTextureReady }) {
 	);
 }
 
-function RevealImage({ imageTexture, revealProgressRef, targetRef }) {
+function RevealContents({ contentsTexture, revealProgressRef, targetRef }) {
 	const { viewport } = useThree();
-	const [materialInstance] = useState(() => new ImageRevealMaterial());
+	const revealMaterial = glslMaterial;
+	const meshRef = useRef();
+	const [visible, setVisible] = useState(true);
 
 	useEffect(() => {
-		materialInstance.uTexture = imageTexture;
-		const { width, height } = imageTexture.image;
-		materialInstance.uImageRes.set(width, height);
-		materialInstance.uRes.set(viewport.width, viewport.height);
-	}, [imageTexture, viewport, materialInstance]);
+		if (contentsTexture?.image) {
+			revealMaterial.uTexture = contentsTexture;
+			const { width, height } = contentsTexture.image;
+			revealMaterial.uImageRes.set(width, height);
+			revealMaterial.uRes.set(viewport.width, viewport.height);
+		}
+	}, [contentsTexture, viewport]);
 
 	useFrame(({ clock }) => {
-		materialInstance.uTime = clock.getElapsedTime();
+		if (!visible) return;
+
+		revealMaterial.uTime = clock.getElapsedTime();
 		const current = revealProgressRef.current;
 		const target = targetRef.current;
 		const lerped = MathUtils.lerp(current, target, 0.05);
 		revealProgressRef.current = lerped;
-		materialInstance.uProgress = lerped;
+		revealMaterial.uProgress = lerped;
+
+		// glsl 메모리 해제
+		if (Math.abs(lerped - target) < 0.01 && target === 0) {
+			if (meshRef.current) {
+				meshRef.current.geometry.dispose();
+				meshRef.current.material.dispose();
+			}
+			if (revealMaterial.uTexture?.dispose) {
+				revealMaterial.uTexture.dispose();
+			}
+			setVisible(false);
+		}
 	});
 
+	if (!visible) return null;
+
 	return (
-		<mesh scale={[viewport.width, viewport.height, 1]}>
+		<mesh ref={meshRef} scale={[viewport.width, viewport.height, 1]}>
 			<planeGeometry args={[1, 1, 32, 32]} />
-			<primitive object={materialInstance} attach="material" />
+			<primitive object={revealMaterial} attach="material" />
 		</mesh>
 	);
 }
