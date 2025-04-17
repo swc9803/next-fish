@@ -112,6 +112,12 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 
 	const isInteractive = freemode && focusIndex === null;
 
+	useEffect(() => {
+		if (hasInitializedRef.current && !freemode && focusIndex === null && slide === 0) {
+			moveToSlide(slide, true);
+		}
+	}, [cameraRadius, totalRadius]);
+
 	return (
 		<CameraControls
 			ref={cameraControlsRef}
