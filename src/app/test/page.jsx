@@ -1,55 +1,132 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { RenderTexture, OrbitControls, ContactShadows } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { shaderMaterial, useFBO, RenderTexture } from "@react-three/drei";
+import { Texture, Vector2, MathUtils } from "three";
+import { useEffect, useRef, useState } from "react";
+
+import fragmentShader from "./shaders/fragment.glsl";
+import vertexShader from "./shaders/vertex.glsl";
+
+const ImageRevealMaterial = shaderMaterial(
+	{
+		uTexture: new Texture(),
+		uTime: 0,
+		uProgress: 1,
+		uImageRes: new Vector2(1.0, 1.0),
+		uRes: new Vector2(1.0, 1.0),
+	},
+	vertexShader,
+	fragmentShader,
+	(self) => {
+		self.transparent = true;
+	}
+);
 
 export default function App() {
-	return (
-		<Canvas camera={{ position: [5, 5, 5], fov: 25 }}>
-			<ambientLight intensity={0.5} />
-			<directionalLight position={[10, 10, 5]} />
-			<Cube />
-			<Dodecahedron position={[0, 1, 0]} scale={0.2} />
-			<ContactShadows frames={1} position={[0, -0.5, 0]} blur={1} opacity={0.75} />
-			<ContactShadows frames={1} position={[0, -0.5, 0]} blur={3} color="orange" />
-			<OrbitControls minPolarAngle={0} maxPolarAngle={Math.PI / 2.1} />
-		</Canvas>
-	);
-}
+	const [isRevealed, setIsRevealed] = useState(true);
+	const [cubeTexture, setCubeTexture] = useState(null);
+	const revealProgressRef = useRef(1);
+	const targetRef = useRef(1);
 
-function Cube() {
-	return (
-		<mesh>
-			<boxGeometry />
-			<meshStandardMaterial>
-				<RenderTexture attach="map" anisotropy={16}>
-					<color attach="background" args={["orange"]} />
-					<ambientLight intensity={0.5} />
-					<Dodecahedron />
-				</RenderTexture>
-			</meshStandardMaterial>
-		</mesh>
-	);
-}
+	const toggleReveal = () => {
+		targetRef.current = isRevealed ? 0 : 1;
+		setIsRevealed(!isRevealed);
+	};
 
-function Dodecahedron(props) {
-	const meshRef = useRef();
-	const [hovered, hover] = useState(false);
-	const [clicked, click] = useState(false);
-	useFrame(() => (meshRef.current.rotation.x += 0.01));
 	return (
-		<group {...props}>
-			<mesh
-				ref={meshRef}
-				scale={clicked ? 1.5 : 1}
-				onClick={() => click(!clicked)}
-				onPointerOver={() => hover(true)}
-				onPointerOut={() => hover(false)}
+		<>
+			<Canvas style={{ width: "100vw", height: "100vh" }}>
+				<ambientLight intensity={0.5} />
+				<directionalLight position={[10, 10, 5]} />
+
+				<CubeSceneTexture onTextureReady={setCubeTexture} />
+
+				{cubeTexture && <RevealImage imageTexture={cubeTexture} revealProgressRef={revealProgressRef} targetRef={targetRef} />}
+			</Canvas>
+
+			<div
+				style={{
+					position: "absolute",
+					bottom: 30,
+					left: "50%",
+					transform: "translateX(-50%)",
+					zIndex: 10,
+				}}
 			>
-				<dodecahedronGeometry args={[0.75]} />
-				<meshStandardMaterial color={hovered ? "hotpink" : "#5de4c7"} />
+				<button
+					onClick={toggleReveal}
+					style={{
+						padding: "10px 20px",
+						background: "#000",
+						color: "#fff",
+						border: "none",
+						borderRadius: "6px",
+						cursor: "pointer",
+					}}
+				>
+					Show / Hide
+				</button>
+			</div>
+		</>
+	);
+}
+
+function CubeSceneTexture({ onTextureReady }) {
+	const cubeRef = useRef();
+	const fbo = useFBO({ samples: 4 });
+
+	useFrame((state) => {
+		if (!fbo || !cubeRef.current) return;
+
+		const oldTarget = state.gl.getRenderTarget();
+		state.gl.setRenderTarget(fbo);
+		state.gl.clear();
+		state.gl.render(cubeRef.current, state.camera);
+		state.gl.setRenderTarget(oldTarget);
+
+		onTextureReady(fbo.texture);
+	});
+
+	return (
+		<group ref={cubeRef} position={[0, 0, -1]}>
+			<mesh>
+				<boxGeometry />
+				<meshStandardMaterial>
+					<RenderTexture attach="map" anisotropy={16}>
+						<color attach="background" args={["orange"]} />
+						<ambientLight intensity={0.5} />
+					</RenderTexture>
+				</meshStandardMaterial>
 			</mesh>
 		</group>
+	);
+}
+
+function RevealImage({ imageTexture, revealProgressRef, targetRef }) {
+	const { viewport } = useThree();
+	const [materialInstance] = useState(() => new ImageRevealMaterial());
+
+	useEffect(() => {
+		materialInstance.uTexture = imageTexture;
+		const { width, height } = imageTexture.image;
+		materialInstance.uImageRes.set(width, height);
+		materialInstance.uRes.set(viewport.width, viewport.height);
+	}, [imageTexture, viewport, materialInstance]);
+
+	useFrame(({ clock }) => {
+		materialInstance.uTime = clock.getElapsedTime();
+		const current = revealProgressRef.current;
+		const target = targetRef.current;
+		const lerped = MathUtils.lerp(current, target, 0.05);
+		revealProgressRef.current = lerped;
+		materialInstance.uProgress = lerped;
+	});
+
+	return (
+		<mesh scale={[viewport.width, viewport.height, 1]}>
+			<planeGeometry args={[1, 1, 32, 32]} />
+			<primitive object={materialInstance} attach="material" />
+		</mesh>
 	);
 }
