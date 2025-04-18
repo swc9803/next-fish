@@ -169,7 +169,7 @@ const FishModel = ({ fishRef, setIsInBombZone, setCountdown }: FishModelProps) =
 	);
 };
 
-const VideoOverlay = () => {
+const VideoCaustics = () => {
 	const videoTexture = useVideoTexture("/videos/caustics.mp4");
 	return (
 		<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} renderOrder={10}>
@@ -579,7 +579,7 @@ const Experience = () => {
 				/>
 
 				<Suspense fallback={null}>
-					<VideoOverlay />
+					<VideoCaustics />
 					<FishModel fishRef={fishRef} setIsInBombZone={setIsInBombZone} setCountdown={setCountdown} />
 					<Plane planeRef={planeRef} />
 					<BombZone

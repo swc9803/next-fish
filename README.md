@@ -21,3 +21,4 @@ ground - MeshReflectorMaterial 값 조정
 use client 최소화
 페이지 이동 시 메모리 해제
 <Suspense fallback={<Loader />}>
+비동기로 object들 초기화
