@@ -65,23 +65,26 @@ export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone
 			const color = material.color;
 			const fish = fishRef.current;
 
-			gsap.to(color, {
-				r: 1,
-				g: 0,
-				b: 0,
-				duration: 3,
-				ease: "power1.inOut",
-				onComplete: () => {
-					if (fish && !isHitDetected(fish, index)) {
-						setScore((prev) => prev + 1);
-					} else if (fish && isHitDetected(fish, index)) {
-						setIsGameOver(true);
-						setIsInBombZone(false);
-					}
+			const animateCell = async (color: any, fish: Object3D, index: number) => {
+				await gsap.to(color, {
+					r: 1,
+					g: 0,
+					b: 0,
+					duration: 3,
+					ease: "power1.inOut",
+				});
 
-					color.set("white");
-				},
-			});
+				if (fish && !isHitDetected(fish, index)) {
+					setScore((prev) => prev + 1);
+				} else if (fish && isHitDetected(fish, index)) {
+					setIsGameOver(true);
+					setIsInBombZone(false);
+				}
+
+				color.set("white");
+			};
+
+			animateCell(color, fish, index);
 		}, 2500);
 
 		return () => clearInterval(interval);

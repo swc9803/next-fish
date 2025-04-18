@@ -62,20 +62,27 @@ const Experience = () => {
 
 	// 폭탄 카운트다운
 	useEffect(() => {
-		if (countdown === null) return;
-		const interval = setInterval(() => {
-			setCountdown((prev) => {
-				if (prev === 1) {
-					clearInterval(interval);
-					setCountdown(null);
-					setBombActive(true);
-					return null;
-				}
-				return (prev ?? 0) - 1;
-			});
-		}, 1000);
+		let isCancelled = false;
 
-		return () => clearInterval(interval);
+		const countdownAsync = async () => {
+			let current = countdown;
+			while (current && current > 0 && !isCancelled) {
+				await new Promise((res) => setTimeout(res, 1000));
+				current--;
+				setCountdown(current);
+			}
+
+			if (!isCancelled) {
+				setCountdown(null);
+				setBombActive(true);
+			}
+		};
+
+		if (countdown !== null) countdownAsync();
+
+		return () => {
+			isCancelled = true;
+		};
 	}, [countdown]);
 
 	// 게임 오버 시 초기화

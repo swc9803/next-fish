@@ -17,3 +17,5 @@ ground - MeshReflectorMaterial 값 조정
 
 페이지 이동 시 메모리 해제
 비동기로 object들 초기화
+
+배포 후 1.1 패치 노트 작성

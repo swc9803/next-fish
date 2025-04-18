@@ -37,24 +37,29 @@ export const GrowingSphere = ({ position, onCollected, fishRef }: GrowingSphereP
 		const dist = ref.current.position.distanceTo(fishRef.current.position);
 		if (dist < 3) {
 			setCollected(true);
-			gsap.to(ref.current.scale, {
-				x: 2,
-				y: 2,
-				z: 2,
-				duration: 0.3,
-				onComplete: () => {
-					gsap.to(ref.current!.scale, {
-						x: 0,
-						y: 0,
-						z: 0,
-						duration: 0.5,
-						onComplete: () => {
-							onCollected();
-							setFishScale((prev) => Math.min(prev + 0.2, 5));
-						},
-					});
-				},
-			});
+			const animateCollection = async () => {
+				await gsap.to(ref.current!.scale, {
+					x: 2,
+					y: 2,
+					z: 2,
+					duration: 0.3,
+				});
+
+				await gsap.to(ref.current!.scale, {
+					x: 0,
+					y: 0,
+					z: 0,
+					duration: 0.5,
+				});
+
+				onCollected();
+				setFishScale((prev) => Math.min(prev + 0.2, 5));
+			};
+
+			if (dist < 3) {
+				setCollected(true);
+				animateCollection();
+			}
 		}
 	});
 
