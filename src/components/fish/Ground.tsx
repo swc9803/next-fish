@@ -11,11 +11,12 @@ interface PlaneProps {
 
 export const Ground = ({ planeRef }: PlaneProps) => {
 	const ext = useMemo(() => (isWebPSupported() ? "webp" : "jpg"), []);
-	const [colorMap, normalMap, roughnessMap] = useTexture([
-		`/textures/sand/sand_02_diff_1k.${ext}`,
-		`/textures/sand/sand_02_nor_gl_1k.${ext}`,
-		`/textures/sand/sand_02_rough_1k.${ext}`,
-	]);
+	const texturePaths = useMemo(
+		() => [`/textures/sand/sand_02_diff_1k.${ext}`, `/textures/sand/sand_02_nor_gl_1k.${ext}`, `/textures/sand/sand_02_rough_1k.${ext}`],
+		[ext]
+	);
+
+	const [colorMap, normalMap, roughnessMap] = useTexture(texturePaths);
 
 	useMemo(() => {
 		[colorMap, normalMap, roughnessMap].forEach((tex) => {

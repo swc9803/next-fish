@@ -32,17 +32,18 @@ export default function App() {
 			<ambientLight intensity={0.5} />
 			<directionalLight position={[5, 5, 5]} />
 
+			{/* 테스트용 박스 후에는 본 컨텐츠가 들어가도록 수정할 것  */}
 			<mesh position={[0, 0, -1]}>
 				<boxGeometry />
 				<meshStandardMaterial color="orange" />
 			</mesh>
 
-			<FullscreenReveal revealProgressRef={revealProgressRef} targetRef={targetRef} />
+			<RevealShader revealProgressRef={revealProgressRef} targetRef={targetRef} />
 		</Canvas>
 	);
 }
 
-function FullscreenReveal({ revealProgressRef, targetRef }) {
+function RevealShader({ revealProgressRef, targetRef }) {
 	const meshRef = useRef();
 	const { viewport } = useThree();
 	const [visible, setVisible] = useState(true);

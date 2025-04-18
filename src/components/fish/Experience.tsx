@@ -19,15 +19,8 @@ import { BombZone } from "./BombZone";
 import { GrowingSphere } from "./GrowingSphere";
 import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundTransition } from "./BackgroundTransition";
-
-import { isWebPSupported } from "@/utils/isWebPSupported";
-
-// preload
-if (typeof window !== "undefined") {
-	const ext = isWebPSupported() ? "webp" : "jpg";
-	useTexture.preload([`/textures/sand/sand_02_diff_1k.${ext}`, `/textures/sand/sand_02_nor_gl_1k.${ext}`, `/textures/sand/sand_02_rough_1k.${ext}`]);
-}
-useGLTF.preload("/models/fish.glb");
+import { RevealShader } from "./RevealShader";
+import { LoadingOverlay } from "../LoadingOverlay";
 
 type BonusSphere = {
 	id: string;
@@ -45,6 +38,9 @@ const Experience = () => {
 	const [bombActive, setBombActive] = useState(false);
 	const [score, setScore] = useState(0);
 	const [bonusSpheres, setBonusSpheres] = useState<BonusSphere[]>([]);
+
+	const revealProgressRef = useRef(1);
+	const revealTargetRef = useRef(0);
 
 	// 먹이 생성
 	useEffect(() => {
@@ -96,27 +92,27 @@ const Experience = () => {
 
 	return (
 		<>
-			<Canvas shadows camera={{ position: [0, 17, 14], fov: 75 }}>
-				<Stats />
-				<BackgroundTransition darkMode={darkMode} />
+			<Suspense fallback={<LoadingOverlay />}>
+				<Canvas shadows camera={{ position: [0, 17, 14], fov: 75 }}>
+					<Stats />
+					<BackgroundTransition darkMode={darkMode} />
 
-				<ambientLight color={0xffffff} intensity={0.8} />
-				<directionalLight
-					color={0xf8f8ff}
-					intensity={4}
-					position={[2, 1, 3]}
-					castShadow
-					shadow-mapSize-width={2048}
-					shadow-mapSize-height={2048}
-					shadow-camera-left={-200}
-					shadow-camera-right={200}
-					shadow-camera-top={200}
-					shadow-camera-bottom={-200}
-					shadow-camera-near={1}
-					shadow-camera-far={500}
-				/>
+					<ambientLight color={0xffffff} intensity={0.8} />
+					<directionalLight
+						color={0xf8f8ff}
+						intensity={4}
+						position={[2, 1, 3]}
+						castShadow
+						shadow-mapSize-width={2048}
+						shadow-mapSize-height={2048}
+						shadow-camera-left={-200}
+						shadow-camera-right={200}
+						shadow-camera-top={200}
+						shadow-camera-bottom={-200}
+						shadow-camera-near={1}
+						shadow-camera-far={500}
+					/>
 
-				<Suspense fallback={null}>
 					<VideoCaustics />
 					<FishModel fishRef={fishRef} setIsInBombZone={setIsInBombZone} setCountdown={setCountdown} />
 					<Ground planeRef={planeRef} />
@@ -137,8 +133,10 @@ const Experience = () => {
 						/>
 					))}
 					<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
-				</Suspense>
-			</Canvas>
+
+					<RevealShader revealProgressRef={revealProgressRef} targetRef={revealTargetRef} />
+				</Canvas>
+			</Suspense>
 
 			<FishConfig />
 
