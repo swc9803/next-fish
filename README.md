@@ -6,6 +6,7 @@
    PolyHaven, SketchFab
    groot/works
 3. SEO 최적화 ( 후순위 )
+4. preload 로 로딩 배경 이미지 추가
 
 # gallery
 
