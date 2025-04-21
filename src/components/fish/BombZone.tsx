@@ -9,13 +9,15 @@ interface BombZoneProps {
 	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;
 	isInBombZone: boolean;
 	bombActive: boolean;
-	setScore: React.Dispatch<React.SetStateAction<number>>;
+	isGameOver: boolean;
 }
 
 type Vec3 = [number, number, number];
 
-export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone, bombActive, setScore }: BombZoneProps) => {
+export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone, bombActive, isGameOver }: BombZoneProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
+	const score = useFishStore((state) => state.score);
+
 	const cellSize = 6;
 	const gridHalf = 3;
 
@@ -29,7 +31,7 @@ export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone
 	const meshRefs = useRef<Mesh[]>([]);
 
 	useEffect(() => {
-		if (!bombActive) return;
+		if (!bombActive || isGameOver) return;
 
 		const groupOffset = new Vector3(-50, 0, 0);
 
@@ -56,39 +58,50 @@ export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone
 			return forwardDist < cellHalf + halfLength && sideDist < cellHalf + halfWidth;
 		};
 
-		const interval = setInterval(() => {
-			const index = Math.floor(Math.random() * cells.length);
-			const mesh = meshRefs.current[index];
-			if (!mesh) return;
+		// score에 따라 폭탄 생성 주기 및 개수 조정
+		const intervalTime = Math.max(1000, 2500 - score * 10);
+		const bombsPerWave = Math.min(1 + Math.floor(score / 20), 3);
 
-			const material = mesh.material as MeshStandardMaterial;
-			const color = material.color;
+		const startBombWave = () => {
 			const fish = fishRef.current;
+			if (!fish) return;
 
-			const animateCell = async (color: any, fish: Object3D, index: number) => {
-				await gsap.to(color, {
-					r: 1,
-					g: 0,
-					b: 0,
-					duration: 3,
-					ease: "power1.inOut",
-				});
+			const indexes = Array.from({ length: cells.length }, (_, i) => i);
 
-				if (fish && !isHitDetected(fish, index)) {
-					setScore((prev) => prev + 1);
-				} else if (fish && isHitDetected(fish, index)) {
-					setIsGameOver(true);
-					setIsInBombZone(false);
-				}
+			for (let i = 0; i < bombsPerWave; i++) {
+				const index = indexes.splice(Math.floor(Math.random() * indexes.length), 1)[0];
+				const mesh = meshRefs.current[index];
+				if (!mesh) continue;
 
-				color.set("white");
-			};
+				const material = mesh.material as MeshStandardMaterial;
+				const color = material.color;
 
-			animateCell(color, fish, index);
-		}, 2500);
+				const animateCell = async (color: any, fish: Object3D, index: number) => {
+					await gsap.to(color, {
+						r: 1,
+						g: 0,
+						b: 0,
+						duration: 3,
+						ease: "power1.inOut",
+					});
 
+					if (isHitDetected(fish, index)) {
+						setIsGameOver(true);
+						setIsInBombZone(false);
+					}
+
+					color.set("white");
+				};
+
+				animateCell(color, fish, index);
+			}
+		};
+
+		startBombWave();
+
+		const interval = setInterval(startBombWave, intervalTime);
 		return () => clearInterval(interval);
-	}, [cells, fishRef, fishScale, isInBombZone, bombActive]);
+	}, [cells, fishRef, fishScale, isInBombZone, bombActive, isGameOver, score]);
 
 	return (
 		<group position={[-50, 0, 0]}>
