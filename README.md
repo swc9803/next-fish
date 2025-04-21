@@ -13,6 +13,8 @@ overlay 디자인 수정 및 visible 타이밍 수정
 반응형 - 여러 비율에서 테스트
 ground - MeshReflectorMaterial 값 조정
 
+gallery png jpg 용량 비교
+
 # 확인 할 것
 
 페이지 이동 시 메모리 해제

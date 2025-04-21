@@ -4,7 +4,6 @@
 import { Suspense, useCallback, useRef, useState, useEffect } from "react";
 
 import { Canvas } from "@react-three/fiber";
-import { Stats, useGLTF, useTexture } from "@react-three/drei";
 import { Mesh, Object3D } from "three";
 
 // store
@@ -19,7 +18,6 @@ import { BombZone } from "./BombZone";
 import { GrowingSphere } from "./GrowingSphere";
 import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundTransition } from "./BackgroundTransition";
-import { RevealShader } from "./RevealShader";
 import { LoadingOverlay } from "../LoadingOverlay";
 
 type BonusSphere = {
@@ -38,9 +36,6 @@ const Experience = () => {
 	const [bombActive, setBombActive] = useState(false);
 	const [score, setScore] = useState(0);
 	const [bonusSpheres, setBonusSpheres] = useState<BonusSphere[]>([]);
-
-	const revealProgressRef = useRef(1);
-	const revealTargetRef = useRef(0);
 
 	// 먹이 생성
 	useEffect(() => {
@@ -101,7 +96,6 @@ const Experience = () => {
 		<>
 			<Suspense fallback={<LoadingOverlay />}>
 				<Canvas shadows camera={{ position: [0, 17, 14], fov: 75 }}>
-					<Stats />
 					<BackgroundTransition darkMode={darkMode} />
 
 					<ambientLight color={0xffffff} intensity={0.8} />
@@ -140,8 +134,6 @@ const Experience = () => {
 						/>
 					))}
 					<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
-
-					<RevealShader revealProgressRef={revealProgressRef} targetRef={revealTargetRef} />
 				</Canvas>
 			</Suspense>
 
