@@ -17,7 +17,7 @@ import { BombZone } from "./BombZone";
 import { GrowingSphere } from "./GrowingSphere";
 import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundTransition } from "./BackgroundTransition";
-import ShaderTransition from "./ShaderTransition";
+import { ShaderTransition } from "./ShaderTransition";
 
 type BonusSphere = {
 	id: string;

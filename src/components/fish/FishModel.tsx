@@ -96,7 +96,7 @@ export const FishModel = ({ fishRef, setIsInBombZone, setCountdown }: FishModelP
 			camera.position.set(GRID_CENTER.x, isMobile ? 40 : 30, GRID_CENTER.z);
 			camera.lookAt(GRID_CENTER);
 		} else {
-			camera.position.set(fishPosition.x, 17, fishPosition.z + 14);
+			camera.position.set(fishPosition.x, 20, fishPosition.z + 14);
 			camera.lookAt(fishPosition);
 		}
 
