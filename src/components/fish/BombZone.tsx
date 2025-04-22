@@ -11,9 +11,14 @@ interface BombZoneProps {
 	isInBombZone: boolean;
 	bombActive: boolean;
 	isGameOver: boolean;
-	feeds: { id: string; position: [number, number, number] }[];
-	setFeeds: React.Dispatch<React.SetStateAction<{ id: string; position: [number, number, number] }[]>>;
+	feeds: Feed[];
+	setFeeds: React.Dispatch<React.SetStateAction<Feed[]>>;
+	countdown: number | null;
+	setCountdown: React.Dispatch<React.SetStateAction<number | null>>;
+	setBombActive: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
+type Feed = { id: string; position: [number, number, number] };
 
 const CELL_SIZE = 6;
 const GRID_HALF = 3;
@@ -23,93 +28,57 @@ const CELLS: [number, number, number][] = Array.from({ length: (GRID_HALF * 2 + 
 	return [x * CELL_SIZE, 0.1, z * CELL_SIZE];
 });
 
-const GrowingFeed = ({
-	position,
+export const BombZone = ({
 	fishRef,
-	onCollected,
+	setIsGameOver,
+	setIsInBombZone,
+	isInBombZone,
+	bombActive,
 	isGameOver,
-	onExpire,
-}: {
-	position: [number, number, number];
-	fishRef: React.RefObject<Object3D>;
-	onCollected: () => void;
-	isGameOver: boolean;
-	onExpire: () => void;
-}) => {
-	const meshRef = useRef<Mesh>(null);
-	const scaleRef = useRef(0.1);
-
-	const MAX_SCALE = 1;
-	const MIN_SCALE = 0;
-	const INCREASE_FEED_SPEED = 0.005;
-	const DECREASE_FEED_SPEED = 0.05;
-
-	const [isVisible, setIsVisible] = useState(true);
-
-	// 최대 크기에서 0.5초 대기
-	useEffect(() => {
-		if (scaleRef.current >= MAX_SCALE) {
-			setTimeout(shrinkFeed, 500);
-		}
-	}, [scaleRef.current]);
-
-	useFrame(() => {
-		if (isGameOver || !meshRef.current || !fishRef.current || !isVisible) return;
-
-		// scale 증가
-		if (scaleRef.current < MAX_SCALE) {
-			scaleRef.current += INCREASE_FEED_SPEED;
-			if (meshRef.current) {
-				meshRef.current.scale.setScalar(scaleRef.current);
-			}
-		}
-
-		// 충돌 감지
-		const feedPos = meshRef.current.position;
-		const fishPos = fishRef.current.position;
-		const dist = feedPos.distanceTo(fishPos);
-		if (dist < 1.5) {
-			onCollected();
-		}
-	});
-
-	// scale 감소
-	const shrinkFeed = () => {
-		if (!meshRef.current || isGameOver || !isVisible) return;
-
-		const shrinkInterval = setInterval(() => {
-			if (scaleRef.current <= MIN_SCALE) {
-				clearInterval(shrinkInterval);
-				setIsVisible(false);
-				onExpire();
-			} else {
-				scaleRef.current = Math.max(MIN_SCALE, scaleRef.current - DECREASE_FEED_SPEED);
-				meshRef.current.scale.setScalar(scaleRef.current);
-			}
-		}, 1000 / 60);
-	};
-
-	useEffect(() => {
-		if (meshRef.current) {
-			meshRef.current.position.set(...position);
-		}
-	}, [position]);
-
-	if (!isVisible) return null;
-	return (
-		<mesh ref={meshRef}>
-			<sphereGeometry args={[0.5, 16, 16]} />
-			<meshStandardMaterial color="limegreen" />
-		</mesh>
-	);
-};
-
-export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone, bombActive, isGameOver, feeds, setFeeds }: BombZoneProps) => {
+	feeds,
+	setFeeds,
+	countdown,
+	setCountdown,
+	setBombActive,
+}: BombZoneProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const score = useFishStore((state) => state.score);
 	const meshRefs = useRef<Mesh[]>([]);
 	const [activeBombs, setActiveBombs] = useState<Set<number>>(new Set());
 
+	// 폭탄 카운트다운
+	useEffect(() => {
+		let isCancelled = false;
+
+		const countdownAsync = async () => {
+			let current = countdown;
+			while (current && current > 0 && !isCancelled) {
+				await new Promise((res) => setTimeout(res, 1000));
+				current--;
+				setCountdown(current);
+			}
+			if (!isCancelled) {
+				setCountdown(null);
+				setBombActive(true);
+			}
+		};
+
+		if (countdown !== null) countdownAsync();
+		return () => {
+			isCancelled = true;
+		};
+	}, [countdown]);
+
+	// 생존 점수
+	useEffect(() => {
+		if (!bombActive || !isInBombZone || isGameOver) return;
+		const interval = setInterval(() => {
+			useFishStore.setState((state) => ({ score: state.score + 1 }));
+		}, 1000);
+		return () => clearInterval(interval);
+	}, [bombActive, isInBombZone, isGameOver]);
+
+	// 먹이 자동 생성
 	useEffect(() => {
 		if (!bombActive || isGameOver || !isInBombZone || feeds.length > 0) return;
 
@@ -131,7 +100,6 @@ export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone
 	// 폭탄 애니메이션
 	const animateCell = useCallback(
 		async (color: any, fish: Object3D, index: number) => {
-			// 중복 연속 폭탄 타일 방지
 			if (activeBombs.has(index)) return;
 
 			await gsap.to(color, {
@@ -186,7 +154,6 @@ export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone
 		const bombWave = Math.min(1 + Math.floor(score / 20), 3);
 
 		const launch = () => {
-			// 중복 연속 폭탄 타일 방지
 			const indexes = [...Array(CELLS.length).keys()].filter((index) => !activeBombs.has(index));
 
 			for (let i = 0; i < bombWave; i++) {
@@ -203,28 +170,8 @@ export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone
 		return () => clearInterval(interval);
 	}, [animateCell, checkCollision, bombActive, isGameOver, score, fishRef, activeBombs]);
 
-	// 먹이 재생성
-	useEffect(() => {
-		if (feeds.length === 0) {
-			const resetTimeout = setTimeout(() => {
-				if (!bombActive || !isInBombZone) return;
-
-				const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
-				const z = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE;
-				const newFeed = {
-					id: crypto.randomUUID(),
-					position: [x, 1, z] as [number, number, number],
-				};
-				setFeeds([newFeed]);
-			}, 500);
-
-			return () => clearTimeout(resetTimeout);
-		}
-	}, [feeds, setFeeds, bombActive, isInBombZone]);
-
 	return (
 		<>
-			{/* Bomb Zone */}
 			<group position={[-50, 0, 0]}>
 				{CELLS.map((pos, i) => (
 					<group key={i} position={pos}>
@@ -240,7 +187,6 @@ export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone
 				))}
 			</group>
 
-			{/* 먹이 생성 */}
 			{feeds.map(({ id, position }) => (
 				<GrowingFeed
 					key={id}
@@ -262,25 +208,120 @@ export const BombZone = ({ fishRef, setIsGameOver, setIsInBombZone, isInBombZone
 							setFeeds([newFeed]);
 						}, 500);
 
-						// score 배율
 						const currentScale = useFishStore.getState().fishScale;
 						const scoreGain = Math.floor(currentScale * 20);
 						useFishStore.setState((state) => ({ score: state.score + scoreGain }));
 
-						// scale 배율
 						const added = 0.1 * Math.exp(-currentScale);
 						const newScale = Math.min(3, parseFloat((currentScale + added).toFixed(2)));
 						useFishStore.getState().setFishScale(newScale);
 
-						// speed 배율
 						const newSpeed = Math.max(10, 50 - newScale * 8);
 						useFishStore.getState().setFishSpeed(parseFloat(newSpeed.toFixed(2)));
 					}}
-					onExpire={() => {
-						setFeeds([]);
-					}}
+					onExpire={() => setFeeds([])}
 				/>
 			))}
 		</>
+	);
+};
+
+export const resetGameState = (
+	fishRef: React.RefObject<Object3D>,
+	setIsGameOver: React.Dispatch<React.SetStateAction<boolean>>,
+	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>,
+	setBombActive: React.Dispatch<React.SetStateAction<boolean>>,
+	setScore: (value: number) => void,
+	setCountdown: React.Dispatch<React.SetStateAction<number | null>>,
+	setFeeds: React.Dispatch<React.SetStateAction<Feed[]>>
+) => {
+	if (fishRef.current) {
+		fishRef.current.position.set(0, 1, 0);
+	}
+	setIsGameOver(false);
+	setIsInBombZone(false);
+	setBombActive(false);
+	setScore(0);
+	setCountdown(null);
+	setFeeds([]);
+	useFishStore.getState().setFishScale(1);
+	useFishStore.getState().setFishSpeed(50);
+};
+
+const GrowingFeed = ({
+	position,
+	fishRef,
+	onCollected,
+	isGameOver,
+	onExpire,
+}: {
+	position: [number, number, number];
+	fishRef: React.RefObject<Object3D>;
+	onCollected: () => void;
+	isGameOver: boolean;
+	onExpire: () => void;
+}) => {
+	const meshRef = useRef<Mesh>(null);
+	const scaleRef = useRef(0.1);
+
+	const MAX_SCALE = 1;
+	const MIN_SCALE = 0;
+	const INCREASE_FEED_SPEED = 0.005;
+	const DECREASE_FEED_SPEED = 0.05;
+
+	const [isVisible, setIsVisible] = useState(true);
+
+	// 최대 크기에서 0.5초 대기
+	useEffect(() => {
+		if (scaleRef.current >= MAX_SCALE) {
+			setTimeout(shrinkFeed, 500);
+		}
+	}, [scaleRef.current]);
+
+	useFrame(() => {
+		if (isGameOver || !meshRef.current || !fishRef.current || !isVisible) return;
+
+		// scale 증가
+		if (scaleRef.current < MAX_SCALE) {
+			scaleRef.current += INCREASE_FEED_SPEED;
+			meshRef.current.scale.setScalar(scaleRef.current);
+		}
+
+		// 충돌 감지
+		const feedPos = meshRef.current.position;
+		const fishPos = fishRef.current.position;
+		const dist = feedPos.distanceTo(fishPos);
+		if (dist < 1.5) {
+			onCollected();
+		}
+	});
+
+	const shrinkFeed = () => {
+		if (!meshRef.current || isGameOver || !isVisible) return;
+
+		const shrinkInterval = setInterval(() => {
+			if (scaleRef.current <= MIN_SCALE) {
+				clearInterval(shrinkInterval);
+				setIsVisible(false);
+				onExpire();
+			} else {
+				scaleRef.current = Math.max(MIN_SCALE, scaleRef.current - DECREASE_FEED_SPEED);
+				meshRef.current.scale.setScalar(scaleRef.current);
+			}
+		}, 1000 / 60);
+	};
+
+	useEffect(() => {
+		if (meshRef.current) {
+			meshRef.current.position.set(...position);
+		}
+	}, [position]);
+
+	if (!isVisible) return null;
+	return (
+		<mesh ref={meshRef}>
+			<sphereGeometry args={[0.5, 16, 16]} />
+			<meshStandardMaterial color="limegreen" />
+		</mesh>
 	);
 };

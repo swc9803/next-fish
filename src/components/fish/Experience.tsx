@@ -13,7 +13,7 @@ import { FishModel } from "./FishModel";
 import { FishConfig } from "./FishConfig";
 import { Ground } from "./Ground";
 import { ClickHandler } from "./ClickHandler";
-import { BombZone } from "./BombZone";
+import { BombZone, resetGameState } from "./BombZone";
 import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundTransition } from "./BackgroundTransition";
 import { ShaderTransition } from "./ShaderTransition";
@@ -55,55 +55,9 @@ const Experience = () => {
 		if (loadingComplete) renderTarget.dispose();
 	}, [loadingComplete]);
 
-	// 생존 점수
-	useEffect(() => {
-		if (!bombActive || !isInBombZone || isGameOver) return;
-
-		const interval = setInterval(() => {
-			useFishStore.setState((state) => ({ score: state.score + 1 }));
-		}, 1000);
-
-		return () => clearInterval(interval);
-	}, [bombActive, isInBombZone, isGameOver]);
-
-	// 폭탄 카운트다운
-	useEffect(() => {
-		let isCancelled = false;
-
-		const countdownAsync = async () => {
-			let current = countdown;
-			while (current && current > 0 && !isCancelled) {
-				await new Promise((res) => setTimeout(res, 1000));
-				current--;
-				setCountdown(current);
-			}
-
-			if (!isCancelled) {
-				setCountdown(null);
-				setBombActive(true);
-			}
-		};
-
-		if (countdown !== null) countdownAsync();
-
-		return () => {
-			isCancelled = true;
-		};
-	}, [countdown]);
-
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
-		if (fishRef.current) {
-			fishRef.current.position.set(0, 1, 0);
-		}
-		setIsGameOver(false);
-		setIsInBombZone(false);
-		setBombActive(false);
-		setScore(0);
-		setCountdown(null);
-		setFeeds([]);
-		useFishStore.getState().setFishScale(1);
-		useFishStore.getState().setFishSpeed(50);
+		resetGameState(fishRef, setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
 	}, []);
 
 	return (
@@ -141,6 +95,9 @@ const Experience = () => {
 							isGameOver={isGameOver}
 							feeds={feeds}
 							setFeeds={setFeeds}
+							countdown={countdown}
+							setCountdown={setCountdown}
+							setBombActive={setBombActive}
 						/>
 						<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 					</>
