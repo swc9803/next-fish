@@ -46,10 +46,17 @@ export const BombZone = ({
 	const meshRefs = useRef<Mesh[]>([]);
 	const [activeBombs, setActiveBombs] = useState<Set<number>>(new Set());
 
+	const bombSpawnIntervalRef = useRef(Math.max(500, 2500 - score * 15));
+	const bombSpawnCountRef = useRef(Math.max(3, Math.min(1 + Math.floor(score / 15), 5)));
+
+	useEffect(() => {
+		bombSpawnIntervalRef.current = Math.max(500, 2500 - score * 15);
+		bombSpawnCountRef.current = Math.max(3, Math.min(1 + Math.floor(score / 15), 5));
+	}, [score]);
+
 	// 폭탄 카운트다운
 	useEffect(() => {
 		let isCancelled = false;
-
 		const countdownAsync = async () => {
 			let current = countdown;
 			while (current && current > 0 && !isCancelled) {
@@ -62,7 +69,6 @@ export const BombZone = ({
 				setBombActive(true);
 			}
 		};
-
 		if (countdown !== null) countdownAsync();
 		return () => {
 			isCancelled = true;
@@ -81,7 +87,6 @@ export const BombZone = ({
 	// 먹이 자동 생성
 	useEffect(() => {
 		if (!bombActive || isGameOver || !isInBombZone || feeds.length > 0) return;
-
 		const interval = setInterval(() => {
 			if (feeds.length === 0) {
 				const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
@@ -93,34 +98,8 @@ export const BombZone = ({
 				setFeeds([newFeed]);
 			}
 		}, 1000);
-
 		return () => clearInterval(interval);
 	}, [bombActive, isGameOver, isInBombZone, feeds, setFeeds]);
-
-	// 폭탄 애니메이션
-	const animateCell = useCallback(
-		async (color: any, fish: Object3D, index: number) => {
-			if (activeBombs.has(index)) return;
-
-			await gsap.to(color, {
-				r: 1,
-				g: 0,
-				b: 0,
-				duration: 3,
-				ease: "power1.inOut",
-			});
-
-			setActiveBombs((prev) => new Set(prev.add(index)));
-
-			if (checkCollision(fish, index)) {
-				setIsGameOver(true);
-				setIsInBombZone(false);
-			}
-
-			color.set("white");
-		},
-		[fishScale, activeBombs]
-	);
 
 	// 충돌 검사
 	const checkCollision = useCallback(
@@ -143,32 +122,55 @@ export const BombZone = ({
 		[fishScale]
 	);
 
+	const animateCells = (indexes: number[], fish: Object3D) => {
+		const newActive = new Set(activeBombs);
+
+		indexes.forEach((index) => {
+			if (newActive.has(index)) return;
+			const mesh = meshRefs.current[index];
+			if (!mesh) return;
+			const color = (mesh.material as MeshStandardMaterial).color;
+			gsap.to(color, { r: 1, g: 0, b: 0, duration: 3, ease: "power1.inOut" });
+			newActive.add(index);
+		});
+
+		setActiveBombs(newActive);
+
+		setTimeout(() => {
+			indexes.forEach((index) => {
+				const mesh = meshRefs.current[index];
+				if (mesh) {
+					const color = (mesh.material as MeshStandardMaterial).color;
+					color.set("white");
+				}
+
+				if (!mesh || !fish) return;
+
+				if (checkCollision(fish, index)) {
+					setIsGameOver(true);
+					setIsInBombZone(false);
+				}
+			});
+		}, 3000);
+	};
+
 	// 폭탄 생성
 	useEffect(() => {
 		if (!bombActive || isGameOver) return;
-
 		const fish = fishRef.current;
 		if (!fish) return;
-
-		const intervalTime = Math.max(1000, 2500 - score * 10);
-		const bombWave = Math.min(1 + Math.floor(score / 20), 3);
-
-		const launch = () => {
-			const indexes = [...Array(CELLS.length).keys()].filter((index) => !activeBombs.has(index));
-
-			for (let i = 0; i < bombWave; i++) {
-				const index = indexes.splice(Math.floor(Math.random() * indexes.length), 1)[0];
-				const mesh = meshRefs.current[index];
-				if (!mesh) continue;
-				const color = (mesh.material as MeshStandardMaterial).color;
-				animateCell(color, fish, index);
+		const intervalId = setInterval(() => {
+			const indexes = [...Array(CELLS.length).keys()].filter((i) => !activeBombs.has(i));
+			if (indexes.length === 0) return;
+			const selected: number[] = [];
+			for (let i = 0; i < bombSpawnCountRef.current && indexes.length > 0; i++) {
+				const idx = indexes.splice(Math.floor(Math.random() * indexes.length), 1)[0];
+				selected.push(idx);
 			}
-		};
-
-		launch();
-		const interval = setInterval(launch, intervalTime);
-		return () => clearInterval(interval);
-	}, [animateCell, checkCollision, bombActive, isGameOver, score, fishRef, activeBombs]);
+			animateCells(selected, fish);
+		}, bombSpawnIntervalRef.current);
+		return () => clearInterval(intervalId);
+	}, [bombActive, isGameOver, fishRef]);
 
 	return (
 		<>
@@ -195,9 +197,7 @@ export const BombZone = ({
 					isGameOver={isGameOver}
 					onCollected={() => {
 						if (isGameOver) return;
-
 						setFeeds([]);
-
 						setTimeout(() => {
 							const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
 							const z = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE;
@@ -207,15 +207,12 @@ export const BombZone = ({
 							};
 							setFeeds([newFeed]);
 						}, 500);
-
 						const currentScale = useFishStore.getState().fishScale;
 						const scoreGain = Math.floor(currentScale * 20);
 						useFishStore.setState((state) => ({ score: state.score + scoreGain }));
-
 						const added = 0.1 * Math.exp(-currentScale);
 						const newScale = Math.min(3, parseFloat((currentScale + added).toFixed(2)));
 						useFishStore.getState().setFishScale(newScale);
-
 						const newSpeed = Math.max(10, 50 - newScale * 8);
 						useFishStore.getState().setFishSpeed(parseFloat(newSpeed.toFixed(2)));
 					}}
@@ -274,7 +271,7 @@ const GrowingFeed = ({
 	// 최대 크기에서 0.5초 대기
 	useEffect(() => {
 		if (scaleRef.current >= MAX_SCALE) {
-			setTimeout(shrinkFeed, 500);
+			setTimeout(decreaseFeed, 500);
 		}
 	}, [scaleRef.current]);
 
@@ -291,15 +288,20 @@ const GrowingFeed = ({
 		const feedPos = meshRef.current.position;
 		const fishPos = fishRef.current.position;
 		const dist = feedPos.distanceTo(fishPos);
-		if (dist < 1.5) {
+		if (dist < 1.5 && isVisible) {
+			setIsVisible(false);
 			onCollected();
 		}
 	});
 
-	const shrinkFeed = () => {
+	const decreaseFeed = () => {
 		if (!meshRef.current || isGameOver || !isVisible) return;
 
 		const shrinkInterval = setInterval(() => {
+			if (!meshRef.current || !isVisible) {
+				clearInterval(shrinkInterval);
+				return;
+			}
 			if (scaleRef.current <= MIN_SCALE) {
 				clearInterval(shrinkInterval);
 				setIsVisible(false);
