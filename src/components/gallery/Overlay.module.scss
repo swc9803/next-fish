@@ -8,46 +8,27 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
-	transition: opacity 0.5s ease, transform 0.5s ease;
-	// will-change: opacity, transform;
-	// opacity: 0;
-	// transform: translateY(10px);
 	pointer-events: none;
-	// &.hidden {
-	// .back_button {
-	// opacity: 0;
-	// transform: translateY(10px);
-	// }
-	// }
 	&.show {
-		opacity: 1;
-		transform: translateY(0);
-	}
-	.logo {
-		width: 10rem;
-		margin: 2rem auto;
-	}
-	.navigation {
-		position: absolute;
-		top: 0;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 1rem;
-		button {
-			pointer-events: auto;
-			svg {
-				width: 2.5rem;
-				height: 2.5rem;
-				transition: opacity 0.3s ease-in-out;
-				&:hover {
-					opacity: 0.6;
-				}
-			}
+		.logo,
+		.slide_navigation,
+		.content {
+			opacity: 1;
 		}
+	}
+	&.disabled {
+		.view_toggle_button,
+		.back_button,
+		.slide_navigation button {
+			pointer-events: none;
+		}
+	}
+	.logo,
+	.slide_navigation,
+	.content {
+		opacity: 0;
+		will-change: opacity;
+		transition: 0.5s ease-out;
 	}
 	.view_toggle_button {
 		position: absolute;
@@ -55,9 +36,11 @@
 		right: 20px;
 		pointer-events: auto;
 		border-radius: 1.5rem;
+		z-index: 1;
 		.switch {
 			position: relative;
 			padding: 0.3125rem 2.375rem;
+			min-width: 9.75rem;
 			border: 1px solid #666;
 			border-radius: 1.5rem;
 			background: #222;
@@ -65,7 +48,7 @@
 			&.free {
 				background: #fff;
 				.knob {
-					transform: translate3d(7.1875rem, 0, 0);
+					transform: translate3d(7.75rem, 0, 0);
 				}
 			}
 			.knob {
@@ -87,7 +70,6 @@
 			}
 		}
 	}
-
 	.back_button {
 		position: absolute;
 		top: 20px;
@@ -96,12 +78,45 @@
 		height: 2.25rem;
 		border-radius: 50%;
 		pointer-events: auto;
+		transform: translate3d(120%, 0, 0);
+		will-change: opacity, transform;
+		transition: 0.2s ease-out;
+		&.show {
+			opacity: 1;
+			transform: translate3d(0, 0, 0);
+		}
 		svg {
 			width: 100%;
 			height: 100%;
 		}
 	}
-
+	.logo {
+		margin: 2rem auto;
+		width: 10rem;
+	}
+	.slide_navigation {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1rem;
+		opacity: 0;
+		button {
+			pointer-events: auto;
+			svg {
+				width: 2.5rem;
+				height: 2.5rem;
+				transition: opacity 0.3s ease-in-out;
+				&:hover {
+					opacity: 0.6;
+				}
+			}
+		}
+	}
 	.content {
 		background: linear-gradient(to top, rgba(255, 255, 255, 0.9), transparent);
 		padding: 5rem 1rem 2.5rem;
@@ -109,6 +124,7 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
+		opacity: 0;
 		h1 {
 			font-size: 3rem;
 			font-weight: 800;
