@@ -21,10 +21,9 @@ export const Overlay = (): JSX.Element | null => {
 
 		const cameFromFreeMode = !freemode && prevFreemode;
 
-		// 자유모드에서 슬라이드 모드로 변경 시 visible 유지
 		if (!freemode && cameFromFreeMode) return;
 
-		// 슬라이드 전환 시 ui 숨기는 모션
+		// ui 숨기기
 		if (!freemode) {
 			setVisible(false);
 			const timeout = setTimeout(() => {
@@ -54,8 +53,6 @@ export const Overlay = (): JSX.Element | null => {
 	const showOverlay = (!freemode && visible) || (freemode && focusIndex !== null && fadeIn);
 	const overlayClass = `${styles.overlay} ${showOverlay ? styles.visible : ""}`;
 
-	if (!isOverlayVisible && freemode) return null;
-
 	return (
 		<div className={overlayClass}>
 			<svg className={styles.logo} viewBox="0 0 342 35" xmlns="http://www.w3.org/2000/svg">
@@ -65,22 +62,49 @@ export const Overlay = (): JSX.Element | null => {
 				/>
 			</svg>
 
+			{/* slide, free mode 토글 버튼 */}
+			<button
+				className={styles.view_toggle_button}
+				onClick={() => {
+					setFocusIndex(null);
+					setFreemode(!freemode);
+				}}
+				aria-label={freemode ? "슬라이드 모드로 변경" : "자유 모드로 변경"}
+				type="button"
+			>
+				<div className={`${styles.switch} ${freemode ? styles.free : ""}`}>
+					<div className={styles.knob}></div>
+					<span className={styles.label}>{freemode ? "Free View" : "Slide View"}</span>
+				</div>
+			</button>
+
 			{/* 뒤로가기 버튼 */}
 			{freemode && focusIndex !== null && (
-				<div className={styles.backButton}>
-					<button
-						onClick={() => {
-							setFocusIndex(null);
-							setFreemode(true);
-						}}
-						aria-label="뒤로가기 버튼"
-					>
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-							<path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12M6 12l4-4M6 12l4 4" />
-						</svg>
-						<span>뒤로가기</span>
-					</button>
-				</div>
+				<button
+					className={styles.back_button}
+					onClick={() => {
+						setFocusIndex(null);
+						setFreemode(true);
+					}}
+					aria-label="Back Button"
+					type="button"
+				>
+					<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<g clipPath="url(#clip0_1841_357)">
+							<circle cx="9" cy="9" r="9" fill="white" fillOpacity="0.6" />
+							<circle cx="9" cy="9" r="8.5" stroke="#111111" strokeOpacity="0.6" />
+							<path
+								d="M13 9.5C13.2761 9.5 13.5 9.27614 13.5 9C13.5 8.72386 13.2761 8.5 13 8.5V9.5ZM4.64645 8.64645C4.45118 8.84171 4.45118 9.15829 4.64645 9.35355L7.82843 12.5355C8.02369 12.7308 8.34027 12.7308 8.53553 12.5355C8.7308 12.3403 8.7308 12.0237 8.53553 11.8284L5.70711 9L8.53553 6.17157C8.7308 5.97631 8.7308 5.65973 8.53553 5.46447C8.34027 5.2692 8.02369 5.2692 7.82843 5.46447L4.64645 8.64645ZM13 8.5L5 8.5V9.5L13 9.5V8.5Z"
+								fill="#111111"
+							/>
+						</g>
+						<defs>
+							<clipPath id="clip0_1841_357">
+								<rect width="18" height="18" fill="white" />
+							</clipPath>
+						</defs>
+					</svg>
+				</button>
 			)}
 
 			{/* 슬라이드 모드 네비게이션 */}
@@ -98,17 +122,6 @@ export const Overlay = (): JSX.Element | null => {
 					</button>
 				</div>
 			)}
-
-			<div className={styles.freemodeToggle}>
-				<button
-					onClick={() => {
-						setFocusIndex(null);
-						setFreemode(!freemode);
-					}}
-				>
-					{freemode ? "슬라이드 모드" : "자유 모드"}로 변경
-				</button>
-			</div>
 
 			<div className={styles.content}>
 				<h1>{slideArray[activeSlideIndex].name}</h1>

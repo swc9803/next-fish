@@ -11,6 +11,7 @@
 
 overlay 디자인 수정 및 visible 타이밍 수정
 ground - MeshReflectorMaterial 값 조정
+슬라이드 줌인 상태에서 클릭 시 링크 이동
 
 # 확인 할 것
 

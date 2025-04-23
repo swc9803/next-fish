@@ -10,12 +10,14 @@
 	justify-content: space-between;
 	transition: opacity 0.5s ease, transform 0.5s ease;
 	// will-change: opacity, transform;
-	opacity: 0;
-	transform: translateY(10px);
+	// opacity: 0;
+	// transform: translateY(10px);
 	pointer-events: none;
 	&.hidden {
-		opacity: 0;
-		transform: translateY(10px);
+		&.back_button {
+			// opacity: 0;
+			// transform: translateY(10px);
+		}
 	}
 	&.visible {
 		opacity: 1;
@@ -47,20 +49,59 @@
 			}
 		}
 	}
-	.freemodeToggle {
+	.view_toggle_button {
 		position: absolute;
-		bottom: 20px;
+		top: 20px;
 		right: 20px;
-		button {
-			padding: 8px 16px;
-			border: 1px solid white;
-			border-radius: 8px;
-			background: rgba(255, 255, 255, 0.1);
-			color: white;
-			cursor: pointer;
-			pointer-events: auto;
+		pointer-events: auto;
+		border-radius: 1.5rem;
+		.switch {
+			position: relative;
+			padding: 0.3125rem 2.125rem;
+			border: 1px solid #666;
+			border-radius: 1.5rem;
+			background: #222;
+			transition: background 0.3s;
+			&.free {
+				background: #fff;
+				.knob {
+					transform: translate3d(7.1875rem, 0, 0);
+				}
+			}
+			.knob {
+				position: absolute;
+				top: 0.1875rem;
+				left: 0;
+				transform: translate3d(0.125rem, 0, 0);
+				width: 1.75rem;
+				height: 1.75rem;
+				border-radius: 50%;
+				background: rgb(212, 212, 212);
+				transition: transform 0.3s ease-out;
+				z-index: 1;
+			}
+			.label {
+				color: #fff;
+				mix-blend-mode: difference;
+				font-size: 1rem;
+			}
 		}
 	}
+
+	.back_button {
+		position: absolute;
+		top: 20px;
+		right: 11rem;
+		width: 2.25rem;
+		height: 2.25rem;
+		border-radius: 50%;
+		pointer-events: auto;
+		svg {
+			width: 100%;
+			height: 100%;
+		}
+	}
+
 	.content {
 		background: linear-gradient(to top, rgba(255, 255, 255, 0.9), transparent);
 		padding: 5rem 1rem 2.5rem;
@@ -103,29 +144,6 @@
 					opacity: 0.8;
 				}
 			}
-		}
-	}
-}
-
-.backButton {
-	position: absolute;
-	top: 20px;
-	right: 20px;
-	z-index: 10;
-	button {
-		display: flex;
-		align-items: center;
-		background: rgba(255, 255, 255, 0.85);
-		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 8px;
-		cursor: pointer;
-		pointer-events: auto;
-		font-weight: bold;
-		svg {
-			width: 20px;
-			height: 20px;
-			margin-right: 6px;
 		}
 	}
 }
