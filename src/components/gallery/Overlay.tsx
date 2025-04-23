@@ -1,60 +1,20 @@
 "use client";
 
 import styles from "./Overlay.module.scss";
-import { useEffect, useRef, useState, JSX } from "react";
+import { JSX } from "react";
 import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const Overlay = (): JSX.Element | null => {
-	const { slide, setSlide, freemode, setFreemode, focusIndex, setFocusIndex, isSliding } = useGallerySlide();
-
-	const [visible, setVisible] = useState(false);
-	const [fadeIn, setFadeIn] = useState(false);
-
-	const [isOverlayVisible, setIsOverlayVisible] = useState(true);
-
-	const prevModeRef = useRef(freemode);
-
-	useEffect(() => {
-		const prevFreemode = prevModeRef.current;
-		prevModeRef.current = freemode;
-
-		const cameFromFreeMode = !freemode && prevFreemode;
-
-		if (!freemode && cameFromFreeMode) return;
-
-		// ui 숨기기
-		if (!freemode) {
-			setVisible(false);
-			const timeout = setTimeout(() => {
-				setVisible(true);
-			}, 2600);
-			return () => clearTimeout(timeout);
-		}
-	}, [slide, freemode]);
-
-	useEffect(() => {
-		if (!freemode) return;
-
-		if (focusIndex !== null) {
-			setIsOverlayVisible(true);
-			setFadeIn(false);
-			const timeout = setTimeout(() => setFadeIn(true), 50);
-			return () => clearTimeout(timeout);
-		}
-
-		setFadeIn(false);
-		const timeout = setTimeout(() => setIsOverlayVisible(false), 500);
-		return () => clearTimeout(timeout);
-	}, [freemode, focusIndex]);
+	const { slide, setSlide, freemode, setFreemode, focusIndex, setFocusIndex } = useGallerySlide();
 
 	const activeSlideIndex = focusIndex !== null ? focusIndex : slide;
 
-	const showOverlay = (!freemode && visible) || (freemode && focusIndex !== null && fadeIn);
-	const overlayClass = `${styles.overlay} ${showOverlay ? styles.visible : ""}`;
+	// zoom-in 상태에서만 show
+	const showOverlay = freemode && focusIndex !== null;
 
 	return (
-		<div className={overlayClass}>
+		<div className={`${styles.overlay} ${showOverlay ? styles.show : ""}`}>
 			<svg className={styles.logo} viewBox="0 0 342 35" xmlns="http://www.w3.org/2000/svg">
 				<path
 					d="M0 .1a9.7 9.7 0 0 0 7 7h11l.5.1v27.6h6.8V7.3L26 7h11a9.8 9.8 0 0 0 7-7H0zm238.6 0h-6.8v34.8H263a9.7 9.7 0 0 0 6-6.8h-30.3V0zm-52.3 6.8c3.6-1 6.6-3.8 7.4-6.9l-38.1.1v20.6h31.1v7.2h-24.4a13.6 13.6 0 0 0-8.7 7h39.9v-21h-31.2v-7h24zm116.2 28h6.7v-14h24.6v14h6.7v-21h-38zM85.3 7h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7zm0 13.8h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7zm0 14.1h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7zM308.5 7h26a9.9 9.9 0 0 0 7-7h-40a9.9 9.9 0 0 0 7 7z"
@@ -72,12 +32,12 @@ export const Overlay = (): JSX.Element | null => {
 					}
 					setFreemode(!freemode);
 				}}
-				aria-label={freemode ? "슬라이드 모드로 변경" : "자유 모드로 변경"}
+				aria-label={freemode ? "Change To Slide View mode" : "Change To Free View mode"}
 				type="button"
 			>
 				<div className={`${styles.switch} ${freemode ? styles.free : ""}`}>
-					<div className={styles.knob}></div>
-					<span className={styles.label}>{freemode ? "Free View" : "Slide View"}</span>
+					<div className={styles.knob} />
+					<p className={styles.label}>{freemode ? "Free View" : "Slide View"}</p>
 				</div>
 			</button>
 
@@ -113,12 +73,12 @@ export const Overlay = (): JSX.Element | null => {
 			{/* 슬라이드 모드 네비게이션 */}
 			{!freemode && (
 				<div className={styles.navigation}>
-					<button onClick={() => setSlide(slide > 0 ? slide - 1 : slideArray.length - 1)} aria-label="이전 슬라이드 버튼" disabled={isSliding}>
+					<button onClick={() => setSlide(slide > 0 ? slide - 1 : slideArray.length - 1)} aria-label="previous slide button">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
 						</svg>
 					</button>
-					<button onClick={() => setSlide(slide < slideArray.length - 1 ? slide + 1 : 0)} aria-label="다음 슬라이드 버튼" disabled={isSliding}>
+					<button onClick={() => setSlide(slide < slideArray.length - 1 ? slide + 1 : 0)} aria-label="next slide button">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
 						</svg>

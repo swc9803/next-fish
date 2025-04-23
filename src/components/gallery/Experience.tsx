@@ -18,6 +18,7 @@ export const Experience = (): JSX.Element | null => {
 	const [cameraRadius, setCameraRadius] = useState<number | undefined>(undefined);
 	const [slideGap, setSlideGap] = useState<number | undefined>(undefined);
 
+	// 반응형
 	const slideWidth = useMemo(() => {
 		if (cameraRadius === undefined) return 0;
 		return 2 * cameraRadius * Math.tan(fov / 2) * aspect;

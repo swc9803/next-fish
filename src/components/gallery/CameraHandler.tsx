@@ -21,23 +21,25 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 	const { slide, setSlide, freemode, focusIndex, setLastFocusTarget, lastFocusTarget, setIsSliding, setIsZoom } = useGallerySlide();
 	const zoomOutRadius = cameraRadius + 2;
 
+	// 슬라이드 인덱스에 해당하는 카메라 위치 계산
 	const getCameraPosition = (targetX: number, targetZ: number, angleInRadians: number, radius: number) => ({
 		x: targetX + radius * Math.sin(angleInRadians + Math.PI),
 		z: targetZ + radius * Math.cos(angleInRadians + Math.PI),
 	});
 
+	// 슬라이드 이동
 	const moveToSlide = async (targetIndex: number, isInitial = false, skipZoom = false) => {
 		if (!cameraControlsRef.current || freemode) return;
 		setIsSliding(true);
 
 		const { x: targetX, z: targetZ, angleInRadians: targetAngle } = getSlidePosition(targetIndex, totalRadius);
-		const closeCameraPos = getCameraPosition(targetX, targetZ, targetAngle, cameraRadius);
+		const nearCameraPos = getCameraPosition(targetX, targetZ, targetAngle, cameraRadius);
 		const farCameraPos = getCameraPosition(targetX, targetZ, targetAngle, zoomOutRadius);
 
 		setLastFocusTarget({ x: targetX, z: targetZ });
 
 		if (isInitial || skipZoom) {
-			cameraControlsRef.current.setLookAt(closeCameraPos.x, 0, closeCameraPos.z, targetX, 0, targetZ, !isInitial);
+			cameraControlsRef.current.setLookAt(nearCameraPos.x, 0, nearCameraPos.z, targetX, 0, targetZ, !isInitial);
 			setIsSliding(false);
 			return;
 		}
@@ -52,27 +54,13 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 		// 회전
 		await cameraControlsRef.current.setLookAt(farCameraPos.x, 0, farCameraPos.z, targetX, 0, targetZ, true);
 		// 줌 인
-		await cameraControlsRef.current.setLookAt(closeCameraPos.x, 0, closeCameraPos.z, targetX, 0, targetZ, true);
+		await cameraControlsRef.current.setLookAt(nearCameraPos.x, 0, nearCameraPos.z, targetX, 0, targetZ, true);
 
 		setIsZoom(false);
 		setIsSliding(false);
 	};
 
-	const findClosestSlideIndex = (cameraX: number, cameraZ: number): number => {
-		let minDistance = Infinity;
-		let closestIndex = 0;
-
-		for (let i = 0; i < slideArray.length; i++) {
-			const { x, z } = getSlidePosition(i, totalRadius);
-			const distance = Math.hypot(cameraX - x, cameraZ - z);
-			if (distance < minDistance) {
-				minDistance = distance;
-				closestIndex = i;
-			}
-		}
-		return closestIndex;
-	};
-
+	// 초기 로드 시 slide view mode
 	useEffect(() => {
 		if (!hasInitializedRef.current && !freemode && focusIndex === null) {
 			if (slide === 0) moveToSlide(slide, true);
@@ -81,10 +69,10 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 		}
 	}, [freemode, focusIndex]);
 
-	// slide view mode에서 이동
+	// slide 변경 시 카메라 이동
 	useEffect(() => {
 		if (!freemode && lastSlideIndexRef.current !== slide) {
-			if (slideArray[slide] && lastSlideIndexRef.current !== slide) {
+			if (slideArray[slide]) {
 				moveToSlide(slide);
 				lastSlideIndexRef.current = slide;
 			}
@@ -104,7 +92,7 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 		if (slide === focusIndex) lastSlideIndexRef.current = slide;
 	}, [freemode, focusIndex, slide]);
 
-	// slide view mode로 변경 시 줌아웃
+	// slide view mode로 변경 시 카메라 정면에 가장 가까운 슬라이드로 이동
 	useEffect(() => {
 		const prevWasFreemode = prevFreemodeRef.current;
 		const currentIsFreemode = freemode;
@@ -113,6 +101,7 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 		const enteredFreemodeNow = !prevWasFreemode && currentIsFreemode;
 		const exitedFreemodeNow = prevWasFreemode && !currentIsFreemode;
 
+		// freemode 진입 시 카메라 뒤로 이동
 		if (enteredFreemodeNow || (freemode && focusIndex === null)) {
 			if (cameraControlsRef.current) {
 				const { x: focusX, z: focusZ } = lastFocusTarget ?? { x: 0, z: 0 };
@@ -124,16 +113,15 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 			}
 		}
 
+		// slidemode 진입 시 현재 시선 방향 기준 가장 가까운 슬라이드로 이동
 		if (exitedFreemodeNow && cameraControlsRef.current) {
 			const camera = cameraControlsRef.current.camera;
 			const direction = new Vector3();
-			camera.getWorldDirection(direction); // 시선 방향
+			camera.getWorldDirection(direction);
 
 			const cameraPos = camera.position.clone();
-			const targetPos = cameraPos.clone().add(direction.multiplyScalar(100)); // 시선 연장
-
 			let minAngle = Infinity;
-			let closestIndex = 0;
+			let nearstIndex = 0;
 
 			for (let i = 0; i < slideArray.length; i++) {
 				const { x, z } = getSlidePosition(i, totalRadius);
@@ -141,13 +129,13 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 				const angle = direction.angleTo(slideVec);
 				if (angle < minAngle) {
 					minAngle = angle;
-					closestIndex = i;
+					nearstIndex = i;
 				}
 			}
 
-			setSlide(closestIndex);
-			moveToSlide(closestIndex, false, true);
-			lastSlideIndexRef.current = closestIndex;
+			setSlide(nearstIndex);
+			moveToSlide(nearstIndex, false, true);
+			lastSlideIndexRef.current = nearstIndex;
 		}
 	}, [freemode, focusIndex, cameraRadius, lastFocusTarget]);
 

@@ -1,47 +1,42 @@
 import { create } from "zustand";
 
+interface FocusTarget {
+	x: number;
+	z: number;
+}
+
 interface GallerySlideState {
-	slide: number;
-	setSlide: (slide: number) => void;
-
 	freemode: boolean;
-	setFreemode: (freemode: boolean) => void;
-
-	isSliding: boolean;
-	setIsSliding: (v: boolean) => void;
-
+	slide: number;
 	focusIndex: number | null;
-	setFocusIndex: (index: number | null) => void;
-
-	lastFocusTarget: { x: number; z: number } | null;
-	setLastFocusTarget: (pos: { x: number; z: number }) => void;
-
-	isZoom: boolean;
-	setIsZoom: (v: boolean) => void;
-
 	hoverIndex: number | null;
+	isSliding: boolean;
+	isZoom: boolean;
+	lastFocusTarget: FocusTarget | null;
+
+	setFreemode: (mode: boolean) => void;
+	setSlide: (index: number) => void;
+	setFocusIndex: (index: number | null) => void;
 	setHoverIndex: (index: number | null) => void;
+	setIsSliding: (flag: boolean) => void;
+	setIsZoom: (flag: boolean) => void;
+	setLastFocusTarget: (target: FocusTarget) => void;
 }
 
 export const useGallerySlide = create<GallerySlideState>((set) => ({
-	slide: 0,
-	setSlide: (slide) => set({ slide }),
-
 	freemode: false,
-	setFreemode: (freemode) => set({ freemode }),
-
-	isSliding: false,
-	setIsSliding: (v) => set({ isSliding: v }),
-
+	slide: 0,
 	focusIndex: null,
-	setFocusIndex: (index) => set({ focusIndex: index }),
-
-	lastFocusTarget: null,
-	setLastFocusTarget: (pos) => set({ lastFocusTarget: pos }),
-
-	isZoom: false,
-	setIsZoom: (v) => set({ isZoom: v }),
-
 	hoverIndex: null,
+	isSliding: false,
+	isZoom: false,
+	lastFocusTarget: null,
+
+	setFreemode: (mode) => set({ freemode: mode }),
+	setSlide: (index) => set({ slide: index }),
+	setFocusIndex: (index) => set({ focusIndex: index }),
 	setHoverIndex: (index) => set({ hoverIndex: index }),
+	setIsSliding: (flag) => set({ isSliding: flag }),
+	setIsZoom: (flag) => set({ isZoom: flag }),
+	setLastFocusTarget: (target) => set({ lastFocusTarget: target }),
 }));
