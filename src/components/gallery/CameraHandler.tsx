@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, JSX } from "react";
 import { CameraControls } from "@react-three/drei";
+import { Vector3 } from "three";
+
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { getSlidePosition, slideArray } from "@/utils/slideUtils";
 
@@ -123,13 +125,29 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 		}
 
 		if (exitedFreemodeNow && cameraControlsRef.current) {
-			const { x: camX, z: camZ } = cameraControlsRef.current.camera.position;
-			const closestIndex = findClosestSlideIndex(camX, camZ);
-			if (closestIndex !== lastSlideIndexRef.current) {
-				setSlide(closestIndex);
-				moveToSlide(closestIndex, false, true);
-				lastSlideIndexRef.current = closestIndex;
+			const camera = cameraControlsRef.current.camera;
+			const direction = new Vector3();
+			camera.getWorldDirection(direction); // 시선 방향
+
+			const cameraPos = camera.position.clone();
+			const targetPos = cameraPos.clone().add(direction.multiplyScalar(100)); // 시선 연장
+
+			let minAngle = Infinity;
+			let closestIndex = 0;
+
+			for (let i = 0; i < slideArray.length; i++) {
+				const { x, z } = getSlidePosition(i, totalRadius);
+				const slideVec = new Vector3(x - cameraPos.x, 0, z - cameraPos.z).normalize();
+				const angle = direction.angleTo(slideVec);
+				if (angle < minAngle) {
+					minAngle = angle;
+					closestIndex = i;
+				}
 			}
+
+			setSlide(closestIndex);
+			moveToSlide(closestIndex, false, true);
+			lastSlideIndexRef.current = closestIndex;
 		}
 	}, [freemode, focusIndex, cameraRadius, lastFocusTarget]);
 

@@ -67,6 +67,9 @@ export const Overlay = (): JSX.Element | null => {
 				className={styles.view_toggle_button}
 				onClick={() => {
 					setFocusIndex(null);
+					if (freemode && focusIndex !== null) {
+						setSlide(focusIndex);
+					}
 					setFreemode(!freemode);
 				}}
 				aria-label={freemode ? "슬라이드 모드로 변경" : "자유 모드로 변경"}

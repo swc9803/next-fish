@@ -4,6 +4,7 @@
    쉐이더 후 바깥부터 입장 모션 추가, 다크모드 빛 약해지며 주변에 바라보는 눈, 동공 커짐
    PolyHaven, SketchFab
    groot/works
+   https://a-perspective-magazine.com/main
 2. preload 로 로딩 배경 이미지 추가
 3. SEO 최적화 ( 후순위 )
 
