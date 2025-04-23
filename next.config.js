@@ -8,9 +8,9 @@ const nextConfig = {
 			test: /\.(glsl|vs|fs)$/,
 			use: ["raw-loader"],
 		});
-
 		return config;
 	},
+	output: "standalone",
 };
 
 export default nextConfig;

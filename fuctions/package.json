@@ -1,0 +1,14 @@
+{
+	"name": "functions",
+	"engines": {
+		"node": "18"
+	},
+	"main": "index.js",
+	"dependencies": {
+		"firebase-functions": "^4.0.0",
+		"firebase-admin": "^11.0.0",
+		"next": "15",
+		"react": "^18",
+		"react-dom": "^18"
+	}
+}
