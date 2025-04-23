@@ -54,7 +54,7 @@ export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 
 			if (previousFreemode && !newFreemode) {
 				slideMoveStartTime.current = performance.now();
-				slideFromIndex.current = Math.round(currentLightIndex.current); // 🔧 여기 수정
+				slideFromIndex.current = Math.round(currentLightIndex.current);
 				slideToIndex.current = state.slide;
 				targetLightIndex.current = state.slide;
 			}
@@ -63,7 +63,7 @@ export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 		});
 
 		return () => unsubscribe();
-	}, []);
+	}, [freemode]);
 
 	useFrame((_, delta) => {
 		if (!bloomRef.current || !lightRef.current) return;

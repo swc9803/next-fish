@@ -73,7 +73,7 @@ export const BombZone = ({
 		return () => {
 			isCancelled = true;
 		};
-	}, [countdown]);
+	}, [countdown, setCountdown, setBombActive]);
 
 	// 생존 점수
 	useEffect(() => {
@@ -122,37 +122,35 @@ export const BombZone = ({
 		[fishScale]
 	);
 
-	const animateCells = (indexes: number[], fish: Object3D) => {
-		const newActive = new Set(activeBombs);
-
-		indexes.forEach((index) => {
-			if (newActive.has(index)) return;
-			const mesh = meshRefs.current[index];
-			if (!mesh) return;
-			const color = (mesh.material as MeshStandardMaterial).color;
-			gsap.to(color, { r: 1, g: 0, b: 0, duration: 3, ease: "power1.inOut" });
-			newActive.add(index);
-		});
-
-		setActiveBombs(newActive);
-
-		setTimeout(() => {
+	const animateCells = useCallback(
+		(indexes: number[], fish: Object3D) => {
+			const newActive = new Set(activeBombs);
 			indexes.forEach((index) => {
+				if (newActive.has(index)) return;
 				const mesh = meshRefs.current[index];
-				if (mesh) {
-					const color = (mesh.material as MeshStandardMaterial).color;
-					color.set("white");
-				}
-
-				if (!mesh || !fish) return;
-
-				if (checkCollision(fish, index)) {
-					setIsGameOver(true);
-					setIsInBombZone(false);
-				}
+				if (!mesh) return;
+				const color = (mesh.material as MeshStandardMaterial).color;
+				gsap.to(color, { r: 1, g: 0, b: 0, duration: 3, ease: "power1.inOut" });
+				newActive.add(index);
 			});
-		}, 3000);
-	};
+			setActiveBombs(newActive);
+			setTimeout(() => {
+				indexes.forEach((index) => {
+					const mesh = meshRefs.current[index];
+					if (mesh) {
+						const color = (mesh.material as MeshStandardMaterial).color;
+						color.set("white");
+					}
+					if (!mesh || !fish) return;
+					if (checkCollision(fish, index)) {
+						setIsGameOver(true);
+						setIsInBombZone(false);
+					}
+				});
+			}, 3000);
+		},
+		[activeBombs, checkCollision, setIsGameOver, setIsInBombZone]
+	);
 
 	// 폭탄 생성
 	useEffect(() => {
@@ -170,7 +168,7 @@ export const BombZone = ({
 			animateCells(selected, fish);
 		}, bombSpawnIntervalRef.current);
 		return () => clearInterval(intervalId);
-	}, [bombActive, isGameOver, fishRef]);
+	}, [bombActive, isGameOver, fishRef, activeBombs, animateCells]);
 
 	return (
 		<>
@@ -268,12 +266,30 @@ const GrowingFeed = ({
 
 	const [isVisible, setIsVisible] = useState(true);
 
+	const decreaseFeed = useCallback(() => {
+		if (!meshRef.current || isGameOver || !isVisible) return;
+		const shrinkInterval = setInterval(() => {
+			if (!meshRef.current || !isVisible) {
+				clearInterval(shrinkInterval);
+				return;
+			}
+			if (scaleRef.current <= MIN_SCALE) {
+				clearInterval(shrinkInterval);
+				setIsVisible(false);
+				onExpire();
+			} else {
+				scaleRef.current = Math.max(MIN_SCALE, scaleRef.current - DECREASE_FEED_SPEED);
+				meshRef.current.scale.setScalar(scaleRef.current);
+			}
+		}, 1000 / 60);
+	}, [isGameOver, isVisible, onExpire]);
+
 	// 최대 크기에서 0.5초 대기
 	useEffect(() => {
 		if (scaleRef.current >= MAX_SCALE) {
 			setTimeout(decreaseFeed, 500);
 		}
-	}, [scaleRef.current]);
+	}, [decreaseFeed]);
 
 	useFrame(() => {
 		if (isGameOver || !meshRef.current || !fishRef.current || !isVisible) return;
@@ -294,25 +310,6 @@ const GrowingFeed = ({
 		}
 	});
 
-	const decreaseFeed = () => {
-		if (!meshRef.current || isGameOver || !isVisible) return;
-
-		const shrinkInterval = setInterval(() => {
-			if (!meshRef.current || !isVisible) {
-				clearInterval(shrinkInterval);
-				return;
-			}
-			if (scaleRef.current <= MIN_SCALE) {
-				clearInterval(shrinkInterval);
-				setIsVisible(false);
-				onExpire();
-			} else {
-				scaleRef.current = Math.max(MIN_SCALE, scaleRef.current - DECREASE_FEED_SPEED);
-				meshRef.current.scale.setScalar(scaleRef.current);
-			}
-		}, 1000 / 60);
-	};
-
 	useEffect(() => {
 		if (meshRef.current) {
 			meshRef.current.position.set(...position);
@@ -320,6 +317,7 @@ const GrowingFeed = ({
 	}, [position]);
 
 	if (!isVisible) return null;
+
 	return (
 		<mesh ref={meshRef}>
 			<sphereGeometry args={[0.5, 16, 16]} />

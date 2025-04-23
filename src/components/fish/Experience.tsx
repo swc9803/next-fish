@@ -53,12 +53,12 @@ const Experience = () => {
 
 	useEffect(() => {
 		if (loadingComplete) renderTarget.dispose();
-	}, [loadingComplete]);
+	}, [loadingComplete, renderTarget]);
 
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
 		resetGameState(fishRef, setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
-	}, []);
+	}, [setScore]);
 
 	return (
 		<>
@@ -121,7 +121,7 @@ const Experience = () => {
 
 			{isGameOver && (
 				<div onClick={resetGame} className="gameover_overlay">
-					<h1>YOU'RE COOKED</h1>
+					<h1>YOU&apos;RE COOKED</h1>
 					<p>화면을 클릭해 다시 시작하세요</p>
 				</div>
 			)}
