@@ -45,15 +45,37 @@ export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 		}
 	}, [freemode, slide, hoverIndex]);
 
+	// free view mode에서 slide view mode로 변경
+	useEffect(() => {
+		let previousFreemode = freemode;
+
+		const unsubscribe = useGallerySlide.subscribe((state) => {
+			const newFreemode = state.freemode;
+
+			if (previousFreemode && !newFreemode) {
+				slideMoveStartTime.current = performance.now();
+				slideFromIndex.current = Math.round(currentLightIndex.current); // 🔧 여기 수정
+				slideToIndex.current = state.slide;
+				targetLightIndex.current = state.slide;
+			}
+
+			previousFreemode = newFreemode;
+		});
+
+		return () => unsubscribe();
+	}, []);
+
 	useFrame((_, delta) => {
 		if (!bloomRef.current || !lightRef.current) return;
 
 		const isSlideMode = !freemode;
 		const slideLength = slideArray.length;
 
-		const getNearestDirection = (from: number, to: number) => {
-			const diff = ((to - from + slideLength / 2) % slideLength) - slideLength / 2;
-			return diff < -slideLength / 2 ? diff + slideLength : diff;
+		const getNearestDirection = (from: number, to: number, length: number): number => {
+			let diff = (to - from) % length;
+			if (diff > length / 2) diff -= length;
+			if (diff < -length / 2) diff += length;
+			return diff;
 		};
 
 		let lightTargetIndex: number;
@@ -64,7 +86,7 @@ export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 			const t = Math.min(elapsed / SLIDE_MODE_LIGHT_MOVE_DURATION, 1);
 			const easedT = easeInOut(t);
 
-			const diff = getNearestDirection(slideFromIndex.current, slideToIndex.current);
+			const diff = getNearestDirection(slideFromIndex.current, slideToIndex.current, slideLength);
 			lightTargetIndex = (slideFromIndex.current + diff * easedT + slideLength) % slideLength;
 
 			if (t === 1) {
@@ -73,7 +95,7 @@ export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 			currentLightIndex.current = lightTargetIndex;
 		} else {
 			const ease = 1 - Math.pow(0.001, delta / FREE_MODE_LIGHT_MOVE_DURATION);
-			const diff = getNearestDirection(currentLightIndex.current, targetLightIndex.current);
+			const diff = getNearestDirection(currentLightIndex.current, targetLightIndex.current, slideLength);
 			currentLightIndex.current = (currentLightIndex.current + diff * ease + slideLength) % slideLength;
 			lightTargetIndex = currentLightIndex.current;
 		}
@@ -89,6 +111,10 @@ export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 
 		const targetY = angle + Math.PI;
 		bloomRef.current.rotation.y += (targetY - bloomRef.current.rotation.y) * easePos;
+
+		if (isSlideMode && slideMoveStartTime.current === null) {
+			currentLightIndex.current = Math.round(currentLightIndex.current);
+		}
 	});
 
 	return (
