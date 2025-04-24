@@ -19,7 +19,7 @@ interface BombZoneProps {
 	meshRefs: React.MutableRefObject<Mesh[]>;
 	hitTilesRef: React.MutableRefObject<number[]>;
 	blinkTweens: React.MutableRefObject<gsap.core.Tween[]>;
-	cellTweens: React.MutableRefObject<gsap.core.Tween[]>;
+	cellTweens: React.MutableRefObject<{ [index: number]: gsap.core.Tween | undefined }>;
 }
 
 type Feed = { id: string; position: [number, number, number] };
@@ -91,7 +91,7 @@ export const BombZone = ({
 		return () => clearInterval(interval);
 	}, [bombActive, isInBombZone, isGameOver]);
 
-	// 먹이 자동 생성
+	// 먹이 생성
 	useEffect(() => {
 		if (!bombActive || isGameOver || !isInBombZone || feeds.length > 0) return;
 		const interval = setInterval(() => {
@@ -139,11 +139,26 @@ export const BombZone = ({
 				if (newActive.has(index)) return;
 				const mesh = meshRefs.current[index];
 				if (!mesh) return;
-				const color = (mesh.material as MeshStandardMaterial).color;
-				const tween = gsap.to(color, { r: 1, g: 0, b: 0, duration: 3, ease: "power1.inOut" });
-				cellTweens.current.push(tween);
+
+				const material = mesh.material as MeshStandardMaterial;
+				const color = material.color;
+
+				if (cellTweens.current[index]) {
+					cellTweens.current[index].kill();
+				}
+
+				const tween = gsap.to(color, {
+					r: 1,
+					g: 0,
+					b: 0,
+					duration: 3,
+					ease: "power1.inOut",
+				});
+				cellTweens.current[index] = tween;
+
 				newActive.add(index);
 			});
+
 			setActiveBombs(newActive);
 
 			setTimeout(() => {
@@ -151,9 +166,17 @@ export const BombZone = ({
 				indexes.forEach((index) => {
 					const mesh = meshRefs.current[index];
 					if (mesh) {
-						const color = (mesh.material as MeshStandardMaterial).color;
+						const material = mesh.material as MeshStandardMaterial;
+						const color = material.color;
+
+						if (cellTweens.current[index]) {
+							cellTweens.current[index].kill();
+							cellTweens.current[index] = undefined;
+						}
+
 						color.set("white");
 					}
+
 					if (!mesh || !fish) return;
 					if (checkCollision(fish, index)) {
 						setIsGameOver(true);
@@ -163,7 +186,7 @@ export const BombZone = ({
 				});
 			}, 3000);
 		},
-		[activeBombs, checkCollision, setIsGameOver, setIsInBombZone, meshRefs, hitTilesRef, isGameOver]
+		[activeBombs, checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone]
 	);
 
 	// 게임 오버 시
@@ -172,8 +195,11 @@ export const BombZone = ({
 
 		blinkTweens.current.forEach((t) => t.kill());
 		blinkTweens.current = [];
-		cellTweens.current.forEach((t) => t.kill());
-		cellTweens.current = [];
+
+		Object.values(cellTweens.current).forEach((tween) => {
+			if (tween) tween.kill();
+		});
+		cellTweens.current = {};
 
 		hitTilesRef.current.forEach((index) => {
 			const mesh = meshRefs.current[index];
@@ -205,6 +231,7 @@ export const BombZone = ({
 			}
 			const indexes = [...Array(CELLS.length).keys()].filter((i) => !activeBombs.has(i));
 			if (indexes.length === 0) return;
+
 			const selected: number[] = [];
 			for (let i = 0; i < bombSpawnCountRef.current && indexes.length > 0; i++) {
 				const idx = indexes.splice(Math.floor(Math.random() * indexes.length), 1)[0];

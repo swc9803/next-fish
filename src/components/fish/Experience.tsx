@@ -32,7 +32,7 @@ const Experience = () => {
 	const planeRef = useRef<Mesh>(null);
 	const hitTilesRef = useRef<number[]>([]);
 	const blinkTweens = useRef<gsap.core.Tween[]>([]);
-	const cellTweens = useRef<gsap.core.Tween[]>([]);
+	const cellTweens = useRef<{ [index: number]: gsap.core.Tween | undefined }>({});
 	const meshRefs = useRef<Mesh[]>([]);
 
 	const renderTarget = useMemo(() => new WebGLRenderTarget(1024, 512), []);
