@@ -12,7 +12,11 @@ interface PlaneProps {
 export const Ground = ({ planeRef }: PlaneProps) => {
 	const ext = useMemo(() => (isWebPSupported() ? "webp" : "jpg"), []);
 	const texturePaths = useMemo(
-		() => [`/textures/sand/sand_02_diff_1k.${ext}`, `/textures/sand/sand_02_nor_gl_1k.${ext}`, `/textures/sand/sand_02_rough_1k.${ext}`],
+		() => [
+			`/textures/sand3/aerial_beach_01_diff_1k.${ext}`,
+			`/textures/sand3/aerial_beach_01_nor_gl_1k.${ext}`,
+			`/textures/sand3/aerial_beach_01_rough_1k.${ext}`,
+		],
 		[ext]
 	);
 
