@@ -3,7 +3,7 @@
 // library
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Mesh, Object3D, WebGLRenderTarget } from "three";
+import { Mesh, MeshStandardMaterial, Object3D, WebGLRenderTarget } from "three";
 
 // store
 import { useFishStore } from "@/store/useFishStore";
@@ -18,33 +18,25 @@ import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundWithFog } from "./BackgroundWithFog";
 import { ShaderTransition } from "./ShaderTransition";
 
-type Feed = {
-	id: string;
-	position: [number, number, number];
-};
-
 const Experience = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadingComplete, setLoadingComplete] = useState(false);
 	const [showShader, setShowShader] = useState(true);
-
-	const fishRef = useRef<Object3D>(null);
-	const planeRef = useRef<Mesh>(null);
-	const darkMode = useFishStore((state) => state.darkMode);
-
-	const backgroundColor = useFishStore((state) => state.backgroundColor);
-	const fogColor = useFishStore((state) => state.fogColor);
-	const fogDensity = useFishStore((state) => state.fogDensity);
-
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
 	const [countdown, setCountdown] = useState<number | null>(null);
 	const [bombActive, setBombActive] = useState(false);
-	const [feeds, setFeeds] = useState<Feed[]>([]);
-	const score = useFishStore((state) => state.score);
-	const setScore = useFishStore((state) => state.setScore);
+	const [feeds, setFeeds] = useState<{ id: string; position: [number, number, number] }[]>([]);
+
+	const fishRef = useRef<Object3D>(null);
+	const planeRef = useRef<Mesh>(null);
+	const hitTilesRef = useRef<number[]>([]);
+	const blinkTweens = useRef<gsap.core.Tween[]>([]);
+	const cellTweens = useRef<gsap.core.Tween[]>([]);
+	const meshRefs = useRef<Mesh[]>([]);
 
 	const renderTarget = useMemo(() => new WebGLRenderTarget(1024, 512), []);
+	const { score, setScore, darkMode, backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
 
 	// shader transition 시작 타이밍 조정
 	useEffect(() => {
@@ -63,6 +55,21 @@ const Experience = () => {
 	const resetGame = useCallback(() => {
 		resetGameState(fishRef, setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
 	}, [setScore]);
+
+	const handleReset = () => {
+		blinkTweens.current.forEach((t) => t.kill());
+		blinkTweens.current = [];
+
+		hitTilesRef.current.forEach((index) => {
+			const mesh = meshRefs.current[index];
+			if (mesh) {
+				(mesh.material as MeshStandardMaterial).color.set("white");
+			}
+		});
+		hitTilesRef.current = [];
+
+		resetGame();
+	};
 
 	return (
 		<>
@@ -102,6 +109,10 @@ const Experience = () => {
 							countdown={countdown}
 							setCountdown={setCountdown}
 							setBombActive={setBombActive}
+							meshRefs={meshRefs}
+							hitTilesRef={hitTilesRef}
+							blinkTweens={blinkTweens}
+							cellTweens={cellTweens}
 						/>
 						<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 					</>
@@ -124,7 +135,7 @@ const Experience = () => {
 			</div>
 
 			{isGameOver && (
-				<div onClick={resetGame} className="gameover_overlay">
+				<div onClick={handleReset} className="gameover_overlay">
 					<h1>YOU&apos;RE COOKED</h1>
 					<p>화면을 클릭해 다시 시작하세요</p>
 				</div>

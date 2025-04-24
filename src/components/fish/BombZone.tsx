@@ -16,6 +16,10 @@ interface BombZoneProps {
 	countdown: number | null;
 	setCountdown: React.Dispatch<React.SetStateAction<number | null>>;
 	setBombActive: React.Dispatch<React.SetStateAction<boolean>>;
+	meshRefs: React.MutableRefObject<Mesh[]>;
+	hitTilesRef: React.MutableRefObject<number[]>;
+	blinkTweens: React.MutableRefObject<gsap.core.Tween[]>;
+	cellTweens: React.MutableRefObject<gsap.core.Tween[]>;
 }
 
 type Feed = { id: string; position: [number, number, number] };
@@ -40,10 +44,13 @@ export const BombZone = ({
 	countdown,
 	setCountdown,
 	setBombActive,
+	meshRefs,
+	hitTilesRef,
+	blinkTweens,
+	cellTweens,
 }: BombZoneProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const score = useFishStore((state) => state.score);
-	const meshRefs = useRef<Mesh[]>([]);
 	const [activeBombs, setActiveBombs] = useState<Set<number>>(new Set());
 
 	const bombSpawnIntervalRef = useRef(Math.max(500, 2500 - score * 15));
@@ -122,19 +129,25 @@ export const BombZone = ({
 		[fishScale]
 	);
 
-	const animateCells = useCallback(
+	// 폭탄 타일 애니메이션
+	const animateBomb = useCallback(
 		(indexes: number[], fish: Object3D) => {
+			if (isGameOver) return;
+
 			const newActive = new Set(activeBombs);
 			indexes.forEach((index) => {
 				if (newActive.has(index)) return;
 				const mesh = meshRefs.current[index];
 				if (!mesh) return;
 				const color = (mesh.material as MeshStandardMaterial).color;
-				gsap.to(color, { r: 1, g: 0, b: 0, duration: 3, ease: "power1.inOut" });
+				const tween = gsap.to(color, { r: 1, g: 0, b: 0, duration: 3, ease: "power1.inOut" });
+				cellTweens.current.push(tween);
 				newActive.add(index);
 			});
 			setActiveBombs(newActive);
+
 			setTimeout(() => {
+				if (isGameOver) return;
 				indexes.forEach((index) => {
 					const mesh = meshRefs.current[index];
 					if (mesh) {
@@ -145,19 +158,51 @@ export const BombZone = ({
 					if (checkCollision(fish, index)) {
 						setIsGameOver(true);
 						setIsInBombZone(false);
+						hitTilesRef.current.push(index);
 					}
 				});
 			}, 3000);
 		},
-		[activeBombs, checkCollision, setIsGameOver, setIsInBombZone]
+		[activeBombs, checkCollision, setIsGameOver, setIsInBombZone, meshRefs, hitTilesRef, isGameOver]
 	);
 
-	// 폭탄 생성
+	// 게임 오버 시
+	useEffect(() => {
+		if (!isGameOver || hitTilesRef.current.length === 0) return;
+
+		blinkTweens.current.forEach((t) => t.kill());
+		blinkTweens.current = [];
+		cellTweens.current.forEach((t) => t.kill());
+		cellTweens.current = [];
+
+		hitTilesRef.current.forEach((index) => {
+			const mesh = meshRefs.current[index];
+			if (mesh) {
+				const color = (mesh.material as MeshStandardMaterial).color;
+				const tween = gsap.to(color, {
+					r: 1,
+					g: 0,
+					b: 0,
+					duration: 0.5,
+					repeat: -1,
+					yoyo: true,
+					ease: "sine.inOut",
+				});
+				blinkTweens.current.push(tween);
+			}
+		});
+	}, [isGameOver, hitTilesRef, meshRefs, blinkTweens, cellTweens]);
+
 	useEffect(() => {
 		if (!bombActive || isGameOver) return;
 		const fish = fishRef.current;
 		if (!fish) return;
+
 		const intervalId = setInterval(() => {
+			if (isGameOver) {
+				clearInterval(intervalId);
+				return;
+			}
 			const indexes = [...Array(CELLS.length).keys()].filter((i) => !activeBombs.has(i));
 			if (indexes.length === 0) return;
 			const selected: number[] = [];
@@ -165,10 +210,11 @@ export const BombZone = ({
 				const idx = indexes.splice(Math.floor(Math.random() * indexes.length), 1)[0];
 				selected.push(idx);
 			}
-			animateCells(selected, fish);
+			animateBomb(selected, fish);
 		}, bombSpawnIntervalRef.current);
+
 		return () => clearInterval(intervalId);
-	}, [bombActive, isGameOver, fishRef, activeBombs, animateCells]);
+	}, [bombActive, isGameOver, fishRef, activeBombs, animateBomb]);
 
 	return (
 		<>
