@@ -15,7 +15,7 @@ import { Ground } from "./Ground";
 import { ClickHandler } from "./ClickHandler";
 import { BombZone, resetGameState } from "./BombZone";
 import { VideoCaustics } from "./VideoCaustics";
-import { BackgroundTransition } from "./BackgroundTransition";
+import { BackgroundWithFog } from "./BackgroundWithFog";
 import { ShaderTransition } from "./ShaderTransition";
 
 type Feed = {
@@ -31,6 +31,10 @@ const Experience = () => {
 	const fishRef = useRef<Object3D>(null);
 	const planeRef = useRef<Mesh>(null);
 	const darkMode = useFishStore((state) => state.darkMode);
+
+	const backgroundColor = useFishStore((state) => state.backgroundColor);
+	const fogColor = useFishStore((state) => state.fogColor);
+	const fogDensity = useFishStore((state) => state.fogDensity);
 
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
@@ -63,7 +67,7 @@ const Experience = () => {
 	return (
 		<>
 			<Canvas shadows camera={{ position: [0, 17, 14], fov: 75 }}>
-				<BackgroundTransition darkMode={darkMode} />
+				<BackgroundWithFog darkMode={darkMode} backgroundColor={backgroundColor} fogColor={fogColor} fogDensity={fogDensity} />
 
 				<ambientLight color={0xffffff} intensity={0.8} />
 				<directionalLight
