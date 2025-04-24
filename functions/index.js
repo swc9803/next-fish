@@ -1,5 +1,5 @@
 const functions = require("firebase-functions");
-const { default: next } = require("next");
+const next = require("next");
 
 const nextApp = next({
 	dev: false,

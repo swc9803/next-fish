@@ -186,7 +186,7 @@ export const BombZone = ({
 				});
 			}, 3000);
 		},
-		[activeBombs, checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone]
+		[activeBombs, checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone, cellTweens]
 	);
 
 	// 게임 오버 시
