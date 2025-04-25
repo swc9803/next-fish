@@ -3,8 +3,6 @@
 1. 인트로 로딩 대기 시 갤러리 바로 진입 가능하도록 변경
    쉐이더 후 바깥부터 입장 모션 추가, 다크모드 빛 약해지며 주변에 바라보는 눈, 동공 커짐
    PolyHaven, SketchFab
-   groot/works
-   https://a-perspective-magazine.com/main
 2. preload 로 로딩 배경 이미지 추가
 3. SEO 최적화 ( 후순위 )
 
@@ -31,3 +29,5 @@ sand도 밝은색으로 변경
 물고기 헤엄치는 애니메이션 추가 blender?
 로딩 > 헤엄치며 땅으로 내려옴 > 가이드 > 가이드 클릭시 glsl shader 구멍뚫리며 사라지게
 폭탄 터지는 이펙트
+
+ga, favicon

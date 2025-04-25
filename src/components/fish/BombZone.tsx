@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import { useFrame } from "@react-three/fiber";
 import gsap from "gsap";
@@ -26,11 +26,10 @@ type Feed = { id: string; position: [number, number, number] };
 
 const CELL_SIZE = 6;
 const GRID_HALF = 3;
-const CELLS: [number, number, number][] = Array.from({ length: (GRID_HALF * 2 + 1) ** 2 }, (_, i) => {
-	const x = (i % (GRID_HALF * 2 + 1)) - GRID_HALF;
-	const z = Math.floor(i / (GRID_HALF * 2 + 1)) - GRID_HALF;
-	return [x * CELL_SIZE, 0.1, z * CELL_SIZE];
-});
+const MAX_SCALE = 1;
+const MIN_SCALE = 0;
+const INCREASE_FEED_SPEED = 0.005;
+const DECREASE_FEED_SPEED = 0.05;
 
 export const BombZone = ({
 	fishRef,
@@ -55,6 +54,14 @@ export const BombZone = ({
 
 	const bombSpawnIntervalRef = useRef(Math.max(500, 2500 - score * 15));
 	const bombSpawnCountRef = useRef(Math.max(3, Math.min(1 + Math.floor(score / 15), 5)));
+
+	const CELLS = useMemo(() => {
+		return Array.from({ length: (GRID_HALF * 2 + 1) ** 2 }, (_, i) => {
+			const x = (i % (GRID_HALF * 2 + 1)) - GRID_HALF;
+			const z = Math.floor(i / (GRID_HALF * 2 + 1)) - GRID_HALF;
+			return [x * CELL_SIZE, 0.1, z * CELL_SIZE] as [number, number, number];
+		});
+	}, []);
 
 	useEffect(() => {
 		bombSpawnIntervalRef.current = Math.max(500, 2500 - score * 15);
@@ -93,27 +100,25 @@ export const BombZone = ({
 
 	// 먹이 생성
 	useEffect(() => {
-		if (!bombActive || isGameOver || !isInBombZone || feeds.length > 0) return;
-		const interval = setInterval(() => {
+		if (!bombActive || isGameOver || !isInBombZone) return;
+
+		const spawnFeed = () => {
 			if (feeds.length === 0) {
 				const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
 				const z = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE;
-				const newFeed = {
-					id: crypto.randomUUID(),
-					position: [x, 1, z] as [number, number, number],
-				};
-				setFeeds([newFeed]);
+				setFeeds([{ id: crypto.randomUUID(), position: [x, 1, z] }]);
 			}
-		}, 1000);
+		};
+
+		const interval = setInterval(spawnFeed, 1000);
 		return () => clearInterval(interval);
-	}, [bombActive, isGameOver, isInBombZone, feeds, setFeeds]);
+	}, [bombActive, isGameOver, isInBombZone, feeds.length]);
 
 	// 충돌 검사
 	const checkCollision = useCallback(
 		(fish: Object3D, cellIndex: number) => {
 			const fishPos = fish.position.clone();
-			const cellLocal = new Vector3(...CELLS[cellIndex]);
-			const cellWorld = cellLocal.add(new Vector3(-50, 0, 0));
+			const cellWorld = new Vector3(...CELLS[cellIndex]).add(new Vector3(-50, 0, 0));
 			const fishDir = new Vector3(0, 0, 1).applyEuler(fish.rotation).normalize();
 			const toCell = new Vector3().subVectors(cellWorld, fishPos);
 
@@ -126,7 +131,7 @@ export const BombZone = ({
 
 			return forwardDist < CELL_SIZE / 2 + hitLength / 2 && sideDist < CELL_SIZE / 2 + hitWidth / 2;
 		},
-		[fishScale]
+		[fishScale, CELLS]
 	);
 
 	// 폭탄 타일 애니메이션
@@ -331,11 +336,6 @@ const GrowingFeed = ({
 }) => {
 	const meshRef = useRef<Mesh>(null);
 	const scaleRef = useRef(0.1);
-
-	const MAX_SCALE = 1;
-	const MIN_SCALE = 0;
-	const INCREASE_FEED_SPEED = 0.005;
-	const DECREASE_FEED_SPEED = 0.05;
 
 	const [isVisible, setIsVisible] = useState(true);
 
