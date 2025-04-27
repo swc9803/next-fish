@@ -6,12 +6,7 @@ import { Group, PointLight } from "three";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray } from "@/utils/slideUtils";
 
-interface HoverLightProps {
-	totalRadius: number;
-	cameraRadius: number;
-}
-
-export const HoverLight = ({ totalRadius }: HoverLightProps) => {
+export const HoverLight = ({ totalRadius }: { totalRadius: number }) => {
 	const bloomRef = useRef<Group>(null);
 	const lightRef = useRef<PointLight>(null);
 

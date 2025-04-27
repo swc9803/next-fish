@@ -9,6 +9,8 @@ import { HoverLight } from "./HoverLight";
 import { CameraHandler } from "./CameraHandler";
 import { Ground } from "./Ground";
 
+import { useGallerySlide } from "@/store/useGallerySlide";
+
 export const Experience = (): JSX.Element | null => {
 	const { camera, viewport } = useThree();
 
@@ -78,13 +80,18 @@ export const Experience = (): JSX.Element | null => {
 		};
 	}, []);
 
+	const { setFocusIndex } = useGallerySlide();
+	useEffect(() => {
+		setFocusIndex(0);
+	}, []);
+
 	if (!isInitialized) return null;
 
 	return (
 		<>
 			<ambientLight intensity={1.5} />
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
-			<HoverLight totalRadius={totalRadius} cameraRadius={cameraRadius} />
+			<HoverLight totalRadius={totalRadius} />
 			<Slides totalRadius={totalRadius} slideWidth={slideWidth} slideHeight={slideHeight} />
 			<Ground positionY={groundY} />
 		</>
