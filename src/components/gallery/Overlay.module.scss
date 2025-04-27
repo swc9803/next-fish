@@ -39,6 +39,7 @@
 		z-index: 1;
 		.switch {
 			position: relative;
+			min-height: 36px;
 			padding: 0.3125rem 2.375rem;
 			min-width: 9.75rem;
 			border: 1px solid #666;
@@ -59,7 +60,7 @@
 				width: 1.75rem;
 				height: 1.75rem;
 				border-radius: 50%;
-				background: rgb(212, 212, 212);
+				background: radial-gradient(circle, rgb(101, 173, 255) 0%, rgb(29, 89, 255) 100%);
 				transition: transform 0.3s ease-out;
 				z-index: 1;
 			}
@@ -67,6 +68,7 @@
 				color: #fff;
 				mix-blend-mode: difference;
 				font-size: 1rem;
+				font-weight: 700;
 			}
 		}
 	}
