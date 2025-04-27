@@ -17,7 +17,6 @@ ground - MeshReflectorMaterial 값 조정
 쉐이더 시작 느린 네트워크에서 확인
 페이지 이동 시 메모리 해제
 비동기로 object들 초기화
-gallery png jpg 용량 비교
 
 배포 후 1.1 패치 노트 작성
 
