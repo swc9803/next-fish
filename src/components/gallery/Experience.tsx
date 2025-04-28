@@ -1,28 +1,26 @@
 "use client";
 
-import { JSX, useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
+import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray } from "@/utils/slideUtils";
 
-import { Slides } from "./Slides";
-import { HoverLight } from "./HoverLight";
 import { CameraHandler } from "./CameraHandler";
+import { HoverLight } from "./HoverLight";
+import { Slides } from "./Slides";
 import { Ground } from "./Ground";
 
-import { useGallerySlide } from "@/store/useGallerySlide";
-
-export const Experience = (): JSX.Element | null => {
+export const Experience = () => {
 	const { camera, viewport } = useThree();
 
 	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
 	const aspect = viewport.aspect;
 
-	const [cameraRadius, setCameraRadius] = useState<number | undefined>(undefined);
-	const [slideGap, setSlideGap] = useState<number | undefined>(undefined);
+	const [cameraRadius, setCameraRadius] = useState<number>();
+	const [slideGap, setSlideGap] = useState<number>();
 
-	// 반응형
 	const slideWidth = useMemo(() => {
-		if (cameraRadius === undefined) return 0;
+		if (!cameraRadius) return 0;
 		return 2 * cameraRadius * Math.tan(fov / 2) * aspect;
 	}, [cameraRadius, fov, aspect]);
 
@@ -32,26 +30,26 @@ export const Experience = (): JSX.Element | null => {
 	}, [slideWidth, aspect]);
 
 	const totalRadius = useMemo(() => {
-		if (slideGap === undefined) return 0;
+		if (!slideGap) return 0;
 		return (slideGap * slideArray.length) / (2 * Math.PI);
 	}, [slideGap]);
 
 	const groundY = useMemo(() => {
-		if (cameraRadius === undefined) return 0;
+		if (!cameraRadius) return 0;
 		return -cameraRadius * 0.29;
 	}, [cameraRadius]);
 
 	const isInitialized = cameraRadius !== undefined && slideGap !== undefined;
 
 	useEffect(() => {
-		const getResponsiveCameraRadius = (width: number): number => {
+		const getResponsiveCameraRadius = (width: number) => {
 			if (width < 640) return 4;
 			if (width < 1024) return 5;
 			if (width < 1440) return 6;
 			return 6.5;
 		};
 
-		const getResponsiveSlideGap = (radius: number, width: number): number => {
+		const getResponsiveSlideGap = (radius: number, width: number) => {
 			if (width < 640) return radius * 1.0;
 			if (width < 1024) return radius * 1.2;
 			if (width < 1440) return radius * 1.4;
@@ -66,16 +64,17 @@ export const Experience = (): JSX.Element | null => {
 			setSlideGap(gap);
 		};
 
-		let timeout: NodeJS.Timeout;
+		handleResize();
+		const timeoutId = { current: 0 as any };
+
 		const debouncedResize = () => {
-			clearTimeout(timeout);
-			timeout = setTimeout(handleResize, 100);
+			clearTimeout(timeoutId.current);
+			timeoutId.current = setTimeout(handleResize, 100);
 		};
 
-		handleResize();
 		window.addEventListener("resize", debouncedResize);
 		return () => {
-			clearTimeout(timeout);
+			clearTimeout(timeoutId.current);
 			window.removeEventListener("resize", debouncedResize);
 		};
 	}, []);

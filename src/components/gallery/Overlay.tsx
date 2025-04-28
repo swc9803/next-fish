@@ -1,33 +1,42 @@
 "use client";
 
 import styles from "./Overlay.module.scss";
-import { JSX } from "react";
 import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
-export const Overlay = (): JSX.Element | null => {
-	const { slide, setSlide, freemode, setFreemode, focusIndex, setFocusIndex } = useGallerySlide();
+export const Overlay = () => {
+	const { slide, focusIndex, freemode } = useGallerySlide();
+	const { setSlide, setFocusIndex, setFreemode } = useGallerySlide.getState();
 	const isSliding = useGallerySlide((state) => state.isSliding);
 
-	const activeSlideIndex = freemode && focusIndex !== null ? focusIndex : slide;
-
+	const activeSlide = freemode && focusIndex !== null ? focusIndex : slide;
 	const showOverlay = !freemode || (freemode && focusIndex !== null);
+
+	const handleToggleView = () => {
+		if (freemode && focusIndex !== null) {
+			setSlide(focusIndex);
+		}
+		setFocusIndex(null);
+		setFreemode(!freemode);
+	};
+
+	const handleBack = () => {
+		setFocusIndex(null);
+		setFreemode(true);
+	};
+
+	const handlePrevSlide = () => {
+		setSlide(slide > 0 ? slide - 1 : slideArray.length - 1);
+	};
+
+	const handleNextSlide = () => {
+		setSlide(slide < slideArray.length - 1 ? slide + 1 : 0);
+	};
 
 	return (
 		<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isSliding ? styles.disabled : ""}`}>
-			{/* slide, free mode 토글 버튼 */}
-			<button
-				className={styles.view_toggle_button}
-				onClick={() => {
-					setFocusIndex(null);
-					if (freemode && focusIndex !== null) {
-						setSlide(focusIndex);
-					}
-					setFreemode(!freemode);
-				}}
-				aria-label={freemode ? "Change To Slide View mode" : "Change To Free View mode"}
-				type="button"
-			>
+			{/* 모드 토글 버튼 */}
+			<button className={styles.view_toggle_button} onClick={handleToggleView} type="button">
 				<div className={`${styles.switch} ${freemode ? styles.free : ""}`}>
 					<div className={styles.knob} />
 					<p className={styles.label}>{freemode ? "Free View" : "Slide View"}</p>
@@ -35,15 +44,7 @@ export const Overlay = (): JSX.Element | null => {
 			</button>
 
 			{/* 뒤로가기 버튼 */}
-			<button
-				className={`${styles.back_button} ${freemode && focusIndex !== null ? styles.show : ""}`}
-				onClick={() => {
-					setFocusIndex(null);
-					setFreemode(true);
-				}}
-				aria-label="Back Button"
-				type="button"
-			>
+			<button className={`${styles.back_button} ${freemode && focusIndex !== null ? styles.show : ""}`} onClick={handleBack} type="button">
 				<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<g clipPath="url(#clip0_1841_357)">
 						<circle cx="9" cy="9" r="9" fill="white" fillOpacity="0.6" />
@@ -71,12 +72,12 @@ export const Overlay = (): JSX.Element | null => {
 			{/* 슬라이드 모드 네비게이션 */}
 			{!freemode && (
 				<div className={styles.slide_navigation}>
-					<button onClick={() => setSlide(slide > 0 ? slide - 1 : slideArray.length - 1)} aria-label="previous slide button">
+					<button onClick={handlePrevSlide} aria-label="previous slide button">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
 						</svg>
 					</button>
-					<button onClick={() => setSlide(slide < slideArray.length - 1 ? slide + 1 : 0)} aria-label="next slide button">
+					<button onClick={handleNextSlide} aria-label="next slide button">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
 							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
 						</svg>
@@ -85,15 +86,15 @@ export const Overlay = (): JSX.Element | null => {
 			)}
 
 			<div className={styles.content}>
-				<h1>{slideArray[activeSlideIndex].name}</h1>
-				<p>{slideArray[activeSlideIndex].description}</p>
+				<h1>{slideArray[activeSlide].name}</h1>
+				<p>{slideArray[activeSlide].description}</p>
 				<div className={styles.info}>
 					<div className={styles["info-block"]}>
 						<div className={styles["info-content"]}>
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 								<path d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
 							</svg>
-							<p>${slideArray[activeSlideIndex].price.toLocaleString()}</p>
+							<p>${slideArray[activeSlide].price.toLocaleString()}</p>
 						</div>
 						<p className={styles["info-text"]}>After Federal Tax Credit</p>
 					</div>

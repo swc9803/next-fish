@@ -1,13 +1,8 @@
 "use client";
 
-import { JSX } from "react";
 import { MeshReflectorMaterial } from "@react-three/drei";
 
-interface GroundProps {
-	positionY: number;
-}
-
-export const Ground = ({ positionY }: GroundProps): JSX.Element => {
+export const Ground = ({ positionY }) => {
 	return (
 		<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, positionY, 0]}>
 			<circleGeometry args={[20, 16]} />

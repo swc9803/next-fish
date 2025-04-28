@@ -1,12 +1,11 @@
 "use client";
 
-import { JSX } from "react";
 import { Canvas } from "@react-three/fiber";
 
 import { Experience } from "@/components/gallery/Experience";
 import { Overlay } from "@/components/gallery/Overlay";
 
-const Gallery = (): JSX.Element => {
+const Gallery = () => {
 	return (
 		<>
 			<Overlay />
