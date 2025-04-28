@@ -1,9 +1,10 @@
 "use client";
 
+import { useRef } from "react";
 import { useTexture } from "@react-three/drei";
+
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
-import { useEffect, useRef } from "react";
 
 interface SlideState {
 	currentImageIndex: number;
@@ -15,68 +16,12 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: { totalRadius: 
 	const { freemode, focusIndex, currentLightIndex, setFocusIndex, setSlide, setHoverIndex } = useGallerySlide();
 	const texturesArray = slideArray.map((slide) => useTexture(slide.imagePaths));
 
-	const slideStates = useRef<SlideState[]>(
-		slideArray.map(() => ({
-			currentImageIndex: 0,
-			intervalId: null,
-			isActive: false,
-		}))
-	);
-
-	const startAnimation = (index: number) => {
-		const slide = slideStates.current[index];
-		if (slide.intervalId) return;
-
-		const textures = texturesArray[index];
-		if (!textures.length) return;
-
-		console.log(`[start] 슬라이드 ${index}번 시작`);
-
-		slide.intervalId = setInterval(() => {
-			slide.currentImageIndex = (slide.currentImageIndex + 1) % textures.length;
-			console.log(`[slide ${index}] 이미지 변경: ${slide.currentImageIndex}`);
-		}, 4000);
-	};
-
-	const stopAnimation = (index: number) => {
-		const slide = slideStates.current[index];
-		if (slide.intervalId) {
-			clearInterval(slide.intervalId);
-			slide.intervalId = null;
-			console.log(`[stop] 슬라이드 ${index}번 중지`);
-		}
-	};
-
-	useEffect(() => {
-		slideStates.current.forEach((slide, index) => {
-			const isFocused = focusIndex === index;
-			const isHovered = Math.round(currentLightIndex ?? -1) === index;
-			const shouldActivate = (freemode && (isFocused || isHovered)) || (!freemode && isFocused);
-
-			if (shouldActivate && !slide.isActive) {
-				slide.isActive = true;
-				startAnimation(index);
-			} else if (!shouldActivate && slide.isActive) {
-				slide.isActive = false;
-				stopAnimation(index);
-			}
-		});
-	}, [freemode, focusIndex, currentLightIndex, texturesArray]);
-
-	useEffect(() => {
-		if (focusIndex !== null && !slideStates.current[focusIndex].isActive) {
-			startAnimation(focusIndex);
-			slideStates.current[focusIndex].isActive = true;
-		}
-	}, [focusIndex]);
-
 	return (
 		<>
 			{slideArray.map((slide, index) => {
 				const { x, z, angleInRadians } = getSlidePosition(index, totalRadius);
 				const slideRotationY = angleInRadians + Math.PI;
-				const currentTexture = texturesArray[index][slideStates.current[index].currentImageIndex];
-
+				const currentTexture = texturesArray[index][0];
 				return (
 					<group
 						key={index}
