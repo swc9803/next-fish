@@ -9,7 +9,7 @@ export const Overlay = (): JSX.Element | null => {
 	const { slide, setSlide, freemode, setFreemode, focusIndex, setFocusIndex } = useGallerySlide();
 	const isSliding = useGallerySlide((state) => state.isSliding);
 
-	const activeSlideIndex = focusIndex !== null ? focusIndex : slide;
+	const activeSlideIndex = freemode && focusIndex !== null ? focusIndex : slide;
 
 	const showOverlay = !freemode || (freemode && focusIndex !== null);
 

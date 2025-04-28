@@ -1,19 +1,12 @@
 "use client";
 
-import { useRef } from "react";
 import { useTexture } from "@react-three/drei";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
 
-interface SlideState {
-	currentImageIndex: number;
-	intervalId: NodeJS.Timeout | null;
-	isActive: boolean;
-}
-
 export const Slides = ({ totalRadius, slideWidth, slideHeight }: { totalRadius: number; slideWidth: number; slideHeight: number }) => {
-	const { freemode, focusIndex, currentLightIndex, setFocusIndex, setSlide, setHoverIndex } = useGallerySlide();
+	const { freemode, focusIndex, setFocusIndex, setSlide, setHoverIndex } = useGallerySlide();
 	const texturesArray = slideArray.map((slide) => useTexture(slide.imagePaths));
 
 	return (
