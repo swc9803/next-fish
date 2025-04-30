@@ -4,12 +4,9 @@ import { Vector2, Vector3, Raycaster, Mesh, Object3D } from "three";
 import gsap from "gsap";
 import { useFishStore } from "@/store/useFishStore";
 
-type RefMesh = React.RefObject<Mesh>;
-type RefAny = React.RefObject<Object3D>;
-
 interface ClickHandlerProps {
-	fishRef: RefAny;
-	planeRef: RefMesh;
+	fishRef: React.RefObject<Object3D>;
+	planeRef: React.RefObject<Mesh>;
 	isInBombZone: boolean;
 	isGameOver: boolean;
 }
