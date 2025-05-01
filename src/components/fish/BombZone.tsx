@@ -152,11 +152,22 @@ export const BombZone = ({
 					cellTweens.current[index].kill();
 				}
 
+				const score = useFishStore.getState().score;
+
+				// score에 비례한 duration
+				const maxDuration = 3;
+				const minDuration = 1.5;
+				const maxScore = 300;
+
+				const ratio = Math.min(score, maxScore) / maxScore;
+				const easedRatio = Math.pow(ratio, 0.7);
+				const duration = maxDuration - (maxDuration - minDuration) * easedRatio;
+
 				const tween = gsap.to(color, {
 					r: 1,
 					g: 0,
 					b: 0,
-					duration: 3,
+					duration,
 					ease: "power1.inOut",
 					onComplete: () => {
 						if (!isGameOver && fish) {
@@ -210,7 +221,7 @@ export const BombZone = ({
 				activeBombsRef.current = updatedActive;
 			}, 3000);
 		},
-		[checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone, cellTweens]
+		[checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone, cellTweens] // score는 직접 getState()로 가져오므로 의존성 X
 	);
 
 	// 게임 오버 시
