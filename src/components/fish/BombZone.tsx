@@ -98,17 +98,19 @@ export const BombZone = ({
 	useEffect(() => {
 		if (!bombActive || isGameOver || !isInBombZone) return;
 
-		const spawnFeed = () => {
-			if (feeds.length === 0) {
-				const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
-				const z = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE;
-				setFeeds([{ id: crypto.randomUUID(), position: [x, 1, z] }]);
-			}
-		};
+		const interval = setInterval(() => {
+			setFeeds((prevFeeds) => {
+				if (prevFeeds.length === 0) {
+					const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
+					const z = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE;
+					return [{ id: crypto.randomUUID(), position: [x, 1, z] }];
+				}
+				return prevFeeds;
+			});
+		}, 1000);
 
-		const interval = setInterval(spawnFeed, 1000);
 		return () => clearInterval(interval);
-	}, [bombActive, isGameOver, isInBombZone, feeds.length]);
+	}, [bombActive, isGameOver, isInBombZone]);
 
 	// 충돌 검사
 	const checkCollision = useCallback(
@@ -154,7 +156,24 @@ export const BombZone = ({
 					b: 0,
 					duration: 3,
 					ease: "power1.inOut",
+					onComplete: () => {
+						if (!isGameOver && fish) {
+							if (checkCollision(fish, index)) {
+								setIsGameOver(true);
+								setIsInBombZone(false);
+								hitTilesRef.current.push(index);
+							}
+						}
+
+						color.set("white");
+						cellTweens.current[index] = undefined;
+
+						const updatedActive = new Set(activeBombs);
+						updatedActive.delete(index);
+						setActiveBombs(updatedActive);
+					},
 				});
+
 				cellTweens.current[index] = tween;
 
 				newActive.add(index);
@@ -164,6 +183,9 @@ export const BombZone = ({
 
 			setTimeout(() => {
 				if (isGameOver) return;
+
+				const updatedActive = new Set(activeBombs);
+
 				indexes.forEach((index) => {
 					const mesh = meshRefs.current[index];
 					if (mesh) {
@@ -179,12 +201,18 @@ export const BombZone = ({
 					}
 
 					if (!mesh || !fish) return;
+
 					if (checkCollision(fish, index)) {
 						setIsGameOver(true);
 						setIsInBombZone(false);
 						hitTilesRef.current.push(index);
 					}
+
+					// 🔧 폭탄 타일 제거
+					updatedActive.delete(index);
 				});
+
+				setActiveBombs(updatedActive); // 🔧 업데이트된 상태로 교체
 			}, 3000);
 		},
 		[activeBombs, checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone, cellTweens]
@@ -227,22 +255,36 @@ export const BombZone = ({
 
 		const intervalId = setInterval(() => {
 			if (isGameOver) {
+				console.log("[BombZone] Game is over, clearing interval");
 				clearInterval(intervalId);
 				return;
 			}
-			const indexes = [...Array(CELLS.length).keys()].filter((i) => !activeBombs.has(i));
-			if (indexes.length === 0) return;
+
+			const availableIndexes = [...Array(CELLS.length).keys()].filter((i) => !activeBombs.has(i));
+			console.log("[BombZone] Available indexes:", availableIndexes.length);
+
+			if (availableIndexes.length === 0) {
+				console.warn("[BombZone] No available cells to spawn bombs");
+				return;
+			}
 
 			const selected: number[] = [];
-			for (let i = 0; i < bombSpawnCountRef.current && indexes.length > 0; i++) {
-				const idx = indexes.splice(Math.floor(Math.random() * indexes.length), 1)[0];
+			for (let i = 0; i < bombSpawnCountRef.current && availableIndexes.length > 0; i++) {
+				const idx = availableIndexes.splice(Math.floor(Math.random() * availableIndexes.length), 1)[0];
 				selected.push(idx);
 			}
+			console.log("[BombZone] Selected bomb cells:", selected);
 			animateBomb(selected, fish);
 		}, bombSpawnIntervalRef.current);
 
-		return () => clearInterval(intervalId);
+		return () => {
+			console.log("[BombZone] Clearing bomb interval");
+			clearInterval(intervalId);
+		};
 	}, [bombActive, isGameOver, fishRef, activeBombs, animateBomb]);
+	useEffect(() => {
+		console.log("[activeBombs] count:", activeBombs.size, "values:", Array.from(activeBombs));
+	}, [activeBombs]);
 
 	return (
 		<>
@@ -290,7 +332,7 @@ export const BombZone = ({
 
 						// speed 배율
 						const BASE_SPEED = 20;
-						const newSpeed = Math.max(10, BASE_SPEED * Math.exp(-0.5 * (newScale - 1)));
+						const newSpeed = Math.max(10, BASE_SPEED * Math.exp(-1.2 * (newScale - 1)));
 
 						useFishStore.getState().setFishScale(newScale);
 						useFishStore.getState().setFishSpeed(parseFloat(newSpeed.toFixed(2)));
