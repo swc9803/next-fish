@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import gsap from "gsap";
 import { useFishStore } from "@/store/useFishStore";
@@ -46,7 +46,8 @@ export const BombZone = ({
 }: BombZoneProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const score = useFishStore((state) => state.score);
-	const [activeBombs, setActiveBombs] = useState<Set<number>>(new Set());
+
+	const activeBombsRef = useRef<Set<number>>(new Set());
 
 	const bombSpawnIntervalRef = useRef(Math.max(500, 2500 - score * 15));
 	const bombSpawnCountRef = useRef(Math.max(3, Math.min(1 + Math.floor(score / 15), 5)));
@@ -103,6 +104,7 @@ export const BombZone = ({
 				if (prevFeeds.length === 0) {
 					const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
 					const z = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE;
+
 					return [{ id: crypto.randomUUID(), position: [x, 1, z] }];
 				}
 				return prevFeeds;
@@ -137,7 +139,7 @@ export const BombZone = ({
 		(indexes: number[], fish: Object3D) => {
 			if (isGameOver) return;
 
-			const newActive = new Set(activeBombs);
+			const newActive = new Set(activeBombsRef.current);
 			indexes.forEach((index) => {
 				if (newActive.has(index)) return;
 				const mesh = meshRefs.current[index];
@@ -164,28 +166,23 @@ export const BombZone = ({
 								hitTilesRef.current.push(index);
 							}
 						}
-
 						color.set("white");
 						cellTweens.current[index] = undefined;
-
-						const updatedActive = new Set(activeBombs);
+						const updatedActive = new Set(activeBombsRef.current);
 						updatedActive.delete(index);
-						setActiveBombs(updatedActive);
+						activeBombsRef.current = updatedActive;
 					},
 				});
 
 				cellTweens.current[index] = tween;
-
 				newActive.add(index);
 			});
 
-			setActiveBombs(newActive);
+			activeBombsRef.current = newActive;
 
 			setTimeout(() => {
 				if (isGameOver) return;
-
-				const updatedActive = new Set(activeBombs);
-
+				const updatedActive = new Set(activeBombsRef.current);
 				indexes.forEach((index) => {
 					const mesh = meshRefs.current[index];
 					if (mesh) {
@@ -208,14 +205,12 @@ export const BombZone = ({
 						hitTilesRef.current.push(index);
 					}
 
-					// 🔧 폭탄 타일 제거
 					updatedActive.delete(index);
 				});
-
-				setActiveBombs(updatedActive); // 🔧 업데이트된 상태로 교체
+				activeBombsRef.current = updatedActive;
 			}, 3000);
 		},
-		[activeBombs, checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone, cellTweens]
+		[checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone, cellTweens]
 	);
 
 	// 게임 오버 시
@@ -255,36 +250,23 @@ export const BombZone = ({
 
 		const intervalId = setInterval(() => {
 			if (isGameOver) {
-				console.log("[BombZone] Game is over, clearing interval");
 				clearInterval(intervalId);
 				return;
 			}
 
-			const availableIndexes = [...Array(CELLS.length).keys()].filter((i) => !activeBombs.has(i));
-			console.log("[BombZone] Available indexes:", availableIndexes.length);
-
-			if (availableIndexes.length === 0) {
-				console.warn("[BombZone] No available cells to spawn bombs");
-				return;
-			}
+			const availableIndexes = [...Array(CELLS.length).keys()].filter((i) => !activeBombsRef.current.has(i));
+			if (availableIndexes.length === 0) return;
 
 			const selected: number[] = [];
 			for (let i = 0; i < bombSpawnCountRef.current && availableIndexes.length > 0; i++) {
 				const idx = availableIndexes.splice(Math.floor(Math.random() * availableIndexes.length), 1)[0];
 				selected.push(idx);
 			}
-			console.log("[BombZone] Selected bomb cells:", selected);
 			animateBomb(selected, fish);
 		}, bombSpawnIntervalRef.current);
 
-		return () => {
-			console.log("[BombZone] Clearing bomb interval");
-			clearInterval(intervalId);
-		};
-	}, [bombActive, isGameOver, fishRef, activeBombs, animateBomb]);
-	useEffect(() => {
-		console.log("[activeBombs] count:", activeBombs.size, "values:", Array.from(activeBombs));
-	}, [activeBombs]);
+		return () => clearInterval(intervalId);
+	}, [bombActive, isGameOver, fishRef, animateBomb]);
 
 	return (
 		<>
@@ -311,17 +293,11 @@ export const BombZone = ({
 					isGameOver={isGameOver}
 					onCollected={() => {
 						if (isGameOver) return;
+
 						setFeeds([]);
-						setTimeout(() => {
-							const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
-							const z = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE;
-							const newFeed = {
-								id: crypto.randomUUID(),
-								position: [x, 1, z] as [number, number, number],
-							};
-							setFeeds([newFeed]);
-						}, 500);
+
 						const currentScale = useFishStore.getState().fishScale;
+
 						// score 배율
 						const scoreGain = Math.floor(currentScale * 10);
 						useFishStore.setState((state) => ({ score: state.score + scoreGain }));

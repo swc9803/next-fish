@@ -3,7 +3,6 @@ import { useFrame } from "@react-three/fiber";
 import { Mesh, Object3D } from "three";
 
 const MAX_SCALE = 1;
-const MIN_SCALE = 0;
 const INCREASE_FEED_SPEED = 0.005;
 const DECREASE_FEED_SPEED = 0.05;
 
@@ -22,17 +21,20 @@ export const GrowingFeed = ({ position, fishRef, isGameOver, onCollected, onExpi
 
 	const decreaseFeed = useCallback(() => {
 		if (!meshRef.current || isGameOver || !isVisible) return;
+
 		const shrinkInterval = setInterval(() => {
 			if (!meshRef.current || !isVisible) {
 				clearInterval(shrinkInterval);
 				return;
 			}
-			if (scaleRef.current <= MIN_SCALE) {
+
+			if (!Number.isFinite(scaleRef.current) || scaleRef.current <= 0.01) {
 				clearInterval(shrinkInterval);
-				setIsVisible(false);
 				onExpire();
+				setIsVisible(false);
+				scaleRef.current = 0;
 			} else {
-				scaleRef.current = Math.max(MIN_SCALE, scaleRef.current - DECREASE_FEED_SPEED);
+				scaleRef.current = Math.max(0, scaleRef.current - DECREASE_FEED_SPEED);
 				meshRef.current.scale.setScalar(scaleRef.current);
 			}
 		}, 1000 / 60);
