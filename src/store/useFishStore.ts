@@ -24,7 +24,7 @@ interface FishStoreActions {
 
 export const useFishStore = create<FishStoreState & FishStoreActions>((set) => ({
 	fishColor: "#e7b518",
-	fishSpeed: 50,
+	fishSpeed: 20,
 	fishScale: 1,
 	darkMode: false,
 	score: 0,

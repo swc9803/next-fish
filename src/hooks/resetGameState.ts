@@ -22,5 +22,5 @@ export const resetGameState = (
 	setCountdown(null);
 	setFeeds([]);
 	useFishStore.getState().setFishScale(1);
-	useFishStore.getState().setFishSpeed(50);
+	useFishStore.getState().setFishSpeed(20);
 };

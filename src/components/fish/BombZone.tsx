@@ -280,12 +280,19 @@ export const BombZone = ({
 							setFeeds([newFeed]);
 						}, 500);
 						const currentScale = useFishStore.getState().fishScale;
-						const scoreGain = Math.floor(currentScale * 20);
+						// score 배율
+						const scoreGain = Math.floor(currentScale * 10);
 						useFishStore.setState((state) => ({ score: state.score + scoreGain }));
-						const added = 0.1 * Math.exp(-currentScale);
-						const newScale = Math.min(3, parseFloat((currentScale + added).toFixed(2)));
+
+						// scale 배율
+						const added = 0.141 * Math.exp(-currentScale);
+						const newScale = Math.min(2, parseFloat((currentScale + added).toFixed(2)));
+
+						// speed 배율
+						const BASE_SPEED = 20;
+						const newSpeed = Math.max(10, BASE_SPEED * Math.exp(-0.5 * (newScale - 1)));
+
 						useFishStore.getState().setFishScale(newScale);
-						const newSpeed = Math.max(10, 50 - newScale * 8);
 						useFishStore.getState().setFishSpeed(parseFloat(newSpeed.toFixed(2)));
 					}}
 					onExpire={() => setFeeds([])}
