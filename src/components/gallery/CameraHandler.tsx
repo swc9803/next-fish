@@ -15,7 +15,7 @@ interface CameraHandlerProps {
 export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps) => {
 	const { cameraControlsRef, moveToSlide, moveToFreeModePosition } = useCameraTransition(cameraRadius, totalRadius);
 
-	const { slide, setSlide, freemode, focusIndex, lastFocusTarget, setHoverIndex, isSliding, setIsSliding } = useGallerySlide();
+	const { slide, setSlide, freemode, focusIndex, lastFocusTarget, setHoverIndex, setFocusIndex } = useGallerySlide();
 
 	const lastSlideIndexRef = useRef<number>(-1);
 	const prevFreemodeRef = useRef(false);
@@ -69,8 +69,9 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 				}
 			}
 
+			setFocusIndex(null);
+			setHoverIndex(null);
 			setSlide(nearest);
-			setHoverIndex(nearest);
 			moveToSlide(nearest, true);
 			lastSlideIndexRef.current = nearest;
 		}
