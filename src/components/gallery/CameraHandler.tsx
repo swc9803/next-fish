@@ -57,14 +57,14 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 
 			const cameraPos = camera.position.clone();
 			let nearest = 0;
-			let minAngle = Infinity;
+			let maxDot = -Infinity;
 
 			for (let i = 0; i < slideArray.length; i++) {
 				const { x, z } = getSlidePosition(i, totalRadius);
 				const vec = new Vector3(x - cameraPos.x, 0, z - cameraPos.z).normalize();
-				const angle = direction.angleTo(vec);
-				if (angle < minAngle) {
-					minAngle = angle;
+				const dot = direction.dot(vec);
+				if (dot > maxDot) {
+					maxDot = dot;
 					nearest = i;
 				}
 			}
