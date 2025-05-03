@@ -11,7 +11,7 @@ interface SlidesProps {
 }
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) => {
-	const { freemode, focusIndex, setFocusIndex, setSlide, setHoverIndex } = useGallerySlide();
+	const { freemode, focusIndex, setFocusIndex, setSlide, hoverIndex, setHoverIndex } = useGallerySlide();
 
 	const texturesArray = slideArray.map((slide) => useTexture(slide.imagePaths));
 
@@ -34,7 +34,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 							}
 						}}
 						onPointerOver={() => {
-							if (freemode && focusIndex === null) {
+							if (freemode && focusIndex === null && hoverIndex !== index) {
 								setHoverIndex(index);
 							}
 						}}
