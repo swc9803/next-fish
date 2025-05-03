@@ -19,12 +19,20 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 
 	const lastSlideIndexRef = useRef<number>(-1);
 	const prevFreemodeRef = useRef(false);
+	const prevFocusRef = useRef<number | null>(null);
 
-	// 초기 진입 (slide 이동)
 	useEffect(() => {
-		moveToSlide(slide, true);
-		lastSlideIndexRef.current = slide;
-	}, []);
+		if (freemode && focusIndex === null) {
+			moveToFreeModePosition(lastFocusTarget);
+		}
+	}, [freemode, focusIndex, moveToFreeModePosition, lastFocusTarget]);
+
+	useEffect(() => {
+		if (freemode && prevFocusRef.current !== null && focusIndex === null) {
+			moveToFreeModePosition(lastFocusTarget);
+		}
+		prevFocusRef.current = focusIndex;
+	}, [freemode, focusIndex, moveToFreeModePosition, lastFocusTarget]);
 
 	// 슬라이드 변경 감지
 	useEffect(() => {
