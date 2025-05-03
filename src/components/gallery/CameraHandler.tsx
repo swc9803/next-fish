@@ -20,46 +20,84 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 	const lastSlideIndexRef = useRef<number>(-1);
 	const prevFreemodeRef = useRef(false);
 	const prevFocusRef = useRef<number | null>(null);
+	const isFirstRender = useRef(true);
+	const introPlaying = useRef(false);
 
+	// 인트로 애니메이션
 	useEffect(() => {
-		if (freemode && focusIndex === null) {
-			moveToFreeModePosition(lastFocusTarget);
-		}
-	}, [freemode, focusIndex, moveToFreeModePosition, lastFocusTarget]);
+		if (introPlaying.current || !cameraControlsRef.current) return;
+		introPlaying.current = true;
 
-	useEffect(() => {
-		if (freemode && prevFocusRef.current !== null && focusIndex === null) {
-			moveToFreeModePosition(lastFocusTarget);
-		}
-		prevFocusRef.current = focusIndex;
-	}, [freemode, focusIndex, moveToFreeModePosition, lastFocusTarget]);
+		const controls = cameraControlsRef.current;
+		let timeoutId: NodeJS.Timeout;
+		let animationFrameId: number;
 
-	// 슬라이드 변경 감지
+		timeoutId = setTimeout(() => {
+			const { x: slideX, z: slideZ } = getSlidePosition(0, totalRadius);
+			const slide0Pos = new Vector3(slideX, 0, slideZ);
+			const center = new Vector3(0, 0, 0);
+			const introRadius = slide0Pos.distanceTo(center);
+			const angleOffset = Math.PI;
+			const duration = 4000;
+			const steps = (duration / 1000) * 60;
+			let currentStep = 0;
+
+			const animate = () => {
+				const angle = angleOffset + (currentStep / steps) * Math.PI * 2;
+				const camX = center.x + introRadius * Math.cos(angle);
+				const camZ = center.z + introRadius * Math.sin(angle);
+
+				controls.setLookAt(camX, 0, camZ, center.x, 0, center.z, false);
+
+				if (currentStep <= steps) {
+					currentStep++;
+					animationFrameId = requestAnimationFrame(animate);
+				} else {
+					const finalCamPos = new Vector3(slideX, 0, slideZ - cameraRadius);
+					controls.setLookAt(finalCamPos.x, finalCamPos.y, finalCamPos.z, slideX, 0, slideZ, true);
+					controls.dollyTo(cameraRadius * 0.7, true);
+					moveToSlide(0);
+					setSlide(0);
+				}
+			};
+
+			animate();
+		}, 1000);
+
+		return () => {
+			clearTimeout(timeoutId);
+			cancelAnimationFrame(animationFrameId);
+		};
+	}, [cameraRadius, totalRadius, moveToSlide, setSlide]);
+
 	useEffect(() => {
 		if (!freemode && lastSlideIndexRef.current !== slide) {
-			moveToSlide(slide);
+			if (!isFirstRender.current) {
+				moveToSlide(slide);
+			}
 			lastSlideIndexRef.current = slide;
 		}
+		isFirstRender.current = false;
 	}, [slide, freemode, moveToSlide]);
 
-	// 자유 모드에서 슬라이드 클릭 시 이동
 	useEffect(() => {
-		if (freemode && focusIndex !== null) {
-			moveToSlide(focusIndex, true);
+		if (freemode) {
+			if (focusIndex !== null) {
+				moveToSlide(focusIndex, true);
+			} else if (prevFocusRef.current !== null || focusIndex === null) {
+				moveToFreeModePosition(lastFocusTarget);
+			}
 		}
-	}, [freemode, focusIndex, moveToSlide]);
+		prevFocusRef.current = focusIndex;
+	}, [freemode, focusIndex, moveToSlide, moveToFreeModePosition, lastFocusTarget]);
 
-	// 모드 전환 감지
 	useEffect(() => {
 		const prev = prevFreemodeRef.current;
 		const now = freemode;
 		prevFreemodeRef.current = now;
 
-		if (prev && !now) {
-			// free -> slide 모드 전환
-			const camera = cameraControlsRef.current?.camera;
-			if (!camera) return;
-
+		if (prev && !now && cameraControlsRef.current?.camera) {
+			const camera = cameraControlsRef.current.camera;
 			const direction = new Vector3();
 			camera.getWorldDirection(direction);
 
