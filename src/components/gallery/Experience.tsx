@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
-import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray } from "@/utils/slideUtils";
 
 import { CameraHandler } from "./CameraHandler";
@@ -77,11 +76,6 @@ export const Experience = () => {
 			clearTimeout(timeoutId.current);
 			window.removeEventListener("resize", debouncedResize);
 		};
-	}, []);
-
-	const { setFocusIndex } = useGallerySlide();
-	useEffect(() => {
-		setFocusIndex(0);
 	}, []);
 
 	if (!isInitialized) return null;

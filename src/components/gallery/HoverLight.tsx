@@ -44,10 +44,6 @@ export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 			const { x, z } = getSlidePosition(targetIndex, totalRadius);
 			const targetPos = new Vector3(x, 0.5, z);
 			setTarget(targetPos);
-
-			console.log(`[HoverLight] Move to index ${targetIndex} | mode: ${freemode ? "Free" : "Slide"}`);
-		} else {
-			console.log("[HoverLight] No valid target index (null)");
 		}
 	}, [hoverIndex, focusIndex, slide, freemode, totalRadius, setTarget]);
 
