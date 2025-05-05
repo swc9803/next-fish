@@ -19,31 +19,16 @@ export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 	const lastModeRef = useRef<boolean | null>(null);
 
 	useEffect(() => {
-		let targetIndex: number | null = null;
+		const targetIndex = !freemode ? slide : hoverIndex ?? focusIndex;
 
-		if (!freemode) {
-			targetIndex = slide;
-		} else {
-			if (hoverIndex !== null) {
-				targetIndex = hoverIndex;
-			} else if (focusIndex !== null) {
-				targetIndex = focusIndex;
-			}
-		}
-
-		const currentMode = freemode;
-
-		if (targetIndex === lastIndexRef.current && currentMode === lastModeRef.current) {
-			return;
-		}
+		if (targetIndex === lastIndexRef.current && freemode === lastModeRef.current) return;
 
 		lastIndexRef.current = targetIndex;
-		lastModeRef.current = currentMode;
+		lastModeRef.current = freemode;
 
 		if (targetIndex !== null) {
 			const { x, z } = getSlidePosition(targetIndex, totalRadius);
-			const targetPos = new Vector3(x, 0.5, z);
-			setTarget(targetPos);
+			setTarget(new Vector3(x, 0.5, z));
 		}
 	}, [hoverIndex, focusIndex, slide, freemode, totalRadius, setTarget]);
 

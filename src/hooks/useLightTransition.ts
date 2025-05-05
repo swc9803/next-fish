@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Vector3, Group, PointLight } from "three";
 
-const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t);
+const easeOut = (t: number) => 1 - Math.pow(1 - t, 5);
 
 export const useLightTransition = () => {
 	const bloomRef = useRef<Group>(null);
@@ -12,34 +12,39 @@ export const useLightTransition = () => {
 
 	const startPos = useRef<Vector3 | null>(null);
 	const targetPos = useRef<Vector3 | null>(null);
-	const progress = useRef<number>(0);
-	const duration = 0.7;
-	let elapsed = 0;
+	const elapsed = useRef(0);
+	const LIGHT_MOVE_DURATION = 1.7;
 
 	useFrame((_, delta) => {
-		if (!lightRef.current || !targetPos.current || !startPos.current) return;
+		const light = lightRef.current;
+		const start = startPos.current;
+		const target = targetPos.current;
 
-		elapsed += delta;
-		progress.current = Math.min(elapsed / duration, 1);
+		if (!light || !start || !target) return;
 
-		const eased = easeOutQuad(progress.current);
-		lightRef.current.position.lerpVectors(startPos.current, targetPos.current, eased);
+		elapsed.current += delta;
+		const t = Math.min(elapsed.current / LIGHT_MOVE_DURATION, 1);
+		const easedT = easeOut(t);
 
-		if (progress.current >= 1) {
-			startPos.current = targetPos.current.clone();
+		light.position.lerpVectors(start, target, easedT);
+
+		if (t >= 1) {
+			light.position.copy(target);
+			startPos.current = null;
 			targetPos.current = null;
-			progress.current = 0;
-			elapsed = 0;
+			elapsed.current = 0;
 		}
 	});
 
 	const setTarget = (v: Vector3) => {
-		if (!lightRef.current) return;
+		const light = lightRef.current;
+		if (!light) return;
 
-		startPos.current = lightRef.current.position.clone();
+		if (targetPos.current?.distanceTo(v) < 0.001) return;
+
+		startPos.current = light.position.clone();
 		targetPos.current = v.clone();
-		progress.current = 0;
-		elapsed = 0;
+		elapsed.current = 0;
 	};
 
 	return {

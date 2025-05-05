@@ -41,6 +41,7 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 			const endAngle = slide0Angle;
 			const startTime = performance.now();
 			const INTRO_DURATION = 2500;
+			// const INTRO_DURATION = 500;
 
 			const animate = () => {
 				const elapsed = performance.now() - startTime;
@@ -83,12 +84,11 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 
 	// 포커스 상태 이동
 	useEffect(() => {
-		if (freemode) {
-			if (focusIndex !== null) {
-				moveToSlide(focusIndex, true);
-			} else if (prevFocusRef.current !== null) {
-				moveToFreeModePosition(lastFocusTarget);
-			}
+		if (freemode && focusIndex !== null && focusIndex !== lastSlideIndexRef.current) {
+			moveToSlide(focusIndex, true);
+			lastSlideIndexRef.current = focusIndex;
+		} else if (freemode && focusIndex === null && prevFocusRef.current !== null) {
+			moveToFreeModePosition(lastFocusTarget);
 		}
 		prevFocusRef.current = focusIndex;
 	}, [freemode, focusIndex, moveToSlide, moveToFreeModePosition, lastFocusTarget]);
