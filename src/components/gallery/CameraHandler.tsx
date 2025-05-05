@@ -20,77 +20,80 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 	const lastSlideIndexRef = useRef<number>(-1);
 	const prevFreemodeRef = useRef(false);
 	const prevFocusRef = useRef<number | null>(null);
-	const isFirstRender = useRef(true);
-	const introPlaying = useRef(false);
+	const isIntroPlating = useRef(false);
 
 	// 인트로 애니메이션
 	useEffect(() => {
-		if (introPlaying.current || !cameraControlsRef.current) return;
-		introPlaying.current = true;
+		if (isIntroPlating.current || !cameraControlsRef.current) return;
+		isIntroPlating.current = true;
 
 		const controls = cameraControlsRef.current;
 		let timeoutId: NodeJS.Timeout;
 		let animationFrameId: number;
 
-		timeoutId = setTimeout(() => {
+		const playIntroAnimation = () => {
 			const { x: slideX, z: slideZ } = getSlidePosition(0, totalRadius);
-			const slide0Pos = new Vector3(slideX, 0, slideZ);
 			const center = new Vector3(0, 0, 0);
-			const introRadius = slide0Pos.distanceTo(center);
-			const angleOffset = Math.PI;
-			const duration = 4000;
-			const steps = (duration / 1000) * 60;
-			let currentStep = 0;
+			const introRadius = Math.hypot(slideX, slideZ);
+
+			const slide0Angle = Math.atan2(slideZ, slideX);
+			const startAngle = slide0Angle + Math.PI * 3;
+			const endAngle = slide0Angle;
+			const startTime = performance.now();
+			const INTRO_DURATION = 2500;
 
 			const animate = () => {
-				const angle = angleOffset + (currentStep / steps) * Math.PI * 2;
-				const camX = center.x + introRadius * Math.cos(angle);
-				const camZ = center.z + introRadius * Math.sin(angle);
+				const elapsed = performance.now() - startTime;
+				const t = Math.min(elapsed / INTRO_DURATION, 1);
+				const easedT = 1 - Math.pow(1 - t, 3);
 
-				controls.setLookAt(camX, 0, camZ, center.x, 0, center.z, false);
+				const angle = startAngle + (1 - easedT) * (endAngle - startAngle);
+				const camX = introRadius * Math.cos(angle);
+				const camZ = introRadius * Math.sin(angle);
 
-				if (currentStep <= steps) {
-					currentStep++;
+				controls.setLookAt(camX, 0, camZ, 0, 0, 0, false);
+
+				if (t < 1) {
 					animationFrameId = requestAnimationFrame(animate);
 				} else {
 					const finalCamPos = new Vector3(slideX, 0, slideZ - cameraRadius);
-					controls.setLookAt(finalCamPos.x, finalCamPos.y, finalCamPos.z, slideX, 0, slideZ, true);
-					controls.dollyTo(cameraRadius * 0.7, true);
-					moveToSlide(0);
+					controls.setLookAt(finalCamPos.x, 0, finalCamPos.z, slideX, 0, slideZ, true);
 					setSlide(0);
 				}
 			};
 
 			animate();
-		}, 1000);
+		};
+
+		timeoutId = setTimeout(playIntroAnimation, 1000);
 
 		return () => {
 			clearTimeout(timeoutId);
 			cancelAnimationFrame(animationFrameId);
 		};
-	}, [cameraRadius, totalRadius, moveToSlide, setSlide]);
+	}, [cameraRadius, totalRadius, setSlide]);
 
+	// 슬라이드 이동
 	useEffect(() => {
 		if (!freemode && lastSlideIndexRef.current !== slide) {
-			if (!isFirstRender.current) {
-				moveToSlide(slide);
-			}
+			moveToSlide(slide);
 			lastSlideIndexRef.current = slide;
 		}
-		isFirstRender.current = false;
 	}, [slide, freemode, moveToSlide]);
 
+	// 포커스 상태 이동
 	useEffect(() => {
 		if (freemode) {
 			if (focusIndex !== null) {
 				moveToSlide(focusIndex, true);
-			} else if (prevFocusRef.current !== null || focusIndex === null) {
+			} else if (prevFocusRef.current !== null) {
 				moveToFreeModePosition(lastFocusTarget);
 			}
 		}
 		prevFocusRef.current = focusIndex;
 	}, [freemode, focusIndex, moveToSlide, moveToFreeModePosition, lastFocusTarget]);
 
+	// 모드 전환 시 정면에서 가까운 슬라이드 줌인
 	useEffect(() => {
 		const prev = prevFreemodeRef.current;
 		const now = freemode;
@@ -107,8 +110,8 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 
 			for (let i = 0; i < slideArray.length; i++) {
 				const { x, z } = getSlidePosition(i, totalRadius);
-				const vec = new Vector3(x - cameraPos.x, 0, z - cameraPos.z).normalize();
-				const dot = direction.dot(vec);
+				const toSlide = new Vector3(x - cameraPos.x, 0, z - cameraPos.z).normalize();
+				const dot = direction.dot(toSlide);
 				if (dot > maxDot) {
 					maxDot = dot;
 					nearest = i;
@@ -126,7 +129,7 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 			// slide -> free 모드 전환
 			moveToFreeModePosition(lastFocusTarget);
 		}
-	}, [freemode, lastFocusTarget, setSlide, setHoverIndex, moveToSlide, moveToFreeModePosition, totalRadius]);
+	}, [freemode, totalRadius, moveToSlide, moveToFreeModePosition, lastFocusTarget, setSlide, setFocusIndex, setHoverIndex]);
 
 	const isInteractive = freemode && focusIndex === null;
 
