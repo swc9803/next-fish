@@ -48,7 +48,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 								<planeGeometry args={[slideWidth + 0.05, slideHeight + 0.05]} />
 								<meshLambertMaterial color="#ffffff" toneMapped={false} />
 							</mesh>
-							<mesh position={[0, 0, -0.01]}>
+							<mesh position={[0, 0, 0]}>
 								<planeGeometry args={[slideWidth, slideHeight]} />
 								<meshBasicMaterial map={texture} toneMapped={false} />
 							</mesh>

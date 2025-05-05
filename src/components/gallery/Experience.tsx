@@ -25,8 +25,8 @@ export const Experience = () => {
 
 	const slideHeight = useMemo(() => {
 		if (slideWidth === 0) return 0;
-		return slideWidth / aspect;
-	}, [slideWidth, aspect]);
+		return slideWidth * (9 / 16);
+	}, [slideWidth]);
 
 	const totalRadius = useMemo(() => {
 		if (!slideGap) return 0;
@@ -42,23 +42,25 @@ export const Experience = () => {
 
 	useEffect(() => {
 		const getResponsiveCameraRadius = (width: number) => {
-			if (width < 640) return 4;
-			if (width < 1024) return 5;
-			if (width < 1440) return 6;
-			return 6.5;
+			const minWidth = 320;
+			const maxWidth = 1920;
+			const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
+			const ratio = (clampedWidth - minWidth) / (maxWidth - minWidth);
+			return 4 + ratio * (6.5 - 4);
 		};
 
 		const getResponsiveSlideGap = (radius: number, width: number) => {
-			if (width < 640) return radius * 1.0;
-			if (width < 1024) return radius * 1.2;
-			if (width < 1440) return radius * 1.4;
-			return radius * 1.5;
+			const minWidth = 320;
+			const maxWidth = 1920;
+			const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
+			const ratio = (clampedWidth - minWidth) / (maxWidth - minWidth);
+			return radius * (1.0 + ratio * (1.5 - 1.0));
 		};
 
 		const handleResize = () => {
 			const width = window.innerWidth;
-			const radius = Math.min(getResponsiveCameraRadius(width), 6.5);
-			const gap = Math.min(getResponsiveSlideGap(radius, width), 10);
+			const radius = getResponsiveCameraRadius(width);
+			const gap = getResponsiveSlideGap(radius, width);
 			setCameraRadius(radius);
 			setSlideGap(gap);
 		};
