@@ -1,14 +1,9 @@
-"use client";
-
 import styles from "./Overlay.module.scss";
 import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const Overlay = () => {
-	const { slide, focusIndex, freemode } = useGallerySlide();
-	const { setSlide, setFocusIndex, setFreemode } = useGallerySlide.getState();
-	const isSliding = useGallerySlide((state) => state.isSliding);
-	const isIntroPlaying = useGallerySlide((state) => state.isIntroPlaying);
+	const { slide, focusIndex, freemode, isSliding, isIntroPlaying, setSlide, setFocusIndex, setFreemode } = useGallerySlide();
 
 	const activeSlide = freemode && focusIndex !== null ? focusIndex : slide;
 	const showOverlay = !freemode || (freemode && focusIndex !== null);
@@ -37,7 +32,6 @@ export const Overlay = () => {
 
 	return (
 		<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>
-			{/* 모드 토글 버튼 */}
 			<button className={styles.view_toggle_button} onClick={handleToggleView} type="button">
 				<div className={`${styles.switch} ${freemode ? styles.free : ""}`}>
 					<div className={styles.knob} />
@@ -45,7 +39,6 @@ export const Overlay = () => {
 				</div>
 			</button>
 
-			{/* 뒤로가기 버튼 */}
 			<button className={`${styles.back_button} ${freemode && focusIndex !== null ? styles.show : ""}`} onClick={handleBack} type="button">
 				<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<g clipPath="url(#clip0_1841_357)">
@@ -71,7 +64,6 @@ export const Overlay = () => {
 				/>
 			</svg>
 
-			{/* 슬라이드 모드 네비게이션 */}
 			{!freemode && (
 				<div className={styles.slide_navigation}>
 					<button onClick={handlePrevSlide} aria-label="previous slide button">

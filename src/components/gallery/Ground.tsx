@@ -1,5 +1,3 @@
-"use client";
-
 import { MeshReflectorMaterial } from "@react-three/drei";
 
 export const Ground = ({ positionY }) => {

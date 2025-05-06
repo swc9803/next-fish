@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useMemo, useState } from "react";
 import { Vector3 } from "three";
 import { useGallerySlide } from "@/store/useGallerySlide";
@@ -11,7 +9,8 @@ interface HoverLightProps {
 }
 
 const useResponsiveLightProps = () => {
-	const [lightProps, setLightProps] = useState({ intensity: 30, distance: 5 });
+	const ref = useRef({ intensity: 30, distance: 5 });
+	const [, forceRender] = useState(0);
 
 	useEffect(() => {
 		const updateLightProps = () => {
@@ -19,10 +18,11 @@ const useResponsiveLightProps = () => {
 			const clampedWidth = Math.min(Math.max(width, 320), 1920);
 			const ratio = (clampedWidth - 320) / (1920 - 320);
 
-			setLightProps({
-				intensity: 10 + ratio * 20, // 10 ~ 30
-				distance: 1 + ratio * 4, // 1 ~ 5
-			});
+			ref.current = {
+				intensity: 10 + ratio * 20,
+				distance: 1 + ratio * 4,
+			};
+			forceRender((prev) => prev + 1);
 		};
 
 		updateLightProps();
@@ -40,7 +40,7 @@ const useResponsiveLightProps = () => {
 		};
 	}, []);
 
-	return lightProps;
+	return ref.current;
 };
 
 export const HoverLight = ({ totalRadius }: HoverLightProps) => {

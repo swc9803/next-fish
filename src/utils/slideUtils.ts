@@ -50,9 +50,8 @@ slideArray.forEach((slide) => useTexture.preload(slide.imagePaths));
 
 export const getSlidePosition = (slideIndex: number, radius: number) => {
 	const angleInRadians = -(2 * Math.PI * slideIndex) / slideArray.length;
-	return {
-		x: radius * Math.sin(angleInRadians),
-		z: radius * Math.cos(angleInRadians),
-		angleInRadians,
-	};
+	const x = radius * Math.sin(angleInRadians);
+	const z = radius * Math.cos(angleInRadians);
+
+	return { x, z, angleInRadians };
 };

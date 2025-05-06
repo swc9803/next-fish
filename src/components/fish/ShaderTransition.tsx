@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Vector4, WebGLRenderTarget, CanvasTexture } from "three";

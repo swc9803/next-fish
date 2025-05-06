@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef, useMemo, JSX } from "react";
 import { Group, Mesh } from "three";
 import { useFrame } from "@react-three/fiber";

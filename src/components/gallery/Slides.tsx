@@ -1,5 +1,5 @@
-"use client";
-
+import { useRef } from "react";
+import { Group } from "three";
 import { useTexture } from "@react-three/drei";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
@@ -11,20 +11,23 @@ interface SlidesProps {
 }
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) => {
-	const { freemode, focusIndex, setFocusIndex, setSlide, hoverIndex, setHoverIndex, isSliding } = useGallerySlide();
+	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setSlide, setHoverIndex } = useGallerySlide();
 
 	const texturesArray = slideArray.map((slide) => useTexture(slide.imagePaths));
+
+	const groupRefs = useRef<(Group | null)[]>([]);
 
 	return (
 		<>
 			{slideArray.map((slide, index) => {
 				const { x, z, angleInRadians } = getSlidePosition(index, totalRadius);
 				const rotationY = angleInRadians + Math.PI;
-				const texture = texturesArray[index][0];
+				const texture = texturesArray[index]?.[0];
 
 				return (
 					<group
 						key={index}
+						ref={(ref) => (groupRefs.current[index] = ref)}
 						position={[x, 0, z]}
 						rotation={[0, rotationY, 0]}
 						onClick={() => {
@@ -46,7 +49,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 							</mesh>
 							<mesh position={[0, 0, 0]}>
 								<planeGeometry args={[slideWidth, slideHeight]} />
-								<meshBasicMaterial map={texture} toneMapped={false} />
+								<meshBasicMaterial map={texture} toneMapped={false} transparent={false} />
 							</mesh>
 						</group>
 					</group>

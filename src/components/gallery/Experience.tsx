@@ -20,41 +20,33 @@ export const Experience = () => {
 	const [slideGap, setSlideGap] = useState<number>();
 
 	const slideWidth = useMemo(() => {
-		if (!cameraRadius) return 0;
-		return 2 * cameraRadius * Math.tan(fov / 2) * aspect;
+		return cameraRadius ? 2 * cameraRadius * Math.tan(fov / 2) * aspect : 0;
 	}, [cameraRadius, fov, aspect]);
 
 	const slideHeight = useMemo(() => {
-		if (slideWidth === 0) return 0;
-		return slideWidth * (9 / 16);
+		return slideWidth ? slideWidth * (9 / 16) : 0;
 	}, [slideWidth]);
 
 	const totalRadius = useMemo(() => {
-		if (!slideGap) return 0;
-		return (slideGap * slideArray.length) / (2 * Math.PI);
+		return slideGap ? (slideGap * slideArray.length) / (2 * Math.PI) : 0;
 	}, [slideGap]);
 
 	const groundY = useMemo(() => {
-		if (!cameraRadius || !slideHeight) return 0;
-		return -slideHeight / 2 - 0.1;
+		return cameraRadius && slideHeight ? -slideHeight / 2 - 0.1 : 0;
 	}, [cameraRadius, slideHeight]);
 
 	const isInitialized = cameraRadius !== undefined && slideGap !== undefined;
 
 	useEffect(() => {
 		const getResponsiveCameraRadius = (width: number) => {
-			const minWidth = 320;
-			const maxWidth = 1920;
-			const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
-			const ratio = (clampedWidth - minWidth) / (maxWidth - minWidth);
+			const clampedWidth = Math.min(Math.max(width, 320), 1920);
+			const ratio = (clampedWidth - 320) / (1920 - 320);
 			return 4 + ratio * (6.5 - 4);
 		};
 
 		const getResponsiveSlideGap = (radius: number, width: number) => {
-			const minWidth = 320;
-			const maxWidth = 1920;
-			const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
-			const ratio = (clampedWidth - minWidth) / (maxWidth - minWidth);
+			const clampedWidth = Math.min(Math.max(width, 320), 1920);
+			const ratio = (clampedWidth - 320) / (1920 - 320);
 			return radius * (1.0 + ratio * (1.5 - 1.0));
 		};
 
@@ -66,17 +58,16 @@ export const Experience = () => {
 			setSlideGap(gap);
 		};
 
-		handleResize();
-		const timeoutId = { current: 0 as any };
-
+		const timeoutRef = { current: 0 as any };
 		const debouncedResize = () => {
-			clearTimeout(timeoutId.current);
-			timeoutId.current = setTimeout(handleResize, 100);
+			clearTimeout(timeoutRef.current);
+			timeoutRef.current = setTimeout(handleResize, 100);
 		};
 
+		handleResize();
 		window.addEventListener("resize", debouncedResize);
 		return () => {
-			clearTimeout(timeoutId.current);
+			clearTimeout(timeoutRef.current);
 			window.removeEventListener("resize", debouncedResize);
 		};
 	}, []);
@@ -86,7 +77,7 @@ export const Experience = () => {
 	return (
 		<>
 			<Background />
-			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
+			<CameraHandler cameraRadius={cameraRadius!} totalRadius={totalRadius} />
 			<HoverLight totalRadius={totalRadius} />
 			<Ground positionY={groundY} />
 			<Slides totalRadius={totalRadius} slideWidth={slideWidth} slideHeight={slideHeight} />
