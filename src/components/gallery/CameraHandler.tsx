@@ -21,11 +21,13 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 	const prevFreemodeRef = useRef(false);
 	const prevFocusRef = useRef<number | null>(null);
 	const isIntroPlating = useRef(false);
+	const { setIsIntroPlaying } = useGallerySlide.getState();
 
 	// 인트로 애니메이션
 	useEffect(() => {
 		if (isIntroPlating.current || !cameraControlsRef.current) return;
 		isIntroPlating.current = true;
+		setIsIntroPlaying(true);
 
 		const controls = cameraControlsRef.current;
 		let timeoutId: NodeJS.Timeout;
@@ -59,6 +61,7 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 					const finalCamPos = new Vector3(slideX, 0, slideZ - cameraRadius);
 					controls.setLookAt(finalCamPos.x, 0, finalCamPos.z, slideX, 0, slideZ, true);
 					setSlide(0);
+					setIsIntroPlaying(false);
 				}
 			};
 

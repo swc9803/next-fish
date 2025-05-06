@@ -11,7 +11,7 @@ interface SlidesProps {
 }
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) => {
-	const { freemode, focusIndex, setFocusIndex, setSlide, hoverIndex, setHoverIndex } = useGallerySlide();
+	const { freemode, focusIndex, setFocusIndex, setSlide, hoverIndex, setHoverIndex, isSliding } = useGallerySlide();
 
 	const texturesArray = slideArray.map((slide) => useTexture(slide.imagePaths));
 
@@ -28,7 +28,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 						position={[x, 0, z]}
 						rotation={[0, rotationY, 0]}
 						onClick={() => {
-							if (freemode) {
+							if (freemode && !isSliding) {
 								setFocusIndex(index);
 								setSlide(index);
 							}

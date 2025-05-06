@@ -7,7 +7,7 @@ export const Ground = ({ positionY }) => {
 		<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, positionY, 0]}>
 			<circleGeometry args={[20, 16]} />
 			<MeshReflectorMaterial
-				blur={[100, 10]}
+				blur={[50, 5]}
 				resolution={512}
 				mixBlur={0.9}
 				mixStrength={15}

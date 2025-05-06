@@ -8,6 +8,7 @@ interface GallerySlideState {
 	isSliding: boolean;
 	isZoom: boolean;
 	lastFocusTarget: { x: number; z: number } | null;
+	isIntroPlaying: boolean;
 
 	setSlide: (index: number) => void;
 	setFocusIndex: (index: number | null) => void;
@@ -16,6 +17,7 @@ interface GallerySlideState {
 	setIsSliding: (state: boolean) => void;
 	setIsZoom: (state: boolean) => void;
 	setLastFocusTarget: (pos: { x: number; z: number } | null) => void;
+	setIsIntroPlaying: (value: boolean) => void;
 }
 
 export const useGallerySlide = create<GallerySlideState>((set) => ({
@@ -26,6 +28,7 @@ export const useGallerySlide = create<GallerySlideState>((set) => ({
 	isSliding: false,
 	isZoom: false,
 	lastFocusTarget: null,
+	isIntroPlaying: true,
 
 	setSlide: (index) => set({ slide: index }),
 	setFocusIndex: (index) => set({ focusIndex: index }),
@@ -34,4 +37,5 @@ export const useGallerySlide = create<GallerySlideState>((set) => ({
 	setIsSliding: (state) => set({ isSliding: state }),
 	setIsZoom: (state) => set({ isZoom: state }),
 	setLastFocusTarget: (pos) => set({ lastFocusTarget: pos }),
+	setIsIntroPlaying: (value) => set({ isIntroPlaying: value }),
 }));

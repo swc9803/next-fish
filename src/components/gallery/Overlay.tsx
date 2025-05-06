@@ -8,9 +8,11 @@ export const Overlay = () => {
 	const { slide, focusIndex, freemode } = useGallerySlide();
 	const { setSlide, setFocusIndex, setFreemode } = useGallerySlide.getState();
 	const isSliding = useGallerySlide((state) => state.isSliding);
+	const isIntroPlaying = useGallerySlide((state) => state.isIntroPlaying);
 
 	const activeSlide = freemode && focusIndex !== null ? focusIndex : slide;
 	const showOverlay = !freemode || (freemode && focusIndex !== null);
+	const isOverlayDisabled = isSliding || isIntroPlaying;
 
 	const handleToggleView = () => {
 		if (freemode && focusIndex !== null) {
@@ -34,7 +36,7 @@ export const Overlay = () => {
 	};
 
 	return (
-		<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isSliding ? styles.disabled : ""}`}>
+		<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>
 			{/* 모드 토글 버튼 */}
 			<button className={styles.view_toggle_button} onClick={handleToggleView} type="button">
 				<div className={`${styles.switch} ${freemode ? styles.free : ""}`}>
