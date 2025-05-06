@@ -34,9 +34,9 @@ export const Experience = () => {
 	}, [slideGap]);
 
 	const groundY = useMemo(() => {
-		if (!cameraRadius) return 0;
-		return -cameraRadius * 0.29;
-	}, [cameraRadius]);
+		if (!cameraRadius || !slideHeight) return 0;
+		return -slideHeight / 2 - 0.1;
+	}, [cameraRadius, slideHeight]);
 
 	const isInitialized = cameraRadius !== undefined && slideGap !== undefined;
 

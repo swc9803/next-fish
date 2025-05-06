@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { CameraControls } from "@react-three/drei";
 import { Vector3 } from "three";
+import { CameraControls } from "@react-three/drei";
 import { useCameraTransition } from "@/hooks/useCameraTransition";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { getSlidePosition, slideArray } from "@/utils/slideUtils";
@@ -33,7 +33,6 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 
 		const playIntroAnimation = () => {
 			const { x: slideX, z: slideZ } = getSlidePosition(0, totalRadius);
-			const center = new Vector3(0, 0, 0);
 			const introRadius = Math.hypot(slideX, slideZ);
 
 			const slide0Angle = Math.atan2(slideZ, slideX);
