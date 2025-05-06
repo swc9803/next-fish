@@ -11,11 +11,11 @@ export const Ground = ({ positionY }) => {
 				resolution={512}
 				mixBlur={0.9}
 				mixStrength={15}
-				roughness={1}
+				roughness={0.7}
 				depthScale={0.8}
 				minDepthThreshold={0.4}
 				maxDepthThreshold={1.2}
-				color={"#575757"}
+				color={"#3DA1E4"}
 				metalness={0.2}
 			/>
 		</mesh>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { Vector3 } from "three";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { getSlidePosition } from "@/utils/slideUtils";
@@ -10,26 +10,19 @@ interface HoverLightProps {
 	totalRadius: number;
 }
 
-export const HoverLight = ({ totalRadius }: HoverLightProps) => {
-	const { bloomRef, lightRef, setTarget } = useLightTransition();
-	const { freemode, hoverIndex, focusIndex, slide } = useGallerySlide();
-
-	const lastIndexRef = useRef<number | null>(null);
-	const lastModeRef = useRef<boolean | null>(null);
-
+const useResponsiveLightProps = () => {
 	const [lightProps, setLightProps] = useState({ intensity: 30, distance: 5 });
 
 	useEffect(() => {
 		const updateLightProps = () => {
 			const width = window.innerWidth;
-			const minWidth = 320;
-			const maxWidth = 1920;
-			const clampedWidth = Math.max(minWidth, Math.min(maxWidth, width));
-			const ratio = (clampedWidth - minWidth) / (maxWidth - minWidth);
+			const clampedWidth = Math.min(Math.max(width, 320), 1920);
+			const ratio = (clampedWidth - 320) / (1920 - 320);
 
-			const intensity = 10 + ratio * (30 - 10);
-			const distance = 1 + ratio * (5 - 1);
-			setLightProps({ intensity, distance });
+			setLightProps({
+				intensity: 10 + ratio * 20, // 10 ~ 30
+				distance: 1 + ratio * 4, // 1 ~ 5
+			});
 		};
 
 		updateLightProps();
@@ -47,32 +40,36 @@ export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 		};
 	}, []);
 
-	const updateTarget = () => {
-		const targetIndex = !freemode ? slide : hoverIndex ?? focusIndex;
-		if (targetIndex !== null) {
-			const { x, z } = getSlidePosition(targetIndex, totalRadius);
-			setTarget(new Vector3(x, 0.5, z));
-		}
-	};
+	return lightProps;
+};
+
+export const HoverLight = ({ totalRadius }: HoverLightProps) => {
+	const { bloomRef, lightRef, setTarget } = useLightTransition();
+	const { freemode, hoverIndex, focusIndex, slide } = useGallerySlide();
+
+	const lightProps = useResponsiveLightProps();
+
+	const targetIndex = useMemo(() => {
+		return !freemode ? slide : hoverIndex ?? focusIndex;
+	}, [freemode, hoverIndex, focusIndex, slide]);
+
+	const lastTargetRef = useRef<number | null>(null);
+	const lastModeRef = useRef<boolean | null>(null);
 
 	useEffect(() => {
-		const targetIndex = !freemode ? slide : hoverIndex ?? focusIndex;
+		if (targetIndex === null) return;
+		if (targetIndex === lastTargetRef.current && freemode === lastModeRef.current) return;
 
-		if (targetIndex === lastIndexRef.current && freemode === lastModeRef.current) return;
-
-		lastIndexRef.current = targetIndex;
+		lastTargetRef.current = targetIndex;
 		lastModeRef.current = freemode;
 
-		updateTarget();
-	}, [hoverIndex, focusIndex, slide, freemode, totalRadius, setTarget]);
-
-	useEffect(() => {
-		updateTarget();
-	}, [totalRadius]);
+		const { x, z } = getSlidePosition(targetIndex, totalRadius);
+		setTarget(new Vector3(x, 0.5, z));
+	}, [targetIndex, freemode, totalRadius, setTarget]);
 
 	return (
 		<group ref={bloomRef}>
-			<pointLight ref={lightRef} position={[0, 0, -1]} intensity={lightProps.intensity} distance={lightProps.distance} color="#ffffff" />
+			<pointLight ref={lightRef} intensity={lightProps.intensity} distance={lightProps.distance} color="#ffffff" />
 		</group>
 	);
 };

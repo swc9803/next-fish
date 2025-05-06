@@ -120,48 +120,23 @@
 		}
 	}
 	.content {
-		background: linear-gradient(to top, rgba(255, 255, 255, 0.9), transparent);
-		padding: 3rem 1rem 2.5rem;
+		background: linear-gradient(0deg, rgba(255, 255, 255, 0.9) 66%, rgba(255, 255, 255, 0));
+		padding: 4rem 3rem 2rem;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
+		gap: 0.5rem;
 		opacity: 0;
 		h1 {
-			font-size: 3rem;
-			font-weight: 800;
+			color: #111;
+			font-size: 2.25rem;
+			font-weight: 700;
 		}
 		p {
-			opacity: 0.6;
-			font-style: italic;
-		}
-		.info {
-			display: flex;
-			align-items: center;
-			gap: 3rem;
-			margin-top: 2.5rem;
-			.info-block {
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				.info-content {
-					display: flex;
-					align-items: center;
-					gap: 0.5rem;
-					svg {
-						width: 1.5rem;
-						height: 1.5rem;
-					}
-					p {
-						font-size: 1.875rem;
-						font-weight: 600;
-					}
-				}
-				.info-text {
-					font-size: 0.875rem;
-					opacity: 0.8;
-				}
-			}
+			color: #444;
+			font-size: 1rem;
+			line-height: 1.6;
 		}
 	}
 }

@@ -4,10 +4,11 @@ import { useEffect, useState, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import { slideArray } from "@/utils/slideUtils";
 
-import { CameraHandler } from "./CameraHandler";
-import { HoverLight } from "./HoverLight";
-import { Slides } from "./Slides";
 import { Ground } from "./Ground";
+import { Background } from "./Background";
+import { CameraHandler } from "./CameraHandler";
+import { Slides } from "./Slides";
+import { HoverLight } from "./HoverLight";
 
 export const Experience = () => {
 	const { camera, viewport } = useThree();
@@ -84,11 +85,11 @@ export const Experience = () => {
 
 	return (
 		<>
-			<ambientLight intensity={1.5} />
+			<Background />
 			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} />
 			<HoverLight totalRadius={totalRadius} />
-			<Slides totalRadius={totalRadius} slideWidth={slideWidth} slideHeight={slideHeight} />
 			<Ground positionY={groundY} />
+			<Slides totalRadius={totalRadius} slideWidth={slideWidth} slideHeight={slideHeight} />
 		</>
 	);
 };

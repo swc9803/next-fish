@@ -5,58 +5,44 @@ export interface slideInfo {
 	name: string;
 	description: string;
 	url: string;
-	price: number;
-	range: number;
 }
 
 export const slideArray: slideInfo[] = [
 	{
 		imagePaths: ["images/gallery1-1.jpg", "images/gallery1-2.jpg", "images/gallery1-3.jpg"],
-		name: "car name 0",
-		description: "0 빨강",
-		url: "https://lotteriafont.com/chobddag",
-		price: 0,
-		range: 0,
+		name: "RIOT GAMES 이벤트 페이지",
+		description: "RIOT GAMES의 발로란트와 전략적 팀 전투(TFT) 이벤트 페이지 퍼블리싱 담당, 게임과 이벤트 컨셉에 맞춘 UI 구성과 모션 구현",
+		url: "https://groot.co.kr/works",
 	},
 	{
 		imagePaths: ["images/gallery2-1.jpg", "images/gallery2-2.jpg", "images/gallery2-3.jpg"],
-		name: "car name 1",
-		description: "1 주황",
-		url: "https://groot.co.kr/works",
-		price: 1,
-		range: 1,
+		name: "롯데리아 신규 폰트 런칭 페이지",
+		description: "롯데리아 신규 폰트 런칭 페이지 퍼블리싱 담당, 브랜드 아이덴티티를 반영한 디자인과 모션 구현",
+		url: "https://lotteriafont.com/chobddag",
 	},
 	{
 		imagePaths: ["images/gallery3-1.jpg", "images/gallery3-2.jpg", "images/gallery3-3.jpg"],
-		name: "car name 2",
-		description: "2 노랑",
+		name: "에스테틱 브랜드 소개 사이트",
+		description: "에스테틱 브랜드 소개 웹사이트 퍼블리싱 및 프론트엔드 담당, 반응형 구현과 모션 중심 구성",
 		url: "https://amazing-prototype.firebaseapp.com",
-		price: 2,
-		range: 2,
 	},
 	{
 		imagePaths: ["images/gallery4-1.jpg", "images/gallery4-2.jpg", "images/gallery4-3.jpg"],
-		name: "car name 3",
-		description: "3 초록",
+		name: "디지털 매거진 사이트",
+		description: "Volvo 자회사 Polestar의 브랜드 매거진 사이트 퍼블리싱 담당, 반응형 구조와 디테일한 UI 구현 중심",
 		url: "https://a-perspective-magazine.com/main",
-		price: 3,
-		range: 3,
 	},
 	{
 		imagePaths: ["images/gallery5-1.jpg", "images/gallery5-2.jpg", "images/gallery5-3.jpg"],
-		name: "car name 4",
-		description: "4 파랑",
+		name: "Creative Studies",
+		description: "다양한 시도를 담은 개인 실험 공간, 애니메이션 아이디어를 지속적으로 업데이트 중",
 		url: "https://sung-gallery.firebaseapp.com",
-		price: 4,
-		range: 4,
 	},
 	{
 		imagePaths: ["images/gallery6-1.jpg", "images/gallery6-2.jpg", "images/gallery6-3.jpg"],
-		name: "car name 5",
-		description: "5 보라",
+		name: "WEMIX 실시간 콘텐츠 디스플레이 UI",
+		description: "사용자가 조작해 실시간으로 반영되는 스크린에 색상과 문구를 출력하는 디스플레이 페이지, 전시 환경에 맞춘 조작 UI 구현",
 		url: "https://lab.ddungsang.com/wemix2022/phone/dist/?auth=QX7UD931",
-		price: 5,
-		range: 5,
 	},
 ];
 

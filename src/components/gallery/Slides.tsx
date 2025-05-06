@@ -41,12 +41,8 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 					>
 						<group>
 							<mesh position={[0, 0, -0.03]}>
-								<planeGeometry args={[slideWidth + 0.15, slideHeight + 0.1]} />
-								<meshBasicMaterial color="#111111" toneMapped={false} />
-							</mesh>
-							<mesh position={[0, 0, -0.02]}>
-								<planeGeometry args={[slideWidth + 0.05, slideHeight + 0.05]} />
-								<meshLambertMaterial color="#ffffff" toneMapped={false} />
+								<planeGeometry args={[slideWidth + 0.1, slideHeight + 0.1]} />
+								<meshLambertMaterial color="#9CB5ED" />
 							</mesh>
 							<mesh position={[0, 0, 0]}>
 								<planeGeometry args={[slideWidth, slideHeight]} />
