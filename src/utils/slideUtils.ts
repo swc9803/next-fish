@@ -41,7 +41,7 @@ export const slideArray: slideInfo[] = [
 	{
 		imagePaths: ["images/gallery6-1.jpg", "images/gallery6-2.jpg", "images/gallery6-3.jpg"],
 		name: "WEMIX 실시간 콘텐츠 디스플레이 UI",
-		description: "사용자가 조작해 실시간으로 반영되는 스크린에 색상과 문구를 출력하는 디스플레이 페이지, 전시 환경에 맞춘 조작 UI 구현",
+		description: "코엑스와 DDP에 설치된 스크린에 실시간으로 사용자 조작에 따라 변경되는 스크린 디스플레이 페이지, 전시 환경에 맞춘 조작 UI 구현",
 		url: "https://lab.ddungsang.com/wemix2022/phone/dist/?auth=QX7UD931",
 	},
 ];
