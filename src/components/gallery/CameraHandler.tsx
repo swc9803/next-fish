@@ -59,9 +59,14 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 					animationFrameId = requestAnimationFrame(animate);
 				} else {
 					const finalCamPos = new Vector3(slideX, 0, slideZ - cameraRadius);
+
 					controls.setLookAt(finalCamPos.x, 0, finalCamPos.z, slideX, 0, slideZ, true);
+
 					setSlide(0);
-					setIsIntroPlaying(false);
+
+					setTimeout(() => {
+						setIsIntroPlaying(false);
+					}, 550);
 				}
 			};
 

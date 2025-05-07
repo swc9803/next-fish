@@ -29,7 +29,10 @@ export const useCameraTransition = (cameraRadius: number, totalRadius: number) =
 
 			if (skipZoom) {
 				await controls.setLookAt(nearPos.x, 0, nearPos.z, targetX, 0, targetZ, true);
-				setIsSliding(false);
+
+				setTimeout(() => {
+					setIsSliding(false);
+				}, 300);
 				return;
 			}
 
@@ -38,7 +41,9 @@ export const useCameraTransition = (cameraRadius: number, totalRadius: number) =
 			await controls.setLookAt(nearPos.x, 0, nearPos.z, targetX, 0, targetZ, true);
 			setIsZoom(false);
 
-			setIsSliding(false);
+			setTimeout(() => {
+				setIsSliding(false);
+			}, 300);
 		},
 		[cameraRadius, zoomOutRadius, totalRadius]
 	);
@@ -56,7 +61,10 @@ export const useCameraTransition = (cameraRadius: number, totalRadius: number) =
 
 			setIsSliding(true);
 			await controls.setLookAt(camX, 0, camZ, 0, 0, 0, true);
-			setIsSliding(false);
+
+			setTimeout(() => {
+				setIsSliding(false);
+			}, 300);
 		},
 		[cameraRadius]
 	);
