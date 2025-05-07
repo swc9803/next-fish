@@ -19,7 +19,7 @@ const useResponsiveLightProps = () => {
 			const ratio = (clampedWidth - 320) / (1920 - 320);
 
 			ref.current = {
-				intensity: 10 + ratio * 20,
+				intensity: 5 + ratio * 20,
 				distance: 1 + ratio * 4,
 			};
 			forceRender((prev) => prev + 1);

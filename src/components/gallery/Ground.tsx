@@ -13,7 +13,7 @@ export const Ground = ({ positionY }) => {
 				depthScale={0.8}
 				minDepthThreshold={0.4}
 				maxDepthThreshold={1.2}
-				color={"#3DA1E4"}
+				color={"#0087E2"}
 				metalness={0.2}
 			/>
 		</mesh>
