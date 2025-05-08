@@ -30,7 +30,6 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 		setIsIntroPlaying(true);
 
 		const controls = cameraControlsRef.current;
-		let timeoutId: NodeJS.Timeout;
 		let animationFrameId: number;
 
 		const playIntroAnimation = () => {
@@ -44,6 +43,9 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 			const INTRO_DURATION = 2500;
 			// const INTRO_DURATION = 500;
 
+			const introStartY = 5;
+			const introEndY = 0;
+
 			const animate = () => {
 				const elapsed = performance.now() - startTime;
 				const t = Math.min(elapsed / INTRO_DURATION, 1);
@@ -52,14 +54,16 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 				const angle = startAngle + (1 - easedT) * (endAngle - startAngle);
 				const camX = introRadius * Math.cos(angle);
 				const camZ = introRadius * Math.sin(angle);
+				const camY = introStartY + (introEndY - introStartY) * easedT;
 
-				controls.setLookAt(camX, 0, camZ, 0, 0, 0, false);
+				const lookAtY = introStartY + (introEndY - introStartY) * easedT;
+
+				controls.setLookAt(camX, camY, camZ, 0, lookAtY, 0, false);
 
 				if (t < 1) {
 					animationFrameId = requestAnimationFrame(animate);
 				} else {
 					const finalCamPos = new Vector3(slideX, 0, slideZ - cameraRadius);
-
 					controls.setLookAt(finalCamPos.x, 0, finalCamPos.z, slideX, 0, slideZ, true);
 
 					setSlide(0);
@@ -73,10 +77,9 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 			animate();
 		};
 
-		timeoutId = setTimeout(playIntroAnimation, 1000);
+		playIntroAnimation();
 
 		return () => {
-			clearTimeout(timeoutId);
 			cancelAnimationFrame(animationFrameId);
 		};
 	}, [cameraRadius, totalRadius, setSlide]);
