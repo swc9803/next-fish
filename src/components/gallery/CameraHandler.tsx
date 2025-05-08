@@ -10,9 +10,10 @@ import { getSlidePosition, slideArray } from "@/utils/slideUtils";
 interface CameraHandlerProps {
 	cameraRadius: number;
 	totalRadius: number;
+	startIntro?: boolean;
 }
 
-export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps) => {
+export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraHandlerProps) => {
 	const { cameraControlsRef, moveToSlide, moveToFreeModePosition } = useCameraTransition(cameraRadius, totalRadius);
 
 	const { slide, setSlide, freemode, focusIndex, lastFocusTarget, setHoverIndex, setFocusIndex } = useGallerySlide();
@@ -37,10 +38,10 @@ export const CameraHandler = ({ cameraRadius, totalRadius }: CameraHandlerProps)
 			const introRadius = Math.hypot(slideX, slideZ);
 
 			const slide0Angle = Math.atan2(slideZ, slideX);
-			const startAngle = slide0Angle + Math.PI * 3;
+			const startAngle = slide0Angle + Math.PI * 5;
 			const endAngle = slide0Angle;
 			const startTime = performance.now();
-			const INTRO_DURATION = 2500;
+			const INTRO_DURATION = 5000;
 			// const INTRO_DURATION = 500;
 
 			const introStartY = 5;

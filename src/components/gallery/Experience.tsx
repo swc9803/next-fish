@@ -10,7 +10,7 @@ import { CameraHandler } from "./CameraHandler";
 import { Slides } from "./Slides";
 import { HoverLight } from "./HoverLight";
 
-export const Experience = () => {
+export const Experience = ({ startIntro }: { startIntro: boolean }) => {
 	const { camera, viewport } = useThree();
 
 	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
@@ -77,7 +77,7 @@ export const Experience = () => {
 	return (
 		<>
 			<Background />
-			<CameraHandler cameraRadius={cameraRadius!} totalRadius={totalRadius} />
+			<CameraHandler cameraRadius={cameraRadius!} totalRadius={totalRadius} startIntro={startIntro} />
 			<HoverLight totalRadius={totalRadius} />
 			<Ground positionY={groundY} />
 			<Slides totalRadius={totalRadius} slideWidth={slideWidth} slideHeight={slideHeight} />
