@@ -1,40 +1,17 @@
 .overlay {
 	position: fixed;
-	z-index: 10;
 	top: 0;
 	left: 0;
 	bottom: 0;
 	right: 0;
 	display: flex;
 	flex-direction: column;
-	justify-content: space-between;
-	pointer-events: none;
-	&.show {
-		.logo,
-		.slide_navigation,
-		.content {
-			opacity: 1;
-		}
-	}
-	&.disabled {
-		.view_toggle_button,
-		.back_button,
-		.slide_navigation button {
-			pointer-events: none;
-		}
-	}
-	.logo,
-	.slide_navigation,
-	.content {
-		opacity: 0;
-		will-change: opacity;
-		transition: 0.5s ease-out;
-	}
+	// pointer-events: none;
+	z-index: 10;
 	.view_toggle_button {
 		position: absolute;
-		top: 20px;
-		right: 20px;
-		pointer-events: auto;
+		top: 1.5rem;
+		right: 1.5rem;
 		border-radius: 1.5rem;
 		z-index: 1;
 		.switch {
@@ -74,13 +51,12 @@
 	}
 	.back_button {
 		position: absolute;
-		top: 20px;
+		top: 1.5rem;
 		right: 11rem;
 		width: 2.25rem;
 		height: 2.25rem;
 		border-radius: 50%;
-		pointer-events: auto;
-		transform: translate3d(120%, 0, 0);
+		transform: translate3d(140%, 0, 0);
 		will-change: opacity, transform;
 		transition: 0.2s ease-out;
 		&.show {
@@ -92,9 +68,27 @@
 			height: 100%;
 		}
 	}
-	.logo {
-		margin: 2rem auto;
-		width: 10rem;
+	.logo_wrapper {
+		position: relative;
+		margin: 1.5rem auto;
+		width: 7rem;
+		height: 2.25rem;
+		pointer-events: none;
+		.logo_background {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate3d(-50%, -50%, 0);
+			width: 200%;
+			height: 200%;
+			border-radius: 50%;
+			background: #fff;
+			filter: blur(10px);
+		}
+		.logo {
+			height: auto;
+			object-fit: contain;
+		}
 	}
 	.slide_navigation {
 		position: absolute;
@@ -106,28 +100,26 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 1rem;
-		opacity: 0;
 		button {
-			pointer-events: auto;
 			svg {
 				width: 2.5rem;
 				height: 2.5rem;
-				transition: opacity 0.3s ease-in-out;
+				transition: transform 0.3s ease-in-out;
 				&:hover {
-					opacity: 0.6;
+					transform: scale(1.1);
 				}
 			}
 		}
 	}
 	.content {
-		background: linear-gradient(0deg, rgba(255, 255, 255, 0.9) 66%, rgba(255, 255, 255, 0));
+		margin-top: auto;
 		padding: 4rem 3rem 2rem;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		text-align: center;
 		gap: 0.5rem;
-		opacity: 0;
+		background: linear-gradient(0deg, rgba(255, 255, 255, 0.9) 66%, rgba(255, 255, 255, 0));
+		text-align: center;
 		h1 {
 			color: #111;
 			font-size: 2.25rem;
@@ -136,7 +128,7 @@
 		p {
 			color: #444;
 			font-size: 1rem;
-			line-height: 1.6;
+			line-height: 160%;
 		}
 	}
 }
