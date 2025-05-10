@@ -134,6 +134,19 @@ export const BombZone = ({
 		[fishScale, CELLS]
 	);
 
+	// 폭탄 피격 함수
+	const handleFishHit = useCallback(
+		(index: number) => {
+			if (fishRef.current) {
+				gsap.killTweensOf(fishRef.current.position);
+			}
+			setIsGameOver(true);
+			setIsInBombZone(false);
+			hitTilesRef.current.push(index);
+		},
+		[setIsGameOver, setIsInBombZone, hitTilesRef]
+	);
+
 	// 폭탄 타일 애니메이션
 	const animateBomb = useCallback(
 		(indexes: number[], fish: Object3D) => {
@@ -172,9 +185,7 @@ export const BombZone = ({
 					onComplete: () => {
 						if (!isGameOver && fish) {
 							if (checkCollision(fish, index)) {
-								setIsGameOver(true);
-								setIsInBombZone(false);
-								hitTilesRef.current.push(index);
+								handleFishHit(index);
 							}
 						}
 						color.set("white");
@@ -211,9 +222,7 @@ export const BombZone = ({
 					if (!mesh || !fish) return;
 
 					if (checkCollision(fish, index)) {
-						setIsGameOver(true);
-						setIsInBombZone(false);
-						hitTilesRef.current.push(index);
+						handleFishHit(index);
 					}
 
 					updatedActive.delete(index);
