@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import { slideArray } from "@/utils/slideUtils";
+import { useGallerySlide } from "@/store/useGallerySlide";
 
 import { Ground } from "./Ground";
 import { Background } from "./Background";
@@ -10,8 +11,9 @@ import { CameraHandler } from "./CameraHandler";
 import { Slides } from "./Slides";
 import { HoverLight } from "./HoverLight";
 
-export const Experience = ({ startIntro }: { startIntro: boolean }) => {
+export const Experience = () => {
 	const { camera, viewport } = useThree();
+	const { isIntroPlaying } = useGallerySlide();
 
 	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
 	const aspect = viewport.aspect;
@@ -58,26 +60,33 @@ export const Experience = ({ startIntro }: { startIntro: boolean }) => {
 			setSlideGap(gap);
 		};
 
-		const timeoutRef = { current: 0 as any };
 		const debouncedResize = () => {
-			clearTimeout(timeoutRef.current);
-			timeoutRef.current = setTimeout(handleResize, 100);
+			if (isIntroPlaying) return;
+
+			handleResize();
 		};
 
 		handleResize();
-		window.addEventListener("resize", debouncedResize);
+
+		const timeoutRef = { current: 0 as any };
+		const onResize = () => {
+			clearTimeout(timeoutRef.current);
+			timeoutRef.current = setTimeout(debouncedResize, 100);
+		};
+
+		window.addEventListener("resize", onResize);
 		return () => {
 			clearTimeout(timeoutRef.current);
-			window.removeEventListener("resize", debouncedResize);
+			window.removeEventListener("resize", onResize);
 		};
-	}, []);
+	}, [isIntroPlaying]);
 
 	if (!isInitialized) return null;
 
 	return (
 		<>
 			<Background />
-			<CameraHandler cameraRadius={cameraRadius!} totalRadius={totalRadius} startIntro={startIntro} />
+			<CameraHandler cameraRadius={cameraRadius!} totalRadius={totalRadius} startIntro={true} />
 			<HoverLight totalRadius={totalRadius} />
 			<Ground positionY={groundY} />
 			<Slides totalRadius={totalRadius} slideWidth={slideWidth} slideHeight={slideHeight} />
