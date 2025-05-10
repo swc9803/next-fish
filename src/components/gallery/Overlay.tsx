@@ -1,14 +1,16 @@
-import styles from "./Overlay.module.scss";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import styles from "./Overlay.module.scss";
 import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const Overlay = () => {
 	const { slide, focusIndex, freemode, isSliding, isIntroPlaying, setSlide, setFocusIndex, setFreemode } = useGallerySlide();
 
-	const activeSlide = freemode && focusIndex !== null ? focusIndex : slide;
 	const showOverlay = !freemode || (freemode && focusIndex !== null);
 	const isOverlayDisabled = isSliding || isIntroPlaying;
+	const [visibleSlide, setVisibleSlide] = useState(slide);
+	const activeSlide = freemode && focusIndex !== null ? focusIndex : visibleSlide;
 
 	const handleToggleView = () => {
 		if (freemode && focusIndex !== null) {
@@ -30,6 +32,15 @@ export const Overlay = () => {
 	const handleNextSlide = () => {
 		setSlide(slide < slideArray.length - 1 ? slide + 1 : 0);
 	};
+
+	useEffect(() => {
+		if (!isIntroPlaying) {
+			const timeout = setTimeout(() => {
+				setVisibleSlide(slide);
+			}, 500);
+			return () => clearTimeout(timeout);
+		}
+	}, [isIntroPlaying, slide]);
 
 	return (
 		<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>
