@@ -72,7 +72,7 @@ export const Overlay = () => {
 			{slideArray[activeSlide].logo && (
 				<div className={styles.logo_wrapper}>
 					<div className={styles.logo_background} />
-					<Image className={styles.logo} src={slideArray[activeSlide].logo!} alt="로고" fill style={{ objectFit: "contain" }} />
+					<Image className={styles.logo} src={slideArray[activeSlide].logo!} alt="로고" fill sizes="7rem" />
 				</div>
 			)}
 

@@ -32,8 +32,13 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 						rotation={[0, rotationY, 0]}
 						onClick={() => {
 							if (freemode && !isSliding) {
-								setFocusIndex(index);
-								setSlide(index);
+								if (focusIndex !== index) {
+									setFocusIndex(index);
+									setSlide(index);
+								} else {
+									setFocusIndex(null);
+									requestAnimationFrame(() => setFocusIndex(index));
+								}
 							}
 						}}
 						onPointerOver={() => {
