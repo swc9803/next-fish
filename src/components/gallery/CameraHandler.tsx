@@ -41,8 +41,6 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 		let animationFrameId: number;
 
 		const playIntroAnimation = () => {
-			console.log("[CameraHandler] 인트로 애니메이션 시작:", performance.now());
-
 			const { x: slideX, z: slideZ } = getSlidePosition(0, totalRadius);
 			const introRadius = Math.hypot(slideX, slideZ);
 
@@ -70,8 +68,6 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 				if (t < 1) {
 					animationFrameId = requestAnimationFrame(animate);
 				} else {
-					console.log("[CameraHandler] 인트로 애니메이션 종료:", performance.now());
-
 					const finalCamPos = new Vector3(slideX, 0, slideZ - cameraRadius);
 					controls.setLookAt(finalCamPos.x, 0, finalCamPos.z, slideX, 0, slideZ, true);
 

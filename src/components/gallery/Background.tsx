@@ -50,10 +50,11 @@ export const Background = () => {
 		groupRef.current.rotation.y = t * 0.01;
 
 		groupRef.current.children.forEach((child, i) => {
-			const { position, floatRange, floatSpeed, offset } = floatingObjects[i];
-			if (child instanceof Mesh) {
-				child.position.y = position[1] + Math.sin(t * floatSpeed + offset) * floatRange;
-			}
+			const data = floatingObjects[i];
+			if (!(child instanceof Mesh) || !data) return;
+
+			const { position, floatRange, floatSpeed, offset } = data;
+			child.position.y = position[1] + Math.sin(t * floatSpeed + offset) * floatRange;
 		});
 	});
 

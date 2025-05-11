@@ -39,24 +39,6 @@ export const Overlay = () => {
 		}
 	}, [isIntroPlaying, slide]);
 
-	useEffect(() => {
-		console.log(
-			"[Overlay] 상태 변화:",
-			"intro:",
-			isIntroPlaying,
-			"cameraIntroDone:",
-			isCameraIntroDone,
-			"sliding:",
-			isSliding,
-			"freemode:",
-			freemode,
-			"focusIndex:",
-			focusIndex,
-			"시간:",
-			performance.now()
-		);
-	}, [isIntroPlaying, isCameraIntroDone, isSliding, freemode, focusIndex]);
-
 	return (
 		<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>
 			<button className={styles.view_toggle_button} onClick={handleToggleView} type="button">
