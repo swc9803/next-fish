@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import { slideArray } from "@/utils/slideUtils";

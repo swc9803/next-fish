@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { Vector3 } from "three";
 import { CameraControls } from "@react-three/drei";

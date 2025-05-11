@@ -1,26 +1,26 @@
-"use client";
-
 import { useEffect, useRef } from "react";
+import { useGallerySlide } from "@/store/useGallerySlide";
 
-interface IntroOverlayProps {
-	onFinish: () => void;
-}
-
-export const IntroOverlay = ({ onFinish }: IntroOverlayProps) => {
+export const IntroOverlay = () => {
 	const overlayRef = useRef<HTMLDivElement>(null);
+	const { setIsIntroPlaying } = useGallerySlide.getState();
 
 	useEffect(() => {
-		const handleEnd = () => onFinish();
+		const handleEnd = () => {
+			setIsIntroPlaying(false);
+		};
+
 		const node = overlayRef.current;
 		if (node) {
 			node.addEventListener("animationend", handleEnd);
 		}
+
 		return () => {
 			if (node) {
 				node.removeEventListener("animationend", handleEnd);
 			}
 		};
-	}, [onFinish]);
+	}, []);
 
 	return (
 		<div
