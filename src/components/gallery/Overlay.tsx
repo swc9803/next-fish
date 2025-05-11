@@ -5,10 +5,10 @@ import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const Overlay = () => {
-	const { slide, focusIndex, freemode, isSliding, isIntroPlaying, setSlide, setFocusIndex, setFreemode } = useGallerySlide();
+	const { slide, focusIndex, freemode, isSliding, isIntroPlaying, isCameraIntroDone, setSlide, setFocusIndex, setFreemode } = useGallerySlide();
 
 	const showOverlay = !freemode || (freemode && focusIndex !== null);
-	const isOverlayDisabled = isSliding || isIntroPlaying;
+	const isOverlayDisabled = isSliding || isIntroPlaying || !isCameraIntroDone;
 	const [visibleSlide, setVisibleSlide] = useState(slide);
 	const activeSlide = freemode && focusIndex !== null ? focusIndex : visibleSlide;
 
@@ -35,12 +35,27 @@ export const Overlay = () => {
 
 	useEffect(() => {
 		if (!isIntroPlaying) {
-			const timeout = setTimeout(() => {
-				setVisibleSlide(slide);
-			}, 500);
-			return () => clearTimeout(timeout);
+			setVisibleSlide(slide);
 		}
 	}, [isIntroPlaying, slide]);
+
+	useEffect(() => {
+		console.log(
+			"[Overlay] 상태 변화:",
+			"intro:",
+			isIntroPlaying,
+			"cameraIntroDone:",
+			isCameraIntroDone,
+			"sliding:",
+			isSliding,
+			"freemode:",
+			freemode,
+			"focusIndex:",
+			focusIndex,
+			"시간:",
+			performance.now()
+		);
+	}, [isIntroPlaying, isCameraIntroDone, isSliding, freemode, focusIndex]);
 
 	return (
 		<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>

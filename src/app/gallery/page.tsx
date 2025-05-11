@@ -4,14 +4,11 @@ import { Canvas } from "@react-three/fiber";
 import { Experience } from "@/components/gallery/Experience";
 import { Overlay } from "@/components/gallery/Overlay";
 import { IntroOverlay } from "@/components/gallery/IntroOverlay";
-import { useGallerySlide } from "@/store/useGallerySlide";
 
 const Gallery = () => {
-	const { isIntroPlaying } = useGallerySlide();
-
 	return (
 		<>
-			{isIntroPlaying && <IntroOverlay />}
+			<IntroOverlay />
 
 			<Overlay />
 

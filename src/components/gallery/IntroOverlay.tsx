@@ -3,7 +3,7 @@ import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const IntroOverlay = () => {
 	const overlayRef = useRef<HTMLDivElement>(null);
-	const { setIsIntroPlaying } = useGallerySlide.getState();
+	const { isIntroPlaying, isIntroStarted, setIsIntroPlaying } = useGallerySlide();
 
 	useEffect(() => {
 		const handleEnd = () => {
@@ -34,7 +34,9 @@ export const IntroOverlay = () => {
 				background: "linear-gradient(white, #a0cfff)",
 				pointerEvents: "none",
 				zIndex: 10,
-				animation: "fadeOut 4s ease-out 0.5s forwards",
+				opacity: isIntroPlaying ? 1 : 0,
+				transition: "opacity 0.3s ease-out",
+				animation: isIntroStarted ? "fadeOut 4s ease-out 0.5s forwards" : "none",
 			}}
 		/>
 	);
