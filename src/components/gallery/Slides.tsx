@@ -14,7 +14,6 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setSlide, setHoverIndex } = useGallerySlide();
 
 	const texturesArray = slideArray.map((slide) => useTexture(slide.imagePaths));
-
 	const groupRefs = useRef<(Group | null)[]>([]);
 
 	return (
@@ -23,6 +22,8 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 				const { x, z, angleInRadians } = getSlidePosition(index, totalRadius);
 				const rotationY = angleInRadians + Math.PI;
 				const texture = texturesArray[index]?.[0];
+
+				const borderColor = slide.borderColor;
 
 				return (
 					<group
@@ -50,7 +51,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 						<group>
 							<mesh position={[0, 0, -0.03]}>
 								<planeGeometry args={[slideWidth + 0.1, slideHeight + 0.1]} />
-								<meshLambertMaterial color="#9CB5ED" />
+								<meshLambertMaterial color={borderColor} />
 							</mesh>
 							<mesh position={[0, 0, 0]}>
 								<planeGeometry args={[slideWidth, slideHeight]} />
