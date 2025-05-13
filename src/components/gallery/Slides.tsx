@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { Group, Texture } from "three";
 import { useTexture } from "@react-three/drei";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
+import { useFrame } from "@react-three/fiber";
 
 interface SlidesProps {
 	totalRadius: number;
@@ -10,95 +11,96 @@ interface SlidesProps {
 	slideHeight: number;
 }
 
+interface SlideState {
+	current: Texture;
+	next: Texture | null;
+	opacity: number;
+	index: number;
+}
+
 export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) => {
 	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setSlide, setHoverIndex, slide, isIntroPlaying } = useGallerySlide();
 
-	const texturesArray = slideArray.map((slide) => useTexture(slide.imagePaths));
 	const groupRefs = useRef<(Group | null)[]>([]);
 
-	const [imageIndices, setImageIndices] = useState<number[]>(() => slideArray.map(() => 0));
+	// 이미지 경로
+	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
+	const texturesArray = useTexture(allImagePaths) as Texture[];
 
-	const [currentTextures, setCurrentTextures] = useState(() => slideArray.map((_, i) => texturesArray[i][0]));
-	const [nextTextures, setNextTextures] = useState<(Texture | null)[]>(() => slideArray.map(() => null));
-	const [opacities, setOpacities] = useState<number[]>(() => slideArray.map(() => 0));
+	const slideTextures = useMemo(() => {
+		let index = 0;
+		return slideArray.map((slide) => {
+			const textures = slide.imagePaths.map(() => texturesArray[index++]);
+			return textures;
+		});
+	}, [texturesArray]);
 
-	// 현재 활성 슬라이드 추적
-	const [activeSlideIndex, setActiveSlideIndex] = useState<number | null>(null);
+	// 슬라이드 상태
+	const [slideStates, setSlideStates] = useState<SlideState[]>(() =>
+		slideTextures.map((textures) => ({
+			current: textures[0],
+			next: null,
+			opacity: 0,
+			index: 0,
+		}))
+	);
 
-	useEffect(() => {
-		if (!freemode) {
-			setActiveSlideIndex(slide);
-		} else if (hoverIndex !== null) {
-			setActiveSlideIndex(hoverIndex);
-		}
+	const activeSlideIndex = useMemo(() => {
+		if (!freemode) return slide;
+		return hoverIndex !== null ? hoverIndex : null;
 	}, [freemode, slide, hoverIndex]);
 
+	// 이미지 전환 주기
 	useEffect(() => {
 		const interval = setInterval(() => {
 			if (isIntroPlaying || activeSlideIndex === null) return;
 
-			const i = activeSlideIndex;
-			const nextIndex = (imageIndices[i] + 1) % slideArray[i].imagePaths.length;
-			const nextTexture = texturesArray[i][nextIndex];
-
-			setNextTextures((prev) => {
+			setSlideStates((prev) => {
 				const updated = [...prev];
-				updated[i] = nextTexture;
+				const i = activeSlideIndex;
+				const textures = slideTextures[i];
+				const nextIdx = (updated[i].index + 1) % textures.length;
+				updated[i] = {
+					...updated[i],
+					next: textures[nextIdx],
+					opacity: 0,
+					index: updated[i].index,
+				};
 				return updated;
 			});
-
-			setOpacities((prev) => {
-				const updated = [...prev];
-				updated[i] = 0;
-				return updated;
-			});
-
-			let frame = 0;
-			const fadeFrames = 30;
-
-			const fade = () => {
-				frame++;
-				const alpha = frame / fadeFrames;
-
-				setOpacities((prev) => {
-					const updated = [...prev];
-					updated[i] = alpha;
-					return updated;
-				});
-
-				if (frame < fadeFrames) {
-					requestAnimationFrame(fade);
-				} else {
-					setCurrentTextures((prev) => {
-						const updated = [...prev];
-						updated[i] = nextTexture;
-						return updated;
-					});
-					setNextTextures((prev) => {
-						const updated = [...prev];
-						updated[i] = null;
-						return updated;
-					});
-					setImageIndices((prev) => {
-						const updated = [...prev];
-						updated[i] = nextIndex;
-						return updated;
-					});
-				}
-			};
-
-			fade();
 		}, 3000);
 
 		return () => clearInterval(interval);
-	}, [activeSlideIndex, imageIndices, texturesArray, isIntroPlaying]);
+	}, [activeSlideIndex, isIntroPlaying, slideTextures]);
+
+	// 이미지 전환
+	useFrame(() => {
+		if (activeSlideIndex === null) return;
+
+		setSlideStates((prev) => {
+			return prev.map((state, i) => {
+				if (!state.next) return state;
+
+				const newOpacity = Math.min(state.opacity + 0.05, 1);
+				if (newOpacity >= 1) {
+					return {
+						current: state.next,
+						next: null,
+						opacity: 0,
+						index: (state.index + 1) % slideTextures[i].length,
+					};
+				}
+				return { ...state, opacity: newOpacity };
+			});
+		});
+	});
 
 	return (
 		<>
 			{slideArray.map((slide, index) => {
 				const { x, z, angleInRadians } = getSlidePosition(index, totalRadius);
 				const rotationY = angleInRadians + Math.PI;
-				const borderColor = slide.borderColor;
+				const state = slideStates[index];
 
 				return (
 					<group
@@ -126,16 +128,16 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 						<group>
 							<mesh position={[0, 0, -0.03]}>
 								<planeGeometry args={[slideWidth + 0.05, slideHeight + 0.05]} />
-								<meshLambertMaterial color={borderColor} />
+								<meshLambertMaterial color={slide.borderColor} />
 							</mesh>
 							<mesh position={[0, 0, 0]}>
 								<planeGeometry args={[slideWidth, slideHeight]} />
-								<meshBasicMaterial map={currentTextures[index]} toneMapped={false} transparent />
+								<meshBasicMaterial map={state.current} toneMapped={false} transparent />
 							</mesh>
-							{nextTextures[index] && (
+							{state.next && (
 								<mesh position={[0, 0, 0]}>
 									<planeGeometry args={[slideWidth, slideHeight]} />
-									<meshBasicMaterial map={nextTextures[index]!} toneMapped={false} transparent opacity={opacities[index]} />
+									<meshBasicMaterial map={state.next} toneMapped={false} transparent opacity={state.opacity} />
 								</mesh>
 							)}
 						</group>
