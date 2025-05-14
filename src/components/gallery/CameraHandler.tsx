@@ -13,7 +13,7 @@ interface CameraHandlerProps {
 
 export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraHandlerProps) => {
 	const { cameraControlsRef, moveToSlide, moveToFreeModePosition } = useCameraTransition(cameraRadius, totalRadius);
-	const { slide, setSlide, freemode, focusIndex, lastFocusTarget, setHoverIndex, setFocusIndex } = useGallerySlide();
+	const { slide, setSlide, freemode, focusIndex, lastFocusTarget, setLastFocusTarget, setHoverIndex, setFocusIndex } = useGallerySlide();
 
 	const lastSlideIndexRef = useRef<number>(-1);
 	const prevFreemodeRef = useRef(false);
@@ -70,6 +70,8 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 				} else {
 					const finalCamPos = new Vector3(slideX, 0, slideZ - cameraRadius);
 					controls.setLookAt(finalCamPos.x, 0, finalCamPos.z, slideX, 0, slideZ, true);
+
+					setLastFocusTarget({ x: slideX, z: slideZ });
 
 					setSlide(0);
 					isIntroPlating.current = false;
