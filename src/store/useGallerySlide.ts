@@ -11,6 +11,7 @@ interface GallerySlideState {
 	isIntroPlaying: boolean;
 	isCameraIntroDone: boolean;
 	isIntroStarted: boolean;
+	hasIntroPlayed: boolean;
 
 	setSlide: (index: number) => void;
 	setFocusIndex: (index: number | null) => void;
@@ -22,6 +23,7 @@ interface GallerySlideState {
 	setIsIntroPlaying: (value: boolean) => void;
 	setCameraIntroDone: (value: boolean) => void;
 	setIntroStarted: (value: boolean) => void;
+	setHasIntroPlayed: (value: boolean) => void;
 }
 
 export const useGallerySlide = create<GallerySlideState>((set) => ({
@@ -35,6 +37,7 @@ export const useGallerySlide = create<GallerySlideState>((set) => ({
 	isIntroPlaying: true,
 	isCameraIntroDone: false,
 	isIntroStarted: false,
+	hasIntroPlayed: false,
 
 	setSlide: (index) => set({ slide: index }),
 	setFocusIndex: (index) => set({ focusIndex: index }),
@@ -46,4 +49,5 @@ export const useGallerySlide = create<GallerySlideState>((set) => ({
 	setIsIntroPlaying: (value) => set({ isIntroPlaying: value }),
 	setCameraIntroDone: (value) => set({ isCameraIntroDone: value }),
 	setIntroStarted: (value) => set({ isIntroStarted: value }),
+	setHasIntroPlayed: (value) => set({ hasIntroPlayed: value }),
 }));

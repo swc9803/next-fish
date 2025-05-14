@@ -11,7 +11,7 @@ import { HoverLight } from "./HoverLight";
 
 export const Experience = () => {
 	const { camera, viewport } = useThree();
-	const { isIntroPlaying } = useGallerySlide();
+	const { isIntroPlaying, hasIntroPlayed } = useGallerySlide();
 
 	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
 	const aspect = viewport.aspect;
@@ -59,7 +59,7 @@ export const Experience = () => {
 		};
 
 		const debouncedResize = () => {
-			if (isIntroPlaying) return;
+			if (!hasIntroPlayed || isIntroPlaying) return;
 
 			handleResize();
 		};
