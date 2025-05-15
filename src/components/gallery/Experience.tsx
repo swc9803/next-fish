@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
@@ -8,18 +8,6 @@ import { Background } from "./Background";
 import { CameraHandler } from "./CameraHandler";
 import { Slides } from "./Slides";
 import { HoverLight } from "./HoverLight";
-
-const getResponsiveCameraRadius = (width: number) => {
-	const clampedWidth = Math.min(Math.max(width, 320), 1920);
-	const ratio = (clampedWidth - 320) / (1920 - 320);
-	return 4 + ratio * (6.5 - 4);
-};
-
-const getResponsiveSlideGap = (radius: number, width: number) => {
-	const clampedWidth = Math.min(Math.max(width, 320), 1920);
-	const ratio = (clampedWidth - 320) / (1920 - 320);
-	return radius * (1.0 + ratio * (1.5 - 1.0));
-};
 
 export const Experience = () => {
 	const { camera, viewport } = useThree();
@@ -31,18 +19,39 @@ export const Experience = () => {
 	const [cameraRadius, setCameraRadius] = useState<number>();
 	const [slideGap, setSlideGap] = useState<number>();
 
-	const slideWidth = useMemo(() => (cameraRadius ? 2 * cameraRadius * Math.tan(fov / 2) * aspect : 0), [cameraRadius, fov, aspect]);
-	const slideHeight = useMemo(() => (slideWidth ? slideWidth * (9 / 16) : 0), [slideWidth]);
-	const totalRadius = useMemo(() => (slideGap ? (slideGap * slideArray.length) / (2 * Math.PI) : 0), [slideGap]);
-	const groundY = useMemo(() => (cameraRadius && slideHeight ? -slideHeight / 2 - 0.1 : 0), [cameraRadius, slideHeight]);
+	const slideWidth = useMemo(() => {
+		if (!cameraRadius) return;
+		return 2 * cameraRadius * Math.tan(fov / 2) * aspect;
+	}, [cameraRadius, fov, aspect]);
+
+	const slideHeight = useMemo(() => {
+		if (!slideWidth) return;
+		return slideWidth * (9 / 16);
+	}, [slideWidth]);
+
+	const totalRadius = useMemo(() => {
+		if (!slideGap) return;
+		return (slideGap * slideArray.length) / (2 * Math.PI);
+	}, [slideGap]);
+
+	const groundY = useMemo(() => {
+		if (!cameraRadius || !slideHeight) return 0;
+		return -slideHeight / 2 - 0.1;
+	}, [cameraRadius, slideHeight]);
 
 	const isInitialized = cameraRadius !== undefined && slideGap !== undefined;
+
+	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
 		const handleResize = () => {
 			const width = window.innerWidth;
-			const radius = getResponsiveCameraRadius(width);
-			const gap = getResponsiveSlideGap(radius, width);
+			const clampedWidth = Math.min(Math.max(width, 320), 1920);
+			const ratio = (clampedWidth - 320) / (1920 - 320);
+
+			const radius = 4 + ratio * (6.5 - 4);
+			const gap = radius * (1.0 + ratio * (1.5 - 1.0));
+
 			setCameraRadius(radius);
 			setSlideGap(gap);
 		};
@@ -55,7 +64,6 @@ export const Experience = () => {
 
 		handleResize();
 
-		const timeoutRef = { current: 0 as any };
 		const onResize = () => {
 			clearTimeout(timeoutRef.current);
 			timeoutRef.current = setTimeout(resizeWithIntroCheck, 100);
@@ -73,10 +81,10 @@ export const Experience = () => {
 	return (
 		<>
 			<Background />
-			<CameraHandler cameraRadius={cameraRadius!} totalRadius={totalRadius} startIntro={true} />
-			<HoverLight totalRadius={totalRadius} />
+			<CameraHandler cameraRadius={cameraRadius!} totalRadius={totalRadius!} startIntro={true} />
+			<HoverLight totalRadius={totalRadius!} />
 			<Ground positionY={groundY} />
-			<Slides totalRadius={totalRadius} slideWidth={slideWidth} slideHeight={slideHeight} />
+			<Slides totalRadius={totalRadius!} slideWidth={slideWidth!} slideHeight={slideHeight!} />
 		</>
 	);
 };
