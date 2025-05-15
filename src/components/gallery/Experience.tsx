@@ -9,6 +9,18 @@ import { CameraHandler } from "./CameraHandler";
 import { Slides } from "./Slides";
 import { HoverLight } from "./HoverLight";
 
+const getResponsiveCameraRadius = (width: number) => {
+	const clampedWidth = Math.min(Math.max(width, 320), 1920);
+	const ratio = (clampedWidth - 320) / (1920 - 320);
+	return 4 + ratio * (6.5 - 4);
+};
+
+const getResponsiveSlideGap = (radius: number, width: number) => {
+	const clampedWidth = Math.min(Math.max(width, 320), 1920);
+	const ratio = (clampedWidth - 320) / (1920 - 320);
+	return radius * (1.0 + ratio * (1.5 - 1.0));
+};
+
 export const Experience = () => {
 	const { camera, viewport } = useThree();
 	const { isIntroPlaying, hasIntroPlayed } = useGallerySlide();
@@ -19,37 +31,14 @@ export const Experience = () => {
 	const [cameraRadius, setCameraRadius] = useState<number>();
 	const [slideGap, setSlideGap] = useState<number>();
 
-	const slideWidth = useMemo(() => {
-		return cameraRadius ? 2 * cameraRadius * Math.tan(fov / 2) * aspect : 0;
-	}, [cameraRadius, fov, aspect]);
-
-	const slideHeight = useMemo(() => {
-		return slideWidth ? slideWidth * (9 / 16) : 0;
-	}, [slideWidth]);
-
-	const totalRadius = useMemo(() => {
-		return slideGap ? (slideGap * slideArray.length) / (2 * Math.PI) : 0;
-	}, [slideGap]);
-
-	const groundY = useMemo(() => {
-		return cameraRadius && slideHeight ? -slideHeight / 2 - 0.1 : 0;
-	}, [cameraRadius, slideHeight]);
+	const slideWidth = useMemo(() => (cameraRadius ? 2 * cameraRadius * Math.tan(fov / 2) * aspect : 0), [cameraRadius, fov, aspect]);
+	const slideHeight = useMemo(() => (slideWidth ? slideWidth * (9 / 16) : 0), [slideWidth]);
+	const totalRadius = useMemo(() => (slideGap ? (slideGap * slideArray.length) / (2 * Math.PI) : 0), [slideGap]);
+	const groundY = useMemo(() => (cameraRadius && slideHeight ? -slideHeight / 2 - 0.1 : 0), [cameraRadius, slideHeight]);
 
 	const isInitialized = cameraRadius !== undefined && slideGap !== undefined;
 
 	useEffect(() => {
-		const getResponsiveCameraRadius = (width: number) => {
-			const clampedWidth = Math.min(Math.max(width, 320), 1920);
-			const ratio = (clampedWidth - 320) / (1920 - 320);
-			return 4 + ratio * (6.5 - 4);
-		};
-
-		const getResponsiveSlideGap = (radius: number, width: number) => {
-			const clampedWidth = Math.min(Math.max(width, 320), 1920);
-			const ratio = (clampedWidth - 320) / (1920 - 320);
-			return radius * (1.0 + ratio * (1.5 - 1.0));
-		};
-
 		const handleResize = () => {
 			const width = window.innerWidth;
 			const radius = getResponsiveCameraRadius(width);
@@ -58,10 +47,10 @@ export const Experience = () => {
 			setSlideGap(gap);
 		};
 
-		const debouncedResize = () => {
-			if (!hasIntroPlayed || isIntroPlaying) return;
-
-			handleResize();
+		const resizeWithIntroCheck = () => {
+			if (hasIntroPlayed && !isIntroPlaying) {
+				handleResize();
+			}
 		};
 
 		handleResize();
@@ -69,7 +58,7 @@ export const Experience = () => {
 		const timeoutRef = { current: 0 as any };
 		const onResize = () => {
 			clearTimeout(timeoutRef.current);
-			timeoutRef.current = setTimeout(debouncedResize, 100);
+			timeoutRef.current = setTimeout(resizeWithIntroCheck, 100);
 		};
 
 		window.addEventListener("resize", onResize);
@@ -77,7 +66,7 @@ export const Experience = () => {
 			clearTimeout(timeoutRef.current);
 			window.removeEventListener("resize", onResize);
 		};
-	}, [isIntroPlaying]);
+	}, [isIntroPlaying, hasIntroPlayed]);
 
 	if (!isInitialized) return null;
 

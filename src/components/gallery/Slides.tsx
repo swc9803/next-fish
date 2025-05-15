@@ -1,29 +1,56 @@
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useReducer, useEffect, useMemo } from "react";
 import { Group, Texture } from "three";
 import { useTexture } from "@react-three/drei";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
 import { useFrame } from "@react-three/fiber";
 
-interface SlidesProps {
-	totalRadius: number;
-	slideWidth: number;
-	slideHeight: number;
+const SLIDE_CHANGE_INTERVAL = 3000;
+
+const initialState = (slideTextures: Texture[][]) =>
+	slideTextures.map((textures) => ({
+		current: textures[0],
+		next: null,
+		opacity: 0,
+		index: 0,
+	}));
+
+function slideReducer(state, action) {
+	switch (action.type) {
+		case "SET_NEXT": {
+			const { index, nextTexture } = action;
+			const updated = [...state];
+			updated[index] = {
+				...updated[index],
+				next: nextTexture,
+				opacity: 0,
+			};
+			return updated;
+		}
+		case "INCREMENT_OPACITY": {
+			return state.map((s) => {
+				if (!s.next) return s;
+				const opacity = Math.min(s.opacity + 0.05, 1);
+				if (opacity >= 1) {
+					return {
+						current: s.next,
+						next: null,
+						opacity: 0,
+						index: (s.index + 1) % slideArray[0].imagePaths.length,
+					};
+				}
+				return { ...s, opacity };
+			});
+		}
+		default:
+			return state;
+	}
 }
 
-interface SlideState {
-	current: Texture;
-	next: Texture | null;
-	opacity: number;
-	index: number;
-}
-
-export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) => {
+export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setSlide, setHoverIndex, slide, isIntroPlaying } = useGallerySlide();
-
 	const groupRefs = useRef<(Group | null)[]>([]);
 
-	// 이미지 경로
 	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
 	const texturesArray = useTexture(allImagePaths) as Texture[];
 
@@ -35,64 +62,24 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 		});
 	}, [texturesArray]);
 
-	// 슬라이드 상태
-	const [slideStates, setSlideStates] = useState<SlideState[]>(() =>
-		slideTextures.map((textures) => ({
-			current: textures[0],
-			next: null,
-			opacity: 0,
-			index: 0,
-		}))
-	);
+	const [slideStates, dispatch] = useReducer(slideReducer, slideTextures, initialState);
 
-	const activeSlideIndex = useMemo(() => {
-		if (!freemode) return slide;
-		return hoverIndex !== null ? hoverIndex : null;
-	}, [freemode, slide, hoverIndex]);
+	const activeSlideIndex = useMemo(() => (!freemode ? slide : hoverIndex ?? null), [freemode, slide, hoverIndex]);
 
-	// 이미지 전환 주기
 	useEffect(() => {
 		const interval = setInterval(() => {
 			if (isIntroPlaying || activeSlideIndex === null) return;
-
-			setSlideStates((prev) => {
-				const updated = [...prev];
-				const i = activeSlideIndex;
-				const textures = slideTextures[i];
-				const nextIdx = (updated[i].index + 1) % textures.length;
-				updated[i] = {
-					...updated[i],
-					next: textures[nextIdx],
-					opacity: 0,
-					index: updated[i].index,
-				};
-				return updated;
-			});
-		}, 3000);
-
+			const textures = slideTextures[activeSlideIndex];
+			const nextIndex = (slideStates[activeSlideIndex].index + 1) % textures.length;
+			dispatch({ type: "SET_NEXT", index: activeSlideIndex, nextTexture: textures[nextIndex] });
+		}, SLIDE_CHANGE_INTERVAL);
 		return () => clearInterval(interval);
-	}, [activeSlideIndex, isIntroPlaying, slideTextures]);
+	}, [activeSlideIndex, slideTextures, isIntroPlaying, slideStates]);
 
-	// 이미지 전환
 	useFrame(() => {
-		if (activeSlideIndex === null) return;
-
-		setSlideStates((prev) => {
-			return prev.map((state, i) => {
-				if (!state.next) return state;
-
-				const newOpacity = Math.min(state.opacity + 0.05, 1);
-				if (newOpacity >= 1) {
-					return {
-						current: state.next,
-						next: null,
-						opacity: 0,
-						index: (state.index + 1) % slideTextures[i].length,
-					};
-				}
-				return { ...state, opacity: newOpacity };
-			});
-		});
+		if (activeSlideIndex !== null) {
+			dispatch({ type: "INCREMENT_OPACITY" });
+		}
 	});
 
 	return (

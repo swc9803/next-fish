@@ -5,47 +5,38 @@ import { getSlidePosition } from "@/utils/slideUtils";
 
 export const useCameraTransition = (cameraRadius: number, totalRadius: number) => {
 	const cameraControlsRef = useRef<CameraControls>(null);
-	const { setLastFocusTarget, setIsSliding, setIsZoom } = useGallerySlide.getState();
+	const setState = useGallerySlide.setState;
 
-	const zoomOutRadius = cameraRadius + 2;
-
-	const getCameraPosition = (targetX: number, targetZ: number, angle: number, radius: number) => ({
-		x: targetX + radius * Math.sin(angle + Math.PI),
-		z: targetZ + radius * Math.cos(angle + Math.PI),
+	const getCameraPosition = (x: number, z: number, angle: number, radius: number) => ({
+		x: x + radius * Math.sin(angle + Math.PI),
+		z: z + radius * Math.cos(angle + Math.PI),
 	});
 
 	const moveToSlide = useCallback(
-		async (targetIndex: number, skipZoom = false) => {
+		async (index: number, skipZoom = false) => {
 			const controls = cameraControlsRef.current;
 			if (!controls) return;
 
-			setIsSliding(true);
+			setState({ isSliding: true });
 
-			const { x: targetX, z: targetZ, angleInRadians: targetAngle } = getSlidePosition(targetIndex, totalRadius);
-			const nearPos = getCameraPosition(targetX, targetZ, targetAngle, cameraRadius);
-			const farPos = getCameraPosition(targetX, targetZ, targetAngle, zoomOutRadius);
+			const { x, z, angleInRadians } = getSlidePosition(index, totalRadius);
+			const near = getCameraPosition(x, z, angleInRadians, cameraRadius);
+			const far = getCameraPosition(x, z, angleInRadians, cameraRadius + 2);
 
-			setLastFocusTarget({ x: targetX, z: targetZ });
+			setState({ lastFocusTarget: { x, z } });
 
 			if (skipZoom) {
-				await controls.setLookAt(nearPos.x, 0, nearPos.z, targetX, 0, targetZ, true);
-
-				setTimeout(() => {
-					setIsSliding(false);
-				}, 300);
-				return;
+				await controls.setLookAt(near.x, 0, near.z, x, 0, z, true);
+			} else {
+				setState({ isZoom: true });
+				await controls.setLookAt(far.x, 0, far.z, x, 0, z, true);
+				await controls.setLookAt(near.x, 0, near.z, x, 0, z, true);
+				setState({ isZoom: false });
 			}
 
-			setIsZoom(true);
-			await controls.setLookAt(farPos.x, 0, farPos.z, targetX, 0, targetZ, true);
-			await controls.setLookAt(nearPos.x, 0, nearPos.z, targetX, 0, targetZ, true);
-			setIsZoom(false);
-
-			setTimeout(() => {
-				setIsSliding(false);
-			}, 300);
+			setTimeout(() => setState({ isSliding: false }), 300);
 		},
-		[cameraRadius, zoomOutRadius, totalRadius]
+		[cameraRadius, totalRadius]
 	);
 
 	const moveToFreeModePosition = useCallback(
@@ -55,16 +46,13 @@ export const useCameraTransition = (cameraRadius: number, totalRadius: number) =
 
 			const { x, z } = focus ?? { x: 0, z: 0 };
 			const angle = Math.atan2(x, z);
-			const distance = cameraRadius * 2.5;
-			const camX = x + distance * Math.sin(angle + Math.PI);
-			const camZ = z + distance * Math.cos(angle + Math.PI);
+			const dist = cameraRadius * 2.5;
+			const camX = x + dist * Math.sin(angle + Math.PI);
+			const camZ = z + dist * Math.cos(angle + Math.PI);
 
-			setIsSliding(true);
+			setState({ isSliding: true });
 			await controls.setLookAt(camX, 0, camZ, 0, 0, 0, true);
-
-			setTimeout(() => {
-				setIsSliding(false);
-			}, 300);
+			setTimeout(() => setState({ isSliding: false }), 300);
 		},
 		[cameraRadius]
 	);
