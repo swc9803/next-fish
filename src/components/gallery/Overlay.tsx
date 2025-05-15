@@ -8,6 +8,8 @@ export const Overlay = () => {
 	const { slide, focusIndex, freemode, isSliding, isIntroPlaying, isCameraIntroDone, setSlide, setFocusIndex, setFreemode } = useGallerySlide();
 
 	const [visibleSlide, setVisibleSlide] = useState(slide);
+	const [isCooldown, setIsCooldown] = useState(false);
+
 	const activeSlide = freemode && focusIndex !== null ? focusIndex : visibleSlide;
 	const isOverlayDisabled = isSliding || isIntroPlaying || !isCameraIntroDone;
 	const showOverlay = !freemode || (freemode && focusIndex !== null);
@@ -22,11 +24,14 @@ export const Overlay = () => {
 	}, [isIntroPlaying, slide]);
 
 	const handleToggleView = () => {
-		if (freemode && focusIndex !== null) {
-			setSlide(focusIndex);
-		}
+		if (isCooldown) return;
+
+		if (freemode && focusIndex !== null) setSlide(focusIndex);
 		setFocusIndex(null);
 		setFreemode(!freemode);
+
+		setIsCooldown(true);
+		setTimeout(() => setIsCooldown(false), 1200);
 	};
 
 	const handleBack = () => {
@@ -43,52 +48,51 @@ export const Overlay = () => {
 	};
 
 	return (
-		<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>
-			<OverlayControls
-				freemode={freemode}
-				focusIndex={focusIndex}
-				onBack={handleBack}
-				onToggle={handleToggleView}
-				onPrev={handlePrevSlide}
-				onNext={handleNextSlide}
-			/>
-
-			{slideArray[activeSlide].logo && (
-				<div className={styles.logo_wrapper}>
-					<div className={styles.logo_background} />
-					<Image className={styles.logo} src={slideArray[activeSlide].logo} alt="로고" fill sizes="7rem" />
-				</div>
+		<>
+			{isCameraIntroDone && (
+				<button className={styles.view_toggle_button} onClick={handleToggleView} type="button">
+					<div className={`${styles.switch} ${freemode ? styles.free : ""}`}>
+						<div className={styles.knob} />
+						<p className={styles.label}>{freemode ? "Free View" : "Slide View"}</p>
+					</div>
+				</button>
 			)}
 
-			<div className={styles.content}>
-				<h1>{slideArray[activeSlide].name}</h1>
-				<p>{slideArray[activeSlide].description}</p>
+			{isCameraIntroDone && (
+				<button className={`${styles.back_button} ${freemode && focusIndex !== null ? styles.show : ""}`} onClick={handleBack} type="button">
+					<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="9" cy="9" r="9" fill="white" fillOpacity="0.6" />
+						<circle cx="9" cy="9" r="8.5" stroke="#111111" strokeOpacity="0.6" />
+						<path
+							d="M13 9.5C13.2761 9.5 13.5 9.27614 13.5 9C13.5 8.72386 13.2761 8.5 13 8.5V9.5ZM4.64645 8.64645C4.45118 8.84171 4.45118 9.15829 4.64645 9.35355L7.82843 12.5355C8.02369 12.7308 8.34027 12.7308 8.53553 12.5355C8.7308 12.3403 8.7308 12.0237 8.53553 11.8284L5.70711 9L8.53553 6.17157C8.7308 5.97631 8.7308 5.65973 8.53553 5.46447C8.34027 5.2692 8.02369 5.2692 7.82843 5.46447L4.64645 8.64645ZM13 8.5L5 8.5V9.5L13 9.5V8.5Z"
+							fill="#111111"
+						/>
+					</svg>
+				</button>
+			)}
+
+			<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>
+				<OverlayControls freemode={freemode} onPrev={handlePrevSlide} onNext={handleNextSlide} />
+
+				{slideArray[activeSlide].logo && (
+					<div className={styles.logo_wrapper}>
+						<div className={styles.logo_background} />
+						<Image className={styles.logo} src={slideArray[activeSlide].logo} alt="로고" fill sizes="7rem" />
+					</div>
+				)}
+
+				<div className={styles.content}>
+					<h1>{slideArray[activeSlide].name}</h1>
+					<p>{slideArray[activeSlide].description}</p>
+				</div>
 			</div>
-		</div>
+		</>
 	);
 };
 
-export const OverlayControls = ({ freemode, focusIndex, onBack, onToggle, onPrev, onNext }) => {
+export const OverlayControls = ({ freemode, onPrev, onNext }) => {
 	return (
 		<>
-			<button className={styles.view_toggle_button} onClick={onToggle} type="button">
-				<div className={`${styles.switch} ${freemode ? styles.free : ""}`}>
-					<div className={styles.knob} />
-					<p className={styles.label}>{freemode ? "Free View" : "Slide View"}</p>
-				</div>
-			</button>
-
-			<button className={`${styles.back_button} ${freemode && focusIndex !== null ? styles.show : ""}`} onClick={onBack} type="button">
-				<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<circle cx="9" cy="9" r="9" fill="white" fillOpacity="0.6" />
-					<circle cx="9" cy="9" r="8.5" stroke="#111111" strokeOpacity="0.6" />
-					<path
-						d="M13 9.5C13.2761 9.5 13.5 9.27614 13.5 9C13.5 8.72386 13.2761 8.5 13 8.5V9.5ZM4.64645 8.64645C4.45118 8.84171 4.45118 9.15829 4.64645 9.35355L7.82843 12.5355C8.02369 12.7308 8.34027 12.7308 8.53553 12.5355C8.7308 12.3403 8.7308 12.0237 8.53553 11.8284L5.70711 9L8.53553 6.17157C8.7308 5.97631 8.7308 5.65973 8.53553 5.46447C8.34027 5.2692 8.02369 5.2692 7.82843 5.46447L4.64645 8.64645ZM13 8.5L5 8.5V9.5L13 9.5V8.5Z"
-						fill="#111111"
-					/>
-				</svg>
-			</button>
-
 			{!freemode && (
 				<div className={styles.slide_navigation}>
 					<button onClick={onPrev} aria-label="previous slide button">

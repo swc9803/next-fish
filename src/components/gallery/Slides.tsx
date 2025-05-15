@@ -1,5 +1,5 @@
-import { useRef, useReducer, useEffect, useMemo } from "react";
-import { Group, Texture } from "three";
+import { useReducer, useEffect, useMemo, useCallback, useRef } from "react";
+import { Texture } from "three";
 import { useTexture } from "@react-three/drei";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
@@ -13,6 +13,7 @@ const initialState = (slideTextures: Texture[][]) =>
 		next: null,
 		opacity: 0,
 		index: 0,
+		isFading: false,
 	}));
 
 function slideReducer(state, action) {
@@ -24,22 +25,24 @@ function slideReducer(state, action) {
 				...updated[index],
 				next: nextTexture,
 				opacity: 0,
+				isFading: true,
 			};
 			return updated;
 		}
 		case "INCREMENT_OPACITY": {
 			return state.map((s) => {
-				if (!s.next) return s;
-				const opacity = Math.min(s.opacity + 0.05, 1);
-				if (opacity >= 1) {
+				if (!s.isFading || !s.next) return s;
+				const newOpacity = Math.min(s.opacity + 0.05, 1);
+				if (newOpacity >= 1) {
 					return {
 						current: s.next,
 						next: null,
 						opacity: 0,
 						index: (s.index + 1) % slideArray[0].imagePaths.length,
+						isFading: false,
 					};
 				}
-				return { ...s, opacity };
+				return { ...s, opacity: newOpacity };
 			});
 		}
 		default:
@@ -49,38 +52,81 @@ function slideReducer(state, action) {
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setSlide, setHoverIndex, slide, isIntroPlaying } = useGallerySlide();
-	const groupRefs = useRef<(Group | null)[]>([]);
 
 	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
 	const texturesArray = useTexture(allImagePaths) as Texture[];
 
 	const slideTextures = useMemo(() => {
 		let index = 0;
-		return slideArray.map((slide) => {
-			const textures = slide.imagePaths.map(() => texturesArray[index++]);
-			return textures;
-		});
+		return slideArray.map((slide) => slide.imagePaths.map(() => texturesArray[index++]));
 	}, [texturesArray]);
 
 	const [slideStates, dispatch] = useReducer(slideReducer, slideTextures, initialState);
 
-	const activeSlideIndex = useMemo(() => (!freemode ? slide : hoverIndex ?? null), [freemode, slide, hoverIndex]);
+	const slideStatesRef = useRef(slideStates);
+	useEffect(() => {
+		slideStatesRef.current = slideStates;
+	}, [slideStates]);
+
+	const lastActiveSlideIndexRef = useRef<number | null>(null);
+
+	const calculatedTargetIndex = useMemo(() => {
+		return !freemode ? slide : hoverIndex ?? focusIndex ?? null;
+	}, [freemode, slide, hoverIndex, focusIndex]);
+
+	useEffect(() => {
+		if (calculatedTargetIndex !== null) {
+			lastActiveSlideIndexRef.current = calculatedTargetIndex;
+		}
+	}, [calculatedTargetIndex]);
+
+	const activeSlideIndex = calculatedTargetIndex ?? lastActiveSlideIndexRef.current;
 
 	useEffect(() => {
 		const interval = setInterval(() => {
 			if (isIntroPlaying || activeSlideIndex === null) return;
+
 			const textures = slideTextures[activeSlideIndex];
-			const nextIndex = (slideStates[activeSlideIndex].index + 1) % textures.length;
-			dispatch({ type: "SET_NEXT", index: activeSlideIndex, nextTexture: textures[nextIndex] });
+			const currentIndex = slideStatesRef.current[activeSlideIndex].index;
+			const nextIndex = (currentIndex + 1) % textures.length;
+
+			dispatch({
+				type: "SET_NEXT",
+				index: activeSlideIndex,
+				nextTexture: textures[nextIndex],
+			});
 		}, SLIDE_CHANGE_INTERVAL);
+
 		return () => clearInterval(interval);
-	}, [activeSlideIndex, slideTextures, isIntroPlaying, slideStates]);
+	}, [activeSlideIndex, slideTextures, isIntroPlaying]);
 
 	useFrame(() => {
-		if (activeSlideIndex !== null) {
-			dispatch({ type: "INCREMENT_OPACITY" });
-		}
+		dispatch({ type: "INCREMENT_OPACITY" });
 	});
+
+	const handleClick = useCallback(
+		(index: number) => {
+			if (freemode && !isSliding) {
+				if (focusIndex !== index) {
+					setFocusIndex(index);
+					setSlide(index);
+				} else {
+					setFocusIndex(null);
+					requestAnimationFrame(() => setFocusIndex(index));
+				}
+			}
+		},
+		[freemode, isSliding, focusIndex, setFocusIndex, setSlide]
+	);
+
+	const handleHover = useCallback(
+		(index: number) => {
+			if (freemode && focusIndex === null && hoverIndex !== index) {
+				setHoverIndex(index);
+			}
+		},
+		[freemode, focusIndex, hoverIndex, setHoverIndex]
+	);
 
 	return (
 		<>
@@ -92,25 +138,10 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 				return (
 					<group
 						key={index}
-						ref={(ref) => (groupRefs.current[index] = ref)}
 						position={[x, 0, z]}
 						rotation={[0, rotationY, 0]}
-						onClick={() => {
-							if (freemode && !isSliding) {
-								if (focusIndex !== index) {
-									setFocusIndex(index);
-									setSlide(index);
-								} else {
-									setFocusIndex(null);
-									requestAnimationFrame(() => setFocusIndex(index));
-								}
-							}
-						}}
-						onPointerOver={() => {
-							if (freemode && focusIndex === null && hoverIndex !== index) {
-								setHoverIndex(index);
-							}
-						}}
+						onClick={() => handleClick(index)}
+						onPointerOver={() => handleHover(index)}
 					>
 						<group>
 							<mesh position={[0, 0, -0.03]}>
