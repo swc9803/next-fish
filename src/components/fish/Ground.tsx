@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTexture } from "@react-three/drei";
 import { Mesh, RepeatWrapping } from "three";
-import { isWebPSupported } from "@/utils/isWebPSupported";
+import { isWebpSupported } from "@/utils/isWebpSupported";
 
 type RefMesh = React.RefObject<Mesh>;
 
@@ -10,7 +10,7 @@ interface PlaneProps {
 }
 
 export const Ground = ({ planeRef }: PlaneProps) => {
-	const ext = useMemo(() => (isWebPSupported() ? "webp" : "jpg"), []);
+	const ext = useMemo(() => (isWebpSupported() ? "webp" : "jpg"), []);
 	const texturePaths = useMemo(
 		() => [
 			`/textures/sand3/aerial_beach_01_diff_1k.${ext}`,

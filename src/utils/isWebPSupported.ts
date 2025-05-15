@@ -1,6 +1,6 @@
 let cachedSupport: boolean | null = null;
 
-export const isWebPSupported = (): boolean => {
+export const isWebpSupported = (): boolean => {
 	if (cachedSupport !== null) return cachedSupport;
 	if (typeof window === "undefined") return false;
 

@@ -1,4 +1,5 @@
 import { useTexture } from "@react-three/drei";
+import { isWebpSupported } from "./isWebpSupported";
 
 export interface slideInfo {
 	imagePaths: string[];
@@ -9,7 +10,7 @@ export interface slideInfo {
 	borderColor: string;
 }
 
-export const slideArray: slideInfo[] = [
+const SlideArray: slideInfo[] = [
 	{
 		imagePaths: ["images/gallery1-1.jpg", "images/gallery1-2.jpg", "images/gallery1-3.jpg"],
 		name: "RIOT GAMES 이벤트 페이지",
@@ -59,6 +60,14 @@ export const slideArray: slideInfo[] = [
 		borderColor: "#66f0ff",
 	},
 ];
+
+const convertToWebp = (path: string): string => path.replace(/\.jpe?g$/i, ".webp");
+const webpSupported = isWebpSupported();
+
+export const slideArray: slideInfo[] = SlideArray.map((slide) => ({
+	...slide,
+	imagePaths: webpSupported ? slide.imagePaths.map(convertToWebp) : slide.imagePaths,
+}));
 
 slideArray.forEach((slide) => useTexture.preload(slide.imagePaths));
 
