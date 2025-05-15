@@ -14,6 +14,8 @@ export const Overlay = () => {
 	const isOverlayDisabled = isSliding || isIntroPlaying || !isCameraIntroDone;
 	const showOverlay = !freemode || (freemode && focusIndex !== null);
 
+	const disabledToggle = isCooldown || isSliding || isIntroPlaying;
+
 	useEffect(() => {
 		if (!isIntroPlaying) {
 			const timeout = setTimeout(() => {
@@ -24,7 +26,7 @@ export const Overlay = () => {
 	}, [isIntroPlaying, slide]);
 
 	const handleToggleView = () => {
-		if (isCooldown) return;
+		if (disabledToggle) return;
 
 		if (freemode && focusIndex !== null) setSlide(focusIndex);
 		setFocusIndex(null);
@@ -50,7 +52,7 @@ export const Overlay = () => {
 	return (
 		<>
 			{isCameraIntroDone && (
-				<button className={styles.view_toggle_button} onClick={handleToggleView} type="button">
+				<button className={styles.view_toggle_button} onClick={handleToggleView} type="button" disabled={disabledToggle}>
 					<div className={`${styles.switch} ${freemode ? styles.free : ""}`}>
 						<div className={styles.knob} />
 						<p className={styles.label}>{freemode ? "Free View" : "Slide View"}</p>
@@ -71,9 +73,22 @@ export const Overlay = () => {
 				</button>
 			)}
 
-			<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>
-				<OverlayControls freemode={freemode} onPrev={handlePrevSlide} onNext={handleNextSlide} />
+			{!freemode && isCameraIntroDone && !isIntroPlaying && (
+				<div className={styles.slide_navigation}>
+					<button onClick={handlePrevSlide} aria-label="previous slide button" type="button">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
+						</svg>
+					</button>
+					<button onClick={handleNextSlide} aria-label="next slide button" type="button">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+						</svg>
+					</button>
+				</div>
+			)}
 
+			<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>
 				{slideArray[activeSlide].logo && (
 					<div className={styles.logo_wrapper}>
 						<div className={styles.logo_background} />
@@ -84,29 +99,11 @@ export const Overlay = () => {
 				<div className={styles.content}>
 					<h1>{slideArray[activeSlide].name}</h1>
 					<p>{slideArray[activeSlide].description}</p>
+					<a href={slideArray[activeSlide].url} target="_blank" rel="noopener noreferrer" className={styles.link_button}>
+						사이트 바로가기 ↗
+					</a>
 				</div>
 			</div>
-		</>
-	);
-};
-
-export const OverlayControls = ({ freemode, onPrev, onNext }) => {
-	return (
-		<>
-			{!freemode && (
-				<div className={styles.slide_navigation}>
-					<button onClick={onPrev} aria-label="previous slide button">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
-						</svg>
-					</button>
-					<button onClick={onNext} aria-label="next slide button">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-						</svg>
-					</button>
-				</div>
-			)}
 		</>
 	);
 };
