@@ -16,6 +16,8 @@ export const Overlay = () => {
 
 	const disabledToggle = isCooldown || isSliding || isIntroPlaying;
 
+	const showSlideNavigation = !freemode && isCameraIntroDone && !isIntroPlaying;
+
 	useEffect(() => {
 		if (!isIntroPlaying) {
 			const timeout = setTimeout(() => {
@@ -73,20 +75,18 @@ export const Overlay = () => {
 				</button>
 			)}
 
-			{!freemode && isCameraIntroDone && !isIntroPlaying && (
-				<div className={styles.slide_navigation}>
-					<button onClick={handlePrevSlide} aria-label="previous slide button" type="button">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-							<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
-						</svg>
-					</button>
-					<button onClick={handleNextSlide} aria-label="next slide button" type="button">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-							<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
-						</svg>
-					</button>
-				</div>
-			)}
+			<div className={`${styles.slide_navigation} ${showSlideNavigation ? styles.show : ""}`}>
+				<button onClick={handlePrevSlide} aria-label="previous slide button" type="button">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+						<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
+					</svg>
+				</button>
+				<button onClick={handleNextSlide} aria-label="next slide button" type="button">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+						<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
+					</svg>
+				</button>
+			</div>
 
 			<div className={`${styles.overlay} ${showOverlay ? styles.show : ""} ${isOverlayDisabled ? styles.disabled : ""}`}>
 				{slideArray[activeSlide].logo && (

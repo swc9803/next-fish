@@ -89,11 +89,16 @@
 	padding: 1rem;
 	pointer-events: none;
 	z-index: 11;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.5s ease-out;
 	&.show {
-		pointer-events: auto;
+		opacity: 1;
+		button {
+			pointer-events: auto;
+		}
 	}
 	button {
-		pointer-events: auto;
 		svg {
 			width: 2.5rem;
 			height: 2.5rem;
