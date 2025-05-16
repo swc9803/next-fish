@@ -170,8 +170,12 @@ const Experience = () => {
 			<FishConfig />
 
 			<div className="hud">
-				{countdown !== null && <div className="countdown">폭탄 시작까지: {countdown}</div>}
-				{bombActive && <div className="score">점수: {score}</div>}
+				{countdown !== null && (
+					<div key={countdown} className="countdown">
+						{countdown}
+					</div>
+				)}
+				{bombActive && <div className="score">SCORE: {score}</div>}
 			</div>
 
 			{isGameOver && (
