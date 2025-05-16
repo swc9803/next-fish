@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
+import { Mesh, Material, Object3D } from "three";
 import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
@@ -10,7 +11,7 @@ import { Slides } from "./Slides";
 import { HoverLight } from "./HoverLight";
 
 export const Experience = () => {
-	const { camera, viewport } = useThree();
+	const { camera, viewport, scene } = useThree();
 	const { isIntroPlaying, hasIntroPlayed } = useGallerySlide();
 
 	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
@@ -75,6 +76,23 @@ export const Experience = () => {
 			window.removeEventListener("resize", onResize);
 		};
 	}, [isIntroPlaying, hasIntroPlayed]);
+
+	// 메모리 해제
+	useEffect(() => {
+		return () => {
+			scene.traverse((child: Object3D) => {
+				if ((child as Mesh).isMesh) {
+					const mesh = child as Mesh;
+					mesh.geometry?.dispose();
+					if (Array.isArray(mesh.material)) {
+						mesh.material.forEach((m: Material) => m.dispose());
+					} else {
+						(mesh.material as Material)?.dispose();
+					}
+				}
+			});
+		};
+	}, [scene]);
 
 	if (!isInitialized) return null;
 

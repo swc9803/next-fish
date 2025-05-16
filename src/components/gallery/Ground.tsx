@@ -1,10 +1,21 @@
+import { useEffect, useRef } from "react";
 import { MeshReflectorMaterial } from "@react-three/drei";
 
 export const Ground = ({ positionY }) => {
+	const materialRef = useRef<any>(null);
+
+	// 메모리 해제
+	useEffect(() => {
+		return () => {
+			materialRef.current?.dispose?.();
+		};
+	}, []);
+
 	return (
 		<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, positionY, 0]}>
 			<circleGeometry args={[20, 16]} />
 			<MeshReflectorMaterial
+				ref={materialRef}
 				blur={[50, 5]}
 				resolution={512}
 				mixBlur={0.9}

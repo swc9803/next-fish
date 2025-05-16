@@ -1,9 +1,9 @@
 import { useReducer, useEffect, useMemo, useCallback, useRef } from "react";
-import { Texture } from "three";
+import { Texture, Mesh } from "three";
 import { useTexture } from "@react-three/drei";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 
 const SLIDE_CHANGE_INTERVAL = 3000;
 
@@ -52,6 +52,7 @@ function slideReducer(state, action) {
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setSlide, setHoverIndex, slide, isIntroPlaying } = useGallerySlide();
+	const { scene } = useThree();
 
 	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
 	const texturesArray = useTexture(allImagePaths) as Texture[];
@@ -60,6 +61,23 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 		let index = 0;
 		return slideArray.map((slide) => slide.imagePaths.map(() => texturesArray[index++]));
 	}, [texturesArray]);
+
+	// 메모리 해제
+	useEffect(() => {
+		return () => {
+			slideTextures.flat().forEach((texture) => texture.dispose());
+			scene.traverse((child) => {
+				if (child instanceof Mesh) {
+					child.geometry?.dispose();
+					if (Array.isArray(child.material)) {
+						child.material.forEach((m) => m.dispose());
+					} else {
+						child.material?.dispose();
+					}
+				}
+			});
+		};
+	}, [slideTextures, scene]);
 
 	const [slideStates, dispatch] = useReducer(slideReducer, slideTextures, initialState);
 

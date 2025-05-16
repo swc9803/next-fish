@@ -58,6 +58,19 @@ export const ShaderTransition = ({ renderTarget, loadingComplete, onFinish }: Sh
 		[texture1, renderTarget.texture]
 	);
 
+	// 메모리 해제
+	useEffect(() => {
+		return () => {
+			texture1.dispose();
+			meshRef.current?.geometry?.dispose();
+			if (Array.isArray(meshRef.current?.material)) {
+				meshRef.current.material.forEach((m) => m.dispose());
+			} else {
+				meshRef.current?.material?.dispose();
+			}
+		};
+	}, [texture1]);
+
 	useEffect(() => {
 		if (!loadingComplete) return;
 		const timeout = setTimeout(() => {

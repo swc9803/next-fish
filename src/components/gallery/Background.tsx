@@ -1,5 +1,5 @@
-import { useMemo, useRef } from "react";
-import { Group, Mesh } from "three";
+import { useMemo, useRef, useEffect } from "react";
+import { Group, Mesh, Material } from "three";
 import { useFrame } from "@react-three/fiber";
 
 const randomPosition = (radius: number): [number, number, number] => {
@@ -69,6 +69,23 @@ export const Background = () => {
 			child.position.y = position[1] + Math.sin(t * floatSpeed + offset) * floatRange;
 		});
 	});
+
+	// 메모리 해제
+	useEffect(() => {
+		return () => {
+			if (!groupRef.current) return;
+			groupRef.current.children.forEach((child) => {
+				if (child instanceof Mesh) {
+					child.geometry?.dispose();
+					if (Array.isArray(child.material)) {
+						child.material.forEach((m: Material) => m.dispose());
+					} else {
+						(child.material as Material)?.dispose();
+					}
+				}
+			});
+		};
+	}, []);
 
 	return (
 		<>

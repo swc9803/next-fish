@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useTexture } from "@react-three/drei";
 import { Mesh, RepeatWrapping } from "three";
 import { isWebpSupported } from "@/utils/isWebpSupported";
@@ -21,6 +21,13 @@ export const Ground = ({ planeRef }: PlaneProps) => {
 	);
 
 	const [colorMap, normalMap, roughnessMap] = useTexture(texturePaths);
+
+	// 메모리 해제
+	useEffect(() => {
+		return () => {
+			[colorMap, normalMap, roughnessMap].forEach((tex) => tex.dispose());
+		};
+	}, [colorMap, normalMap, roughnessMap]);
 
 	useMemo(() => {
 		[colorMap, normalMap, roughnessMap].forEach((tex) => {

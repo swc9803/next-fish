@@ -2,8 +2,8 @@
 
 // library
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
-import { Canvas } from "@react-three/fiber";
-import { Mesh, MeshStandardMaterial, Object3D, WebGLRenderTarget } from "three";
+import { Canvas, useThree } from "@react-three/fiber";
+import { Material, Mesh, MeshStandardMaterial, Object3D, WebGLRenderTarget } from "three";
 
 // store
 import { useFishStore } from "@/store/useFishStore";
@@ -51,6 +51,24 @@ const Experience = () => {
 	useEffect(() => {
 		if (loadingComplete) renderTarget.dispose();
 	}, [loadingComplete, renderTarget]);
+
+	// 메모리 해제
+	useEffect(() => {
+		return () => {
+			const { scene } = useThree();
+			scene.traverse((child: Object3D) => {
+				if ((child as Mesh).isMesh) {
+					const mesh = child as Mesh;
+					mesh.geometry?.dispose();
+					if (Array.isArray(mesh.material)) {
+						mesh.material.forEach((m: Material) => m.dispose());
+					} else {
+						(mesh.material as Material)?.dispose();
+					}
+				}
+			});
+		};
+	}, []);
 
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
