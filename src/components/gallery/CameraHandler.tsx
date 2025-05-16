@@ -11,6 +11,8 @@ interface CameraHandlerProps {
 	startIntro?: boolean;
 }
 
+const INTRO_DURATION = 5000;
+
 export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraHandlerProps) => {
 	const { cameraControlsRef, moveToSlide, moveToFreeModePosition } = useCameraTransition(cameraRadius, totalRadius);
 
@@ -42,43 +44,37 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 
 	useEffect(() => {
 		if (!isReadyToStart || !startIntro || hasIntroPlayed || !cameraControlsRef.current) return;
+		playIntroAnimation();
+	}, [startIntro, isReadyToStart]);
 
+	const playIntroAnimation = () => {
 		setHasIntroPlayed(true);
 		setIsIntroPlaying(true);
 		setIntroStarted(true);
 
-		const controls = cameraControlsRef.current;
-		const { x: slideX, z: slideZ } = getSlidePosition(0, totalRadius);
-		const introRadius = Math.hypot(slideX, slideZ);
-		const slide0Angle = Math.atan2(slideZ, slideX);
-		const startAngle = slide0Angle + Math.PI * 5;
-		const endAngle = slide0Angle;
-		const introStartY = 5;
-		const introEndY = 0;
-		const INTRO_DURATION = 5000;
-
+		const controls = cameraControlsRef.current!;
+		const { x, z } = getSlidePosition(0, totalRadius);
+		const introRadius = Math.hypot(x, z);
+		const angleStart = Math.atan2(z, x) + Math.PI * 5;
+		const angleEnd = Math.atan2(z, x);
 		const startTime = performance.now();
-		let animationFrameId: number;
 
 		const animate = () => {
 			const elapsed = performance.now() - startTime;
 			const t = Math.min(elapsed / INTRO_DURATION, 1);
 			const easedT = 1 - Math.pow(1 - t, 3);
-
-			const angle = startAngle + (1 - easedT) * (endAngle - startAngle);
+			const angle = angleStart + (1 - easedT) * (angleEnd - angleStart);
 			const camX = introRadius * Math.cos(angle);
 			const camZ = introRadius * Math.sin(angle);
-			const camY = introStartY + (introEndY - introStartY) * easedT;
+			const camY = 5 + (0 - 5) * easedT;
 
 			controls.setLookAt(camX, camY, camZ, 0, camY, 0, false);
 
 			if (t < 1) {
-				animationFrameId = requestAnimationFrame(animate);
+				requestAnimationFrame(animate);
 			} else {
-				const finalCamPos = new Vector3(slideX, 0, slideZ - cameraRadius);
-				controls.setLookAt(finalCamPos.x, 0, finalCamPos.z, slideX, 0, slideZ, true);
-
-				setLastFocusTarget({ x: slideX, z: slideZ });
+				controls.setLookAt(x, 0, z - cameraRadius, x, 0, z, true);
+				setLastFocusTarget({ x, z });
 				setSlide(0);
 				setIsIntroPlaying(false);
 				setCameraIntroDone(true);
@@ -86,33 +82,26 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 		};
 
 		animate();
+	};
 
-		return () => {
-			cancelAnimationFrame(animationFrameId);
-		};
-	}, [startIntro, isReadyToStart]);
-
-	// 슬라이드 이동
 	useEffect(() => {
-		if (!isReadyToStart || isIntroPlaying || lastSlideIndexRef.current === slide) return;
+		if (!isReadyToStart || isIntroPlaying || slide === lastSlideIndexRef.current) return;
 		moveToSlide(slide);
 		lastSlideIndexRef.current = slide;
 	}, [slide, moveToSlide, isReadyToStart, isIntroPlaying]);
 
-	// 포커스 이동
 	useEffect(() => {
 		if (!isReadyToStart || isIntroPlaying) return;
 
 		const prevFocus = prevFocusRef.current;
-		const shouldZoomToSlide = freemode && focusIndex !== null && (focusIndex !== lastSlideIndexRef.current || prevFocus === null);
-		const shouldReturnToFreePosition = freemode && focusIndex === null && prevFocus !== null;
+		const isNewFocus = freemode && focusIndex !== null && (focusIndex !== lastSlideIndexRef.current || prevFocus === null);
+		const isFocusCleared = freemode && focusIndex === null && prevFocus !== null;
 
-		if (shouldZoomToSlide) {
+		if (isNewFocus) {
 			moveToSlide(focusIndex, true);
 			lastSlideIndexRef.current = focusIndex;
 		}
-
-		if (shouldReturnToFreePosition) {
+		if (isFocusCleared) {
 			moveToFreeModePosition(lastFocusTarget);
 		}
 
@@ -123,55 +112,45 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 	useEffect(() => {
 		if (!isReadyToStart || isIntroPlaying) return;
 
-		const prev = prevFreemodeRef.current;
-		const now = freemode;
-		prevFreemodeRef.current = now;
+		const prevMode = prevFreemodeRef.current;
+		const currentMode = freemode;
+		prevFreemodeRef.current = currentMode;
 
-		if (prev && !now && cameraControlsRef.current?.camera) {
-			requestAnimationFrame(() => {
-				const camera = cameraControlsRef.current!.camera;
-				camera.updateMatrixWorld();
-
-				const direction = new Vector3();
-				camera.getWorldDirection(direction);
-
-				const cameraPos = camera.position.clone();
-				let nearest = 0;
-				let maxDot = -Infinity;
-
-				for (let i = 0; i < slideArray.length; i++) {
-					const { x, z } = getSlidePosition(i, totalRadius);
-					const toSlide = new Vector3(x - cameraPos.x, 0, z - cameraPos.z).normalize();
-					const dot = direction.dot(toSlide);
-					if (dot > maxDot) {
-						maxDot = dot;
-						nearest = i;
-					}
-				}
-
-				setFocusIndex(null);
-				setHoverIndex(null);
-				setSlide(nearest);
-				moveToSlide(nearest, true);
-				lastSlideIndexRef.current = nearest;
-			});
+		if (prevMode && !currentMode && cameraControlsRef.current?.camera) {
+			requestAnimationFrame(() => zoomToNearestSlide());
 		}
 
-		if (!prev && now) {
+		if (!prevMode && currentMode) {
 			moveToFreeModePosition(lastFocusTarget);
 		}
-	}, [
-		freemode,
-		totalRadius,
-		moveToSlide,
-		moveToFreeModePosition,
-		lastFocusTarget,
-		setSlide,
-		setFocusIndex,
-		setHoverIndex,
-		isReadyToStart,
-		isIntroPlaying,
-	]);
+	}, [freemode, totalRadius, moveToSlide, moveToFreeModePosition, lastFocusTarget, isReadyToStart, isIntroPlaying]);
+
+	const zoomToNearestSlide = () => {
+		const camera = cameraControlsRef.current!.camera;
+		camera.updateMatrixWorld();
+		const direction = new Vector3();
+		camera.getWorldDirection(direction);
+		const position = camera.position.clone();
+
+		let nearestIndex = 0;
+		let maxDot = -Infinity;
+
+		slideArray.forEach((_, i) => {
+			const { x, z } = getSlidePosition(i, totalRadius);
+			const toSlide = new Vector3(x - position.x, 0, z - position.z).normalize();
+			const dot = direction.dot(toSlide);
+			if (dot > maxDot) {
+				maxDot = dot;
+				nearestIndex = i;
+			}
+		});
+
+		setFocusIndex(null);
+		setHoverIndex(null);
+		setSlide(nearestIndex);
+		moveToSlide(nearestIndex, true);
+		lastSlideIndexRef.current = nearestIndex;
+	};
 
 	const isInteractive = freemode && focusIndex === null;
 

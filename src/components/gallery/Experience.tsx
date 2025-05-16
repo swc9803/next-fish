@@ -17,8 +17,8 @@ export const Experience = () => {
 	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
 	const aspect = viewport.aspect;
 
-	const [cameraRadius, setCameraRadius] = useState<number>();
-	const [slideGap, setSlideGap] = useState<number>();
+	const [cameraRadius, setCameraRadius] = useState<number>(0);
+	const [slideGap, setSlideGap] = useState<number>(0);
 
 	const slideWidth = useMemo(() => {
 		if (!cameraRadius) return;
@@ -94,7 +94,7 @@ export const Experience = () => {
 		};
 	}, [scene]);
 
-	if (!isInitialized) return null;
+	if (!cameraRadius || !slideGap) return null;
 
 	return (
 		<>

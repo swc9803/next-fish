@@ -5,6 +5,15 @@ import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
 import { useFrame, useThree } from "@react-three/fiber";
 
+interface SlideState {
+	current: Texture;
+	next: Texture | null;
+	opacity: number;
+	index: number;
+	isFading: boolean;
+}
+type SlideAction = { type: "SET_NEXT"; index: number; nextTexture: Texture } | { type: "INCREMENT_OPACITY" };
+
 const SLIDE_CHANGE_INTERVAL = 3000;
 
 const initialState = (slideTextures: Texture[][]) =>
@@ -16,21 +25,14 @@ const initialState = (slideTextures: Texture[][]) =>
 		isFading: false,
 	}));
 
-function slideReducer(state, action) {
+function slideReducer(state: SlideState[], action: SlideAction): SlideState[] {
 	switch (action.type) {
 		case "SET_NEXT": {
 			const { index, nextTexture } = action;
-			const updated = [...state];
-			updated[index] = {
-				...updated[index],
-				next: nextTexture,
-				opacity: 0,
-				isFading: true,
-			};
-			return updated;
+			return state.map((s: SlideState, i: number) => (i === index ? { ...s, next: nextTexture, opacity: 0, isFading: true } : s));
 		}
 		case "INCREMENT_OPACITY": {
-			return state.map((s) => {
+			return state.map((s: SlideState, i: number) => {
 				if (!s.isFading || !s.next) return s;
 				const newOpacity = Math.min(s.opacity + 0.05, 1);
 				if (newOpacity >= 1) {
@@ -52,6 +54,7 @@ function slideReducer(state, action) {
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setSlide, setHoverIndex, slide, isIntroPlaying } = useGallerySlide();
+
 	const { scene } = useThree();
 
 	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
@@ -62,7 +65,13 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 		return slideArray.map((slide) => slide.imagePaths.map(() => texturesArray[index++]));
 	}, [texturesArray]);
 
-	// 메모리 해제
+	const [slideStates, dispatch] = useReducer(slideReducer, slideTextures, initialState);
+	const slideStatesRef = useRef(slideStates);
+
+	useEffect(() => {
+		slideStatesRef.current = slideStates;
+	}, [slideStates]);
+
 	useEffect(() => {
 		return () => {
 			slideTextures.flat().forEach((texture) => texture.dispose());
@@ -79,18 +88,14 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 		};
 	}, [slideTextures, scene]);
 
-	const [slideStates, dispatch] = useReducer(slideReducer, slideTextures, initialState);
-
-	const slideStatesRef = useRef(slideStates);
-	useEffect(() => {
-		slideStatesRef.current = slideStates;
-	}, [slideStates]);
+	const calculatedTargetIndex = useMemo(() => {
+		if (!freemode) return slide;
+		if (focusIndex !== null) return focusIndex;
+		if (hoverIndex !== null) return hoverIndex;
+		return null;
+	}, [freemode, slide, hoverIndex, focusIndex]);
 
 	const lastActiveSlideIndexRef = useRef<number | null>(null);
-
-	const calculatedTargetIndex = useMemo(() => {
-		return !freemode ? slide : hoverIndex ?? focusIndex ?? null;
-	}, [freemode, slide, hoverIndex, focusIndex]);
 
 	useEffect(() => {
 		if (calculatedTargetIndex !== null) {
@@ -103,7 +108,6 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 	useEffect(() => {
 		const interval = setInterval(() => {
 			if (isIntroPlaying || activeSlideIndex === null) return;
-
 			const textures = slideTextures[activeSlideIndex];
 			const currentIndex = slideStatesRef.current[activeSlideIndex].index;
 			const nextIndex = (currentIndex + 1) % textures.length;
@@ -118,23 +122,20 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 		return () => clearInterval(interval);
 	}, [activeSlideIndex, slideTextures, isIntroPlaying]);
 
-	useFrame(() => {
-		dispatch({ type: "INCREMENT_OPACITY" });
-	});
+	useFrame(() => dispatch({ type: "INCREMENT_OPACITY" }));
 
 	const handleClick = useCallback(
 		(index: number) => {
 			if (freemode && !isSliding) {
 				if (focusIndex !== index) {
 					setFocusIndex(index);
-					setSlide(index);
 				} else {
 					setFocusIndex(null);
 					requestAnimationFrame(() => setFocusIndex(index));
 				}
 			}
 		},
-		[freemode, isSliding, focusIndex, setFocusIndex, setSlide]
+		[freemode, isSliding, focusIndex, setFocusIndex]
 	);
 
 	const handleHover = useCallback(
