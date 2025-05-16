@@ -1,20 +1,18 @@
 import { useRef, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Vector4, WebGLRenderTarget, CanvasTexture } from "three";
-import * as THREE from "three";
 import gsap from "gsap";
 
-// shaders
-import vertex from "@/shaders/vertex.glsl";
-import fragment from "@/shaders/fragment.glsl";
+import vertex from "@/shaders/loadingVertex.glsl";
+import fragment from "@/shaders/loadingFragment.glsl";
 
-interface ShaderTransitionProps {
+interface LoadingShaderProps {
 	renderTarget: WebGLRenderTarget;
 	loadingComplete: boolean;
 	onFinish: () => void;
 }
 
-export const ShaderTransition = ({ renderTarget, loadingComplete, onFinish }: ShaderTransitionProps) => {
+export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: LoadingShaderProps) => {
 	const meshRef = useRef<Mesh>(null);
 	const { size } = useThree();
 
@@ -40,7 +38,7 @@ export const ShaderTransition = ({ renderTarget, loadingComplete, onFinish }: Sh
 		ctx.textBaseline = "middle";
 		ctx.fillText("Loading...", canvas.width / 2, canvas.height / 2);
 
-		const texture = new THREE.CanvasTexture(canvas);
+		const texture = new CanvasTexture(canvas);
 		texture.needsUpdate = true;
 		return texture;
 	}, []);

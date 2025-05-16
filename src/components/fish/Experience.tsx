@@ -1,25 +1,24 @@
 "use client";
 
-// library
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
+import { useGLTF, useTexture } from "@react-three/drei";
 import { Material, Mesh, MeshStandardMaterial, Object3D, WebGLRenderTarget } from "three";
 
-// store
 import { useFishStore } from "@/store/useFishStore";
+import { resetGameState } from "@/hooks/resetGameState";
 
-// components
+import { LoadingShader } from "./LoadingShader";
+import { GuideShader } from "./GuideShader";
 import { FishModel } from "./FishModel";
 import { FishConfig } from "./FishConfig";
 import { Ground } from "./Ground";
 import { ClickHandler } from "./ClickHandler";
 import { BombZone } from "./BombZone";
-import { resetGameState } from "@/hooks/resetGameState";
 import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundWithFog } from "./BackgroundWithFog";
-import { ShaderTransition } from "./ShaderTransition";
-import { useGLTF, useTexture } from "@react-three/drei";
 
+// preload
 useGLTF.preload("/models/fish.glb");
 useTexture.preload([
 	"/textures/sand3/aerial_beach_01_diff_1k.jpg",
@@ -30,7 +29,10 @@ useTexture.preload([
 const Experience = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadingComplete, setLoadingComplete] = useState(false);
-	const [showShader, setShowShader] = useState(true);
+	const [showLoadingShader, setShowLoadingShader] = useState(true);
+	const [showGuideShader, setShowGuideShader] = useState(false);
+	const [isShowGuide, setisShowGuide] = useState(false);
+
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
 	const [countdown, setCountdown] = useState<number | null>(null);
@@ -48,7 +50,7 @@ const Experience = () => {
 	const renderTarget = useMemo(() => new WebGLRenderTarget(1024, 512), []);
 	const { score, setScore, darkMode, backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
 
-	// shader transition 시작 타이밍 조정
+	// loading shader 시작 타이밍 조정
 	useEffect(() => {
 		const timeout = setTimeout(() => {
 			setIsLoading(false);
@@ -56,27 +58,16 @@ const Experience = () => {
 		}, 1500);
 		return () => clearTimeout(timeout);
 	}, []);
-
-	// 메모리 해제
+	// guide shader 시작 타이밍 조정
 	useEffect(() => {
-		if (loadingComplete) renderTarget.dispose();
-	}, [loadingComplete, renderTarget]);
-	useEffect(() => {
-		return () => {
-			const { scene } = useThree();
-			scene.traverse((child: Object3D) => {
-				if ((child as Mesh).isMesh) {
-					const mesh = child as Mesh;
-					mesh.geometry?.dispose();
-					if (Array.isArray(mesh.material)) {
-						mesh.material.forEach((m: Material) => m.dispose());
-					} else {
-						(mesh.material as Material)?.dispose();
-					}
-				}
-			});
-		};
-	}, []);
+		if (loadingComplete) {
+			const showDelay = setTimeout(() => {
+				setShowGuideShader(true);
+				requestAnimationFrame(() => setisShowGuide(true));
+			}, 1000);
+			return () => clearTimeout(showDelay);
+		}
+	}, [loadingComplete]);
 
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
@@ -110,6 +101,27 @@ const Experience = () => {
 
 		resetGame();
 	};
+
+	// 메모리 해제
+	useEffect(() => {
+		if (loadingComplete) renderTarget.dispose();
+	}, [loadingComplete, renderTarget]);
+	useEffect(() => {
+		return () => {
+			const { scene } = useThree();
+			scene.traverse((child: Object3D) => {
+				if ((child as Mesh).isMesh) {
+					const mesh = child as Mesh;
+					mesh.geometry?.dispose();
+					if (Array.isArray(mesh.material)) {
+						mesh.material.forEach((m: Material) => m.dispose());
+					} else {
+						(mesh.material as Material)?.dispose();
+					}
+				}
+			});
+		};
+	}, []);
 
 	return (
 		<>
@@ -159,10 +171,20 @@ const Experience = () => {
 				)}
 			</Canvas>
 
-			{showShader && (
+			{/* 로딩 */}
+			{showLoadingShader && (
 				<div className="shader_container">
 					<Canvas orthographic camera={{ zoom: 1, position: [0, 0, 100] }}>
-						<ShaderTransition renderTarget={renderTarget} loadingComplete={loadingComplete} onFinish={() => setShowShader(false)} />
+						<LoadingShader renderTarget={renderTarget} loadingComplete={loadingComplete} onFinish={() => setShowLoadingShader(false)} />
+					</Canvas>
+				</div>
+			)}
+
+			{/* 가이드 */}
+			{showGuideShader && (
+				<div className={`guide_container ${isShowGuide ? "show" : ""}`}>
+					<Canvas orthographic camera={{ zoom: 1, position: [0, 0, 100] }}>
+						<GuideShader onFinish={() => setShowGuideShader(false)} />
 					</Canvas>
 				</div>
 			)}
@@ -181,7 +203,7 @@ const Experience = () => {
 			{isGameOver && (
 				<div onClick={handleReset} className="gameover_overlay">
 					<h1>YOU&apos;RE COOKED</h1>
-					<p className={preventClick ? "show" : ""}>화면을 클릭해 다시 시작하세요</p>
+					<p className={preventClick ? "show" : ""}>Click the screen to restart</p>
 				</div>
 			)}
 		</>
