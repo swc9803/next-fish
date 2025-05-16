@@ -18,6 +18,14 @@ import { resetGameState } from "@/hooks/resetGameState";
 import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundWithFog } from "./BackgroundWithFog";
 import { ShaderTransition } from "./ShaderTransition";
+import { useGLTF, useTexture } from "@react-three/drei";
+
+useGLTF.preload("/models/fish.glb");
+useTexture.preload([
+	"/textures/sand3/aerial_beach_01_diff_1k.jpg",
+	"/textures/sand3/aerial_beach_01_nor_gl_1k.jpg",
+	"/textures/sand3/aerial_beach_01_rough_1k.jpg",
+]);
 
 const Experience = () => {
 	const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +36,7 @@ const Experience = () => {
 	const [countdown, setCountdown] = useState<number | null>(null);
 	const [bombActive, setBombActive] = useState(false);
 	const [feeds, setFeeds] = useState<{ id: string; position: [number, number, number] }[]>([]);
+	const [preventClick, setPreventClick] = useState(false);
 
 	const fishRef = useRef<Object3D>(null);
 	const planeRef = useRef<Mesh>(null);
@@ -48,11 +57,10 @@ const Experience = () => {
 		return () => clearTimeout(timeout);
 	}, []);
 
+	// 메모리 해제
 	useEffect(() => {
 		if (loadingComplete) renderTarget.dispose();
 	}, [loadingComplete, renderTarget]);
-
-	// 메모리 해제
 	useEffect(() => {
 		return () => {
 			const { scene } = useThree();
@@ -75,7 +83,20 @@ const Experience = () => {
 		resetGameState(fishRef, setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
 	}, [setScore]);
 
+	useEffect(() => {
+		if (isGameOver) {
+			setPreventClick(false);
+			const timeout = setTimeout(() => {
+				setPreventClick(true);
+			}, 1200);
+
+			return () => clearTimeout(timeout);
+		}
+	}, [isGameOver]);
+
 	const handleReset = () => {
+		if (!preventClick) return;
+
 		blinkTweens.current.forEach((t) => t.kill());
 		blinkTweens.current = [];
 
@@ -156,7 +177,7 @@ const Experience = () => {
 			{isGameOver && (
 				<div onClick={handleReset} className="gameover_overlay">
 					<h1>YOU&apos;RE COOKED</h1>
-					<p>화면을 클릭해 다시 시작하세요</p>
+					<p className={preventClick ? "show" : ""}>화면을 클릭해 다시 시작하세요</p>
 				</div>
 			)}
 		</>
