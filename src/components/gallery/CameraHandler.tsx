@@ -128,29 +128,33 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 		prevFreemodeRef.current = now;
 
 		if (prev && !now && cameraControlsRef.current?.camera) {
-			const camera = cameraControlsRef.current.camera;
-			const direction = new Vector3();
-			camera.getWorldDirection(direction);
+			requestAnimationFrame(() => {
+				const camera = cameraControlsRef.current!.camera;
+				camera.updateMatrixWorld();
 
-			const cameraPos = camera.position.clone();
-			let nearest = 0;
-			let maxDot = -Infinity;
+				const direction = new Vector3();
+				camera.getWorldDirection(direction);
 
-			for (let i = 0; i < slideArray.length; i++) {
-				const { x, z } = getSlidePosition(i, totalRadius);
-				const toSlide = new Vector3(x - cameraPos.x, 0, z - cameraPos.z).normalize();
-				const dot = direction.dot(toSlide);
-				if (dot > maxDot) {
-					maxDot = dot;
-					nearest = i;
+				const cameraPos = camera.position.clone();
+				let nearest = 0;
+				let maxDot = -Infinity;
+
+				for (let i = 0; i < slideArray.length; i++) {
+					const { x, z } = getSlidePosition(i, totalRadius);
+					const toSlide = new Vector3(x - cameraPos.x, 0, z - cameraPos.z).normalize();
+					const dot = direction.dot(toSlide);
+					if (dot > maxDot) {
+						maxDot = dot;
+						nearest = i;
+					}
 				}
-			}
 
-			setFocusIndex(null);
-			setHoverIndex(null);
-			setSlide(nearest);
-			moveToSlide(nearest, true);
-			lastSlideIndexRef.current = nearest;
+				setFocusIndex(null);
+				setHoverIndex(null);
+				setSlide(nearest);
+				moveToSlide(nearest, true);
+				lastSlideIndexRef.current = nearest;
+			});
 		}
 
 		if (!prev && now) {

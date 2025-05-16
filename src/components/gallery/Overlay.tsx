@@ -12,7 +12,7 @@ export const Overlay = () => {
 
 	const activeSlide = freemode && focusIndex !== null ? focusIndex : visibleSlide;
 	const isOverlayDisabled = isSliding || isIntroPlaying || !isCameraIntroDone;
-	const showOverlay = !freemode || (freemode && focusIndex !== null);
+	const showOverlay = isCameraIntroDone && !isSliding && (!freemode || (freemode && focusIndex !== null));
 
 	const disabledToggle = isCooldown || isSliding || isIntroPlaying;
 
@@ -92,7 +92,7 @@ export const Overlay = () => {
 				{slideArray[activeSlide].logo && (
 					<div className={styles.logo_wrapper}>
 						<div className={styles.logo_background} />
-						<Image className={styles.logo} src={slideArray[activeSlide].logo} alt="로고" fill sizes="7rem" />
+						<Image className={styles.logo} src={slideArray[activeSlide].logo} alt="로고" fill sizes="7rem" priority />
 					</div>
 				)}
 

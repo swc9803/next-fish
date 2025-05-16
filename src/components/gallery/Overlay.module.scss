@@ -12,11 +12,14 @@
 	pointer-events: none;
 	&.show {
 		opacity: 1;
-		pointer-events: auto;
+		.content {
+			a {
+				pointer-events: auto;
+			}
+		}
 	}
 	&.disabled {
 		opacity: 0;
-		pointer-events: none;
 	}
 	.logo_wrapper {
 		position: relative;
@@ -48,28 +51,28 @@
 		gap: 0.5rem;
 		background: linear-gradient(0deg, rgba(255, 255, 255, 0.9) 66%, rgba(255, 255, 255, 0));
 		text-align: center;
-		pointer-events: none;
 		h1 {
 			color: #111;
-			font-size: 2.25rem;
+			font-size: clamp(1.25rem, calc(12.956px + 2.366vw), 2.25rem);
 			font-weight: 700;
 		}
 		p {
 			color: #444;
-			font-size: 1rem;
+			font-size: clamp(0.75rem, calc(0.5rem + 1vw), 1rem);
 			line-height: 160%;
+			word-break: keep-all;
 		}
 		a {
-			margin-top: 0.5rem;
 			padding: 0.75rem 1.5rem;
 			display: inline-block;
 			border-radius: 0.5rem;
 			background: #111;
 			color: #fff;
+			font-size: clamp(0.875rem, calc(11.186px + 0.828vw), 1.25rem);
 			font-weight: 600;
 			text-decoration: none;
 			transition: background 0.3s ease-out;
-			pointer-events: auto;
+			pointer-events: none;
 			&:hover {
 				background: #333;
 			}
@@ -121,15 +124,14 @@
 		position: relative;
 		min-height: 36px;
 		padding: 0.3125rem 2.375rem;
-		min-width: 9.75rem;
+		min-width: 10rem;
 		border: 1px solid #666;
 		border-radius: 1.5rem;
 		transition: background 0.3s ease-in-out;
 		background: #fff;
-
 		&.free {
 			.knob {
-				transform: translate3d(7.75rem, 0, 0);
+				transform: translate3d(8rem, 0, 0);
 			}
 		}
 		.knob {
@@ -144,7 +146,6 @@
 			transition: transform 0.3s ease-in-out;
 			z-index: 1;
 		}
-
 		.label {
 			color: #fff;
 			mix-blend-mode: difference;
