@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useGLTF } from "@react-three/drei";
 import { useThree, useFrame } from "@react-three/fiber";
-import { MeshStandardMaterial, Mesh, Object3D, Vector3 } from "three";
-import { useFishStore } from "@/store/useFishStore";
+import { MeshStandardMaterial, Mesh, Object3D, Vector3, AnimationMixer, AnimationAction, LoopRepeat } from "three";
 import gsap from "gsap";
+
+import { useFishStore } from "@/store/useFishStore";
 
 interface FishModelProps {
 	fishRef: React.RefObject<Object3D>;
@@ -17,8 +18,10 @@ const GRID_SIZE_Z = 42;
 const GRID_HALF_SIZE_X = GRID_SIZE_X / 2;
 const GRID_HALF_SIZE_Z = GRID_SIZE_Z / 2;
 
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
 export const FishModel = ({ fishRef, setIsInBombZone, setCountdown }: FishModelProps) => {
-	const { scene } = useGLTF("/models/fish.glb");
+	const { scene, animations } = useGLTF("/models/fish.glb");
 	const { camera } = useThree();
 	const { fishColor, fishScale } = useFishStore();
 
@@ -30,7 +33,16 @@ export const FishModel = ({ fishRef, setIsInBombZone, setCountdown }: FishModelP
 	const lastInBombZone = useRef<boolean | null>(null);
 	const hasMovedToCenter = useRef(false);
 
-	// 모바일 검사
+	const mixerRef = useRef<AnimationMixer | null>(null);
+	const swimActionRef = useRef<AnimationAction | null>(null);
+	const prevPositionRef = useRef<Vector3 | null>(null);
+	const lerpTimeScale = useRef<number>(0.01);
+	const decayedSpeed = useRef<number>(0);
+
+	const offsetVec = useRef(new Vector3());
+	const tempTarget = useRef(new Vector3());
+	const currentPosition = useRef(new Vector3());
+
 	useEffect(() => {
 		const handleResize = () => setIsMobile(window.innerWidth <= 480);
 		handleResize();
@@ -44,56 +56,68 @@ export const FishModel = ({ fishRef, setIsInBombZone, setCountdown }: FishModelP
 			if (child instanceof Mesh && child.name === "Mesh") {
 				const mats = Array.isArray(child.material) ? child.material : [child.material];
 				mats.forEach((mat) => {
-					if (mat instanceof MeshStandardMaterial) {
-						materials.push(mat);
-					}
+					if (mat instanceof MeshStandardMaterial) materials.push(mat);
 				});
 			}
 		});
 		meshMaterials.current = materials;
 	}, [scene]);
 
-	// 물고기 색상 적용
 	useEffect(() => {
 		meshMaterials.current.forEach((mat) => mat.color.set(fishColor));
 	}, [fishColor]);
 
-	// 디버그용 토글 히트박스
+	const toggleDebug = useCallback((e: KeyboardEvent) => {
+		if (e.key.toLowerCase() === "d") {
+			setShowHitBox((prev) => !prev);
+		}
+	}, []);
 	useEffect(() => {
-		const toggleDebug = (e: KeyboardEvent) => {
-			if (e.key.toLowerCase() === "d") {
-				setShowHitBox((prev) => !prev);
-			}
-		};
 		window.addEventListener("keydown", toggleDebug);
 		return () => window.removeEventListener("keydown", toggleDebug);
-	}, []);
+	}, [toggleDebug]);
 
-	// 프레임마다 fish 위치 및 카메라 조정
-	useFrame(() => {
+	// 애니메이션 초기화
+	useEffect(() => {
+		if (!fishRef.current) return;
+		const mixer = new AnimationMixer(fishRef.current);
+		mixerRef.current = mixer;
+
+		const swimClip = animations.find((clip) => clip.name.toLowerCase().includes("swim"));
+		if (swimClip) {
+			const action = mixer.clipAction(swimClip);
+			action.setLoop(LoopRepeat, Infinity);
+			action.play();
+			swimActionRef.current = action;
+		}
+	}, [animations, fishRef]);
+
+	// 위치 기반 처리
+	useFrame((_, delta) => {
 		if (!fishRef.current) return;
 		const fish = fishRef.current;
-		const fishPosition = fish.position as Vector3;
+		const pos = fish.position;
 
 		fish.scale.set(fishScale, fishScale, fishScale);
 
+		// 히트박스 위치 갱신
 		if (hitBoxRef.current) {
-			hitBoxRef.current.position.copy(fishPosition);
-			const offset = new Vector3(0, 0, -fishScale * 0.5).applyEuler(fish.rotation);
-			hitBoxRef.current.position.add(offset);
+			hitBoxRef.current.position.copy(pos);
+			offsetVec.current.set(0, 0, -fishScale * 0.5).applyEuler(fish.rotation);
+			hitBoxRef.current.position.add(offsetVec.current);
 			hitBoxRef.current.rotation.copy(fish.rotation);
 			hitBoxRef.current.scale.set(1, 1, 1);
 		}
 
-		const inBombZone = Math.abs(fishPosition.x - GRID_CENTER.x) < GRID_HALF_SIZE_X && Math.abs(fishPosition.z - GRID_CENTER.z) < GRID_HALF_SIZE_Z;
+		const inBombZone = Math.abs(pos.x - GRID_CENTER.x) < GRID_HALF_SIZE_X && Math.abs(pos.z - GRID_CENTER.z) < GRID_HALF_SIZE_Z;
 
-		// BombZone 진입 시 카메라 이동
+		// 카메라 위치
 		if (inBombZone) {
 			camera.position.set(GRID_CENTER.x, isMobile ? 40 : 30, GRID_CENTER.z);
 			camera.lookAt(GRID_CENTER);
 		} else {
-			camera.position.set(fishPosition.x, 20, fishPosition.z + 14);
-			camera.lookAt(fishPosition);
+			camera.position.set(pos.x, 20, pos.z + 14);
+			camera.lookAt(pos);
 		}
 
 		if (lastInBombZone.current !== inBombZone) {
@@ -103,17 +127,17 @@ export const FishModel = ({ fishRef, setIsInBombZone, setCountdown }: FishModelP
 			if (inBombZone && !hasMovedToCenter.current) {
 				hasMovedToCenter.current = true;
 
-				gsap.killTweensOf(fish.position);
-				const target = new Vector3(GRID_CENTER.x, fishPosition.y, GRID_CENTER.z);
-				fish.lookAt(target);
+				gsap.killTweensOf(pos);
+				tempTarget.current.set(GRID_CENTER.x, pos.y, GRID_CENTER.z);
+				fish.lookAt(tempTarget.current);
 
 				const speed = useFishStore.getState().fishSpeed;
-				const distance = fishPosition.distanceTo(target);
+				const distance = pos.distanceTo(tempTarget.current);
 				const duration = distance / speed;
 
-				gsap.to(fish.position, {
-					x: target.x,
-					z: target.z,
+				gsap.to(pos, {
+					x: tempTarget.current.x,
+					z: tempTarget.current.z,
 					duration,
 					ease: "power2.out",
 				});
@@ -124,6 +148,28 @@ export const FishModel = ({ fishRef, setIsInBombZone, setCountdown }: FishModelP
 			if (!inBombZone) {
 				hasMovedToCenter.current = false;
 			}
+		}
+
+		mixerRef.current?.update(delta);
+
+		// 이동 속도에 비례한 애니메이션 속도 조절
+		if (swimActionRef.current) {
+			const prev = prevPositionRef.current;
+			currentPosition.current.copy(pos);
+
+			if (prev) {
+				const distance = currentPosition.current.distanceTo(prev);
+				const instantSpeed = distance / delta;
+
+				// 감속
+				decayedSpeed.current = lerp(decayedSpeed.current, instantSpeed, 0.15);
+
+				const targetTimeScale = Math.min(Math.max(decayedSpeed.current * 0.3, 0.01), 1.5);
+				lerpTimeScale.current = lerp(lerpTimeScale.current, targetTimeScale, 0.1);
+				swimActionRef.current.timeScale = lerpTimeScale.current;
+			}
+
+			prevPositionRef.current = currentPosition.current.clone();
 		}
 	});
 
