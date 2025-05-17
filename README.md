@@ -16,14 +16,12 @@ SEO 최적화 ( 후순위 )
 
 특정 위치에 일정시간 위치하면 낚시대 챔질 rotation 변경
 
-fish model 블랜더 애니메이션 추가
 (swim)
-Frame 0: R → Z (또는 Y축) → -30 입력 → I → Rotation 키 삽입
-Frame 15: R → Z → +30 입력 → I → Rotation
-Frame 30: R → Z → -30 → I → Rotation
+Frame 0: 꼬리 Z축 회전 -30
+Frame 15: 꼬리 Z축 회전 +30
+Frame 30: 꼬리 Z축 회전 -30
 (tail_center)
-new 버튼 클릭 > tail_center 로 설정
-Frame 30: 현재 회전값 기준 키 삽입 (I → Rotation)
-Frame 60: 꼬리 뼈를 0도 회전 위치로 설정 (Alt+R 또는 R → Z → 0), 키 삽입
+Frame 30: 꼬리 Z축 회전 -30
+Frame 60: 꼬리 Z축 회전 0
 
 각각을 Fake User (F 아이콘) 로 저장 상태 유지
