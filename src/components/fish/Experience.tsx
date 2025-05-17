@@ -39,6 +39,7 @@ const Experience = () => {
 	const [bombActive, setBombActive] = useState(false);
 	const [feeds, setFeeds] = useState<{ id: string; position: [number, number, number] }[]>([]);
 	const [preventClick, setPreventClick] = useState(false);
+	const [deathPosition, setDeathPosition] = useState<[number, number, number] | null>(null);
 
 	const fishRef = useRef<Object3D>(null);
 	const planeRef = useRef<Mesh>(null);
@@ -71,7 +72,7 @@ const Experience = () => {
 
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
-		resetGameState(fishRef, setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
+		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
 	}, [setScore]);
 
 	useEffect(() => {
@@ -147,7 +148,13 @@ const Experience = () => {
 				<VideoCaustics />
 				{!isLoading && (
 					<>
-						<FishModel fishRef={fishRef} setIsInBombZone={setIsInBombZone} setCountdown={setCountdown} />
+						<FishModel
+							fishRef={fishRef}
+							setIsInBombZone={setIsInBombZone}
+							setCountdown={setCountdown}
+							isGameOver={isGameOver}
+							deathPosition={deathPosition}
+						/>
 						<Ground planeRef={planeRef} />
 						<BombZone
 							fishRef={fishRef}
@@ -165,6 +172,7 @@ const Experience = () => {
 							hitTilesRef={hitTilesRef}
 							blinkTweens={blinkTweens}
 							cellTweens={cellTweens}
+							setDeathPosition={setDeathPosition}
 						/>
 						<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 					</>

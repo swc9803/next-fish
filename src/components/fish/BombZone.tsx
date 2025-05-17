@@ -20,6 +20,7 @@ interface BombZoneProps {
 	hitTilesRef: React.MutableRefObject<number[]>;
 	blinkTweens: React.MutableRefObject<gsap.core.Tween[]>;
 	cellTweens: React.MutableRefObject<{ [index: number]: gsap.core.Tween | undefined }>;
+	setDeathPosition: React.Dispatch<React.SetStateAction<[number, number, number] | null>>; // ✅ 추가
 }
 
 type Feed = { id: string; position: [number, number, number] };
@@ -43,6 +44,7 @@ export const BombZone = ({
 	hitTilesRef,
 	blinkTweens,
 	cellTweens,
+	setDeathPosition,
 }: BombZoneProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
 	const score = useFishStore((state) => state.score);
@@ -138,7 +140,9 @@ export const BombZone = ({
 	const handleFishHit = useCallback(
 		(index: number) => {
 			if (fishRef.current) {
-				gsap.killTweensOf(fishRef.current.position);
+				const pos = fishRef.current.position;
+				setDeathPosition([pos.x, pos.y, pos.z]);
+				gsap.killTweensOf(pos);
 			}
 			setIsGameOver(true);
 			setIsInBombZone(false);
