@@ -31,7 +31,7 @@ const Experience = () => {
 	const [loadingComplete, setLoadingComplete] = useState(false);
 	const [showLoadingShader, setShowLoadingShader] = useState(true);
 	const [showGuideShader, setShowGuideShader] = useState(false);
-	const [isShowGuide, setisShowGuide] = useState(false);
+	const [isShowGuide, setIsShowGuide] = useState(false);
 
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
@@ -63,7 +63,7 @@ const Experience = () => {
 		if (loadingComplete) {
 			const showDelay = setTimeout(() => {
 				setShowGuideShader(true);
-				requestAnimationFrame(() => setisShowGuide(true));
+				requestAnimationFrame(() => setIsShowGuide(true));
 			}, 1000);
 			return () => clearTimeout(showDelay);
 		}

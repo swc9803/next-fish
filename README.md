@@ -16,12 +16,4 @@ SEO 최적화 ( 후순위 )
 
 특정 위치에 일정시간 위치하면 낚시대 챔질 rotation 변경
 
-(swim)
-Frame 0: 꼬리 Z축 회전 -30
-Frame 15: 꼬리 Z축 회전 +30
-Frame 30: 꼬리 Z축 회전 -30
-(tail_center)
-Frame 30: 꼬리 Z축 회전 -30
-Frame 60: 꼬리 Z축 회전 0
-
-각각을 Fake User (F 아이콘) 로 저장 상태 유지
+preload glb
