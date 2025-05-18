@@ -6,8 +6,16 @@ export const VideoCaustics = () => {
 
 	// 메모리 해제
 	useEffect(() => {
+		const videoElement = videoTexture.image;
+
 		return () => {
 			videoTexture.dispose();
+
+			if (videoElement instanceof HTMLVideoElement) {
+				videoElement.pause();
+				videoElement.removeAttribute("src");
+				videoElement.load();
+			}
 		};
 	}, [videoTexture]);
 

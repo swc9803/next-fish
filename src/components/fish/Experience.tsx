@@ -126,7 +126,21 @@ const Experience = () => {
 
 	return (
 		<>
-			<Canvas shadows camera={{ position: [0, 17, 14], fov: 75 }}>
+			<Canvas
+				shadows
+				camera={{ position: [0, 17, 14], fov: 75 }}
+				gl={{
+					preserveDrawingBuffer: true,
+					powerPreference: "high-performance",
+					antialias: true,
+					failIfMajorPerformanceCaveat: false,
+				}}
+				onCreated={({ gl }) => {
+					gl.getContext().canvas.addEventListener("webglcontextlost", (e) => {
+						e.preventDefault();
+					});
+				}}
+			>
 				<BackgroundWithFog darkMode={darkMode} backgroundColor={backgroundColor} fogColor={fogColor} fogDensity={fogDensity} />
 
 				<ambientLight color={0xffffff} intensity={0.8} />

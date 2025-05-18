@@ -3,6 +3,7 @@ const nextConfig = {
 	transpilePackages: ["three"],
 	sassOptions: {},
 	reactStrictMode: false,
+	productionBrowserSourceMaps: false,
 	webpack: (config) => {
 		config.module.rules.push({
 			test: /\.(glsl|vs|fs)$/,
