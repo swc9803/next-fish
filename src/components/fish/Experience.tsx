@@ -12,7 +12,7 @@ import { LoadingShader } from "./LoadingShader";
 import { GuideShader } from "./GuideShader";
 import { FishModel } from "./FishModel";
 import { FishConfig } from "./FishConfig";
-import { FishingRod } from "./FishingRod";
+import { MoveRouter } from "./MoveRouter";
 import { Ground } from "./Ground";
 import { ClickHandler } from "./ClickHandler";
 import { BombZone } from "./BombZone";
@@ -170,7 +170,7 @@ const Experience = () => {
 							isGameOver={isGameOver}
 							deathPosition={deathPosition}
 						/>
-						<FishingRod />
+						<MoveRouter fishRef={fishRef} />
 						<Ground planeRef={planeRef} />
 						<BombZone
 							fishRef={fishRef}
