@@ -1,19 +1,14 @@
-import { useRef, useEffect, useMemo, useState } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
 
-const logoData: {
-	id: string;
-	url: string;
-	modelPath: string;
-	position: [number, number, number];
-}[] = [
+const logoData = [
 	{
 		id: "github",
 		url: "https://github.com/swc9803",
 		modelPath: "/models/github.glb",
-		position: [-7, 0.5, 20],
+		position: [-10, 0.5, 20],
 	},
 	{
 		id: "codepen",
@@ -25,7 +20,7 @@ const logoData: {
 		id: "email",
 		url: "mailto:swc9803@gmail.com",
 		modelPath: "/models/email.glb",
-		position: [7, 0.5, 20],
+		position: [10, 0.5, 20],
 	},
 ];
 
@@ -40,54 +35,56 @@ const LogoModel = ({ modelPath, position, url, fishRef }: LogoProps) => {
 	const { scene } = useGLTF(modelPath);
 	const ref = useRef<Object3D>(null);
 	const ringRef = useRef<Mesh>(null);
-	const [triggered, setTriggered] = useState(false);
 	const progressRef = useRef(0);
-	const maxDistance = 10;
+	const triggeredRef = useRef(false);
+	const prevArcRef = useRef<number | null>(null);
+	const ringMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
+
+	const MAX_DISTANCE = 5;
 
 	useEffect(() => {
 		if (ringRef.current) {
-			ringRef.current.material = new MeshBasicMaterial({ color: "white", transparent: false });
-			ringRef.current.rotation.x = Math.PI * -0.5;
-			ringRef.current.rotation.z = Math.PI * 0.5;
+			ringRef.current.material = ringMaterial;
+			ringRef.current.rotation.set(Math.PI * -0.5, 0, Math.PI * 0.5);
 		}
-	}, []);
+	}, [ringMaterial]);
 
 	useFrame((_, delta) => {
-		if (!ref.current || !fishRef.current || !ringRef.current) return;
-		const dist = ref.current.position.distanceTo(fishRef.current.position);
+		const ring = ringRef.current;
+		const self = ref.current;
+		const fish = fishRef.current;
+
+		if (!self || !fish || !ring) return;
+
+		const dist = self.position.distanceTo(fish.position);
 		let progress = progressRef.current;
 
-		if (dist < maxDistance) {
+		if (dist < MAX_DISTANCE) {
 			progress = Math.min(1, progress + delta / 4);
-			if (progress >= 1 && !triggered) {
-				setTriggered(true);
+			if (progress >= 1 && !triggeredRef.current) {
+				triggeredRef.current = true;
 				window.open(url, "_blank");
 			}
 		} else {
 			progress = Math.max(0, progress - delta / 1.5);
-			if (progress < 1) setTriggered(false);
+			if (progress < 1) triggeredRef.current = false;
 		}
 
 		progressRef.current = progress;
 
 		const arc = -progress * Math.PI * 2;
-		const newGeometry = new TorusGeometry(1.125, 0.05, 4, 64, arc);
-		const ring = ringRef.current;
-		if (ring.geometry) ring.geometry.dispose();
-		ring.geometry = newGeometry;
-	});
 
-	const ring = useMemo(() => {
-		const geometry = new TorusGeometry(1.125, 0.05, 4, 64, 0);
-		const material = new MeshBasicMaterial({ color: "white" });
-		const mesh = <mesh ref={ringRef} geometry={geometry} material={material} position={[0, 0.01, 0]} />;
-		return mesh;
-	}, []);
+		if (prevArcRef.current === null || Math.abs(arc - prevArcRef.current) > 0.01) {
+			if (ring.geometry) ring.geometry.dispose();
+			ring.geometry = new TorusGeometry(1.125, 0.05, 16, 64, arc);
+			prevArcRef.current = arc;
+		}
+	});
 
 	return (
 		<group ref={ref} position={position} scale={3.5}>
 			<primitive object={scene} />
-			{ring}
+			<mesh ref={ringRef} position={[0, 0.01, 0]} />
 		</group>
 	);
 };
@@ -100,7 +97,7 @@ export const MoveRouter = ({ fishRef }: MoveRouterProps) => {
 	return (
 		<group>
 			{logoData.map((logo) => (
-				<LogoModel key={logo.id} {...logo} fishRef={fishRef} />
+				<LogoModel key={logo.id} url={logo.url} modelPath={logo.modelPath} position={logo.position as [number, number, number]} fishRef={fishRef} />
 			))}
 		</group>
 	);
