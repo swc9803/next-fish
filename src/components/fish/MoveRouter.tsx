@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
@@ -40,9 +39,10 @@ interface LogoProps {
 	position: [number, number, number];
 	fishRef: React.RefObject<Object3D>;
 	isInternal?: boolean;
+	showGalleryOverlay?: () => void;
 }
 
-const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false }: LogoProps) => {
+const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay }: LogoProps) => {
 	const { scene } = useGLTF(modelPath);
 	const modelRef = useRef<Object3D>(null);
 	const progressCircleRef = useRef<Mesh>(null);
@@ -50,7 +50,6 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false }: Lo
 	const triggeredRef = useRef(false);
 	const prevArcRef = useRef<number | null>(null);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
-	const router = useRouter();
 
 	const DETECT_DISTANCE = 5;
 
@@ -76,8 +75,8 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false }: Lo
 			if (progress >= 1 && !triggeredRef.current) {
 				triggeredRef.current = true;
 
-				if (isInternal) {
-					router.push(url);
+				if (isInternal && url === "/gallery") {
+					showGalleryOverlay?.();
 				} else {
 					window.open(url, "_blank");
 				}
@@ -108,9 +107,10 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false }: Lo
 
 interface MoveRouterProps {
 	fishRef: React.RefObject<Object3D>;
+	showGalleryOverlay?: () => void;
 }
 
-export const MoveRouter = ({ fishRef }: MoveRouterProps) => {
+export const MoveRouter = ({ fishRef, showGalleryOverlay }: MoveRouterProps) => {
 	return (
 		<group>
 			{logoData.map((logo) => (
@@ -121,6 +121,7 @@ export const MoveRouter = ({ fishRef }: MoveRouterProps) => {
 					position={logo.position as [number, number, number]}
 					fishRef={fishRef}
 					isInternal={logo.isInternal}
+					showGalleryOverlay={showGalleryOverlay}
 				/>
 			))}
 		</group>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useGLTF, useTexture } from "@react-three/drei";
 import { Material, Mesh, MeshStandardMaterial, Object3D, WebGLRenderTarget } from "three";
@@ -27,12 +28,27 @@ useTexture.preload([
 	"/textures/sand3/aerial_beach_01_rough_1k.jpg",
 ]);
 
+const GalleryTransitionOverlay = () => {
+	const [visible, setVisible] = useState(false);
+
+	useEffect(() => {
+		const raf = requestAnimationFrame(() => {
+			setVisible(true);
+		});
+		return () => cancelAnimationFrame(raf);
+	}, []);
+
+	return <div className={`move_gallery_overlay ${visible ? "show" : ""}`} />;
+};
+
 const Experience = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadingComplete, setLoadingComplete] = useState(false);
 	const [showLoadingShader, setShowLoadingShader] = useState(true);
 	const [showGuideShader, setShowGuideShader] = useState(false);
 	const [isShowGuide, setIsShowGuide] = useState(false);
+	const [showGalleryTransitionOverlay, setShowGalleryTransitionOverlay] = useState(false);
+	const router = useRouter();
 
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
@@ -72,6 +88,13 @@ const Experience = () => {
 		}
 	}, [loadingComplete]);
 
+	const galleryTransitionOverlayHandler = () => {
+		setShowGalleryTransitionOverlay(true);
+		setTimeout(() => {
+			router.push("/gallery");
+		}, 1000);
+	};
+
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
 		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
@@ -83,7 +106,6 @@ const Experience = () => {
 			const timeout = setTimeout(() => {
 				setPreventClick(true);
 			}, 1200);
-
 			return () => clearTimeout(timeout);
 		}
 	}, [isGameOver]);
@@ -105,7 +127,6 @@ const Experience = () => {
 		resetGame();
 	};
 
-	// 메모리 해제
 	const SceneCleanup = () => {
 		const { scene } = useThree();
 
@@ -165,6 +186,7 @@ const Experience = () => {
 				/>
 
 				<VideoCaustics />
+
 				{!isLoading && (
 					<>
 						<FishModel
@@ -174,7 +196,7 @@ const Experience = () => {
 							isGameOver={isGameOver}
 							deathPosition={deathPosition}
 						/>
-						<MoveRouter fishRef={fishRef} />
+						<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} />
 						<Ground planeRef={planeRef} />
 						<BombZone
 							fishRef={fishRef}
@@ -198,6 +220,9 @@ const Experience = () => {
 					</>
 				)}
 			</Canvas>
+
+			{/* 갤러리로 이동 오버레이 */}
+			{showGalleryTransitionOverlay && <GalleryTransitionOverlay />}
 
 			{/* 로딩 */}
 			{showLoadingShader && (
