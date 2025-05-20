@@ -60,6 +60,7 @@ const Experience = () => {
 		}, 1500);
 		return () => clearTimeout(timeout);
 	}, []);
+
 	// guide shader 시작 타이밍 조정
 	useEffect(() => {
 		if (loadingComplete) {
@@ -105,25 +106,27 @@ const Experience = () => {
 	};
 
 	// 메모리 해제
-	useEffect(() => {
-		if (loadingComplete) renderTarget.dispose();
-	}, [loadingComplete, renderTarget]);
-	useEffect(() => {
-		return () => {
-			const { scene } = useThree();
-			scene.traverse((child: Object3D) => {
-				if ((child as Mesh).isMesh) {
-					const mesh = child as Mesh;
-					mesh.geometry?.dispose();
-					if (Array.isArray(mesh.material)) {
-						mesh.material.forEach((m: Material) => m.dispose());
-					} else {
-						(mesh.material as Material)?.dispose();
+	const SceneCleanup = () => {
+		const { scene } = useThree();
+
+		useEffect(() => {
+			return () => {
+				scene.traverse((child: Object3D) => {
+					if ((child as Mesh).isMesh) {
+						const mesh = child as Mesh;
+						mesh.geometry?.dispose();
+						if (Array.isArray(mesh.material)) {
+							mesh.material.forEach((m: Material) => m.dispose());
+						} else {
+							(mesh.material as Material)?.dispose();
+						}
 					}
-				}
-			});
-		};
-	}, []);
+				});
+			};
+		}, [scene]);
+
+		return null;
+	};
 
 	return (
 		<>
@@ -142,6 +145,7 @@ const Experience = () => {
 					});
 				}}
 			>
+				<SceneCleanup />
 				<BackgroundWithFog darkMode={darkMode} backgroundColor={backgroundColor} fogColor={fogColor} fogDensity={fogDensity} />
 
 				<ambientLight color={0xffffff} intensity={0.8} />
