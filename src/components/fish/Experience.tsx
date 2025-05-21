@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
-import { useGLTF, useTexture } from "@react-three/drei";
+import { useTexture } from "@react-three/drei";
 import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
 
 import { useFishStore } from "@/store/useFishStore";
@@ -19,7 +19,7 @@ import { BombZone } from "./BombZone";
 import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundWithFog } from "./BackgroundWithFog";
 
-useGLTF.preload("/models/fish.glb");
+// preload
 useTexture.preload([
 	"/textures/sand3/aerial_beach_01_diff_1k.jpg",
 	"/textures/sand3/aerial_beach_01_nor_gl_1k.jpg",
@@ -59,18 +59,31 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 	const { score, setScore, darkMode, backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
 
 	const [hasNotified, setHasNotified] = useState(false);
+	const [fishLoaded, setFishLoaded] = useState(false);
+	const [groundLoaded, setGroundLoaded] = useState(false);
 
+	// 모든 리소스 준비 완료 체크
 	useEffect(() => {
-		const timeout = setTimeout(() => {
-			if (!hasNotified) {
-				setHasNotified(true);
-				onReady();
-				setShowGuideShader(true);
-				requestAnimationFrame(() => setIsShowGuide(true));
-			}
-		}, 1500);
-		return () => clearTimeout(timeout);
-	}, [hasNotified, onReady]);
+		if (fishLoaded && groundLoaded && !hasNotified) {
+			setHasNotified(true);
+			onReady();
+		}
+	}, [fishLoaded, groundLoaded, hasNotified]);
+
+	// 가이드 오버레이 보이기 전 딜레이
+	useEffect(() => {
+		if (!hasNotified) return;
+
+		const delay = setTimeout(() => {
+			setShowGuideShader(true);
+
+			requestAnimationFrame(() => {
+				setIsShowGuide(true);
+			});
+		}, 2000);
+
+		return () => clearTimeout(delay);
+	}, [hasNotified]);
 
 	const galleryTransitionOverlayHandler = () => {
 		setShowGalleryTransitionOverlay(true);
@@ -79,6 +92,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 		}, 1000);
 	};
 
+	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
 		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
 	}, [setScore]);
@@ -146,7 +160,6 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 			>
 				<SceneCleanup />
 				<BackgroundWithFog darkMode={darkMode} backgroundColor={backgroundColor} fogColor={fogColor} fogDensity={fogDensity} />
-
 				<ambientLight color={0xffffff} intensity={0.8} />
 				<directionalLight
 					color={0xf8f8ff}
@@ -162,18 +175,17 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 					shadow-camera-near={1}
 					shadow-camera-far={500}
 				/>
-
 				<VideoCaustics />
-
 				<FishModel
 					fishRef={fishRef}
 					setIsInBombZone={setIsInBombZone}
 					setCountdown={setCountdown}
 					isGameOver={isGameOver}
 					deathPosition={deathPosition}
+					onLoaded={() => setFishLoaded(true)}
 				/>
 				<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} />
-				<Ground planeRef={planeRef} />
+				<Ground planeRef={planeRef} onLoaded={() => setGroundLoaded(true)} />
 				<BombZone
 					fishRef={fishRef}
 					setIsGameOver={setIsGameOver}
@@ -195,6 +207,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 				<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 			</Canvas>
 
+			{/* 갤러리로 이동 오버레이 */}
 			{showGalleryTransitionOverlay && <GalleryTransitionOverlay />}
 
 			{showGuideShader && (

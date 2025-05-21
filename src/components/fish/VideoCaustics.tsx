@@ -5,7 +5,23 @@ export const VideoCaustics = () => {
 	const [videoTexture, setVideoTexture] = useState<VideoTexture | null>(null);
 	const meshRef = useRef<Mesh>(null);
 
-	// 메모리 해제
+	useEffect(() => {
+		if (!videoTexture || !videoTexture.image) return;
+
+		const video = videoTexture.image;
+		if (!(video instanceof HTMLVideoElement)) return;
+
+		const onCanPlay = () => {
+			video.removeEventListener("canplaythrough", onCanPlay);
+		};
+
+		video.addEventListener("canplaythrough", onCanPlay);
+		return () => {
+			video.removeEventListener("canplaythrough", onCanPlay);
+		};
+	}, [videoTexture]);
+
+	// 비디오 초기화 및 텍스처 생성
 	useEffect(() => {
 		const video = document.createElement("video");
 		video.src = "/videos/caustics.mp4";

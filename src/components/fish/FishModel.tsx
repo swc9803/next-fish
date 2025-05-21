@@ -15,6 +15,7 @@ interface FishModelProps {
 	setCountdown: React.Dispatch<React.SetStateAction<number | null>>;
 	isGameOver: boolean;
 	deathPosition: [number, number, number] | null;
+	onLoaded: () => void;
 }
 
 const GRID_CENTER = new Vector3(-50, 0, 0);
@@ -23,7 +24,7 @@ const GRID_HALF_SIZE_Z = 21;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-export const FishModel = ({ fishRef, setIsInBombZone, setCountdown, isGameOver, deathPosition }: FishModelProps) => {
+export const FishModel = ({ fishRef, setIsInBombZone, setCountdown, isGameOver, deathPosition, onLoaded }: FishModelProps) => {
 	const { scene: fishScene, animations } = useGLTF("/models/fish.glb");
 	const { scene: deadScene } = useGLTF("/models/fish_bone.glb");
 	const { camera } = useThree();
@@ -46,6 +47,15 @@ export const FishModel = ({ fishRef, setIsInBombZone, setCountdown, isGameOver, 
 	const offsetVec = useMemo(() => new Vector3(), []);
 	const tempTarget = useMemo(() => new Vector3(), []);
 	const currentPosition = useMemo(() => new Vector3(), []);
+
+	//  준비 완료
+	const didNotify = useRef(false);
+	useEffect(() => {
+		if (!didNotify.current) {
+			onLoaded();
+			didNotify.current = true;
+		}
+	}, [fishScene, onLoaded]);
 
 	useEffect(() => {
 		const handleResize = () => setIsMobile(window.innerWidth <= 480);
