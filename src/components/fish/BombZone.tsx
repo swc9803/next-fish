@@ -1,26 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef } from "react";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import gsap from "gsap";
 import { useFishStore } from "@/store/useFishStore";
 import { GrowingFeed } from "./GrowingFeed";
 
 interface BombZoneProps {
-	fishRef: React.RefObject<Object3D>;
-	setIsGameOver: React.Dispatch<React.SetStateAction<boolean>>;
-	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;
+	fishRef: RefObject<Object3D>;
+	setIsGameOver: Dispatch<SetStateAction<boolean>>;
+	setIsInBombZone: Dispatch<SetStateAction<boolean>>;
 	isInBombZone: boolean;
 	bombActive: boolean;
 	isGameOver: boolean;
 	feeds: Feed[];
-	setFeeds: React.Dispatch<React.SetStateAction<Feed[]>>;
+	setFeeds: Dispatch<SetStateAction<Feed[]>>;
 	countdown: number | null;
-	setCountdown: React.Dispatch<React.SetStateAction<number | null>>;
-	setBombActive: React.Dispatch<React.SetStateAction<boolean>>;
-	meshRefs: React.MutableRefObject<Mesh[]>;
-	hitTilesRef: React.MutableRefObject<number[]>;
-	blinkTweens: React.MutableRefObject<gsap.core.Tween[]>;
-	cellTweens: React.MutableRefObject<{ [index: number]: gsap.core.Tween | undefined }>;
-	setDeathPosition: React.Dispatch<React.SetStateAction<[number, number, number] | null>>; // ✅ 추가
+	setCountdown: Dispatch<SetStateAction<number | null>>;
+	setBombActive: Dispatch<SetStateAction<boolean>>;
+	meshRefs: RefObject<Mesh[]>;
+	hitTilesRef: RefObject<number[]>;
+	blinkTweens: RefObject<gsap.core.Tween[]>;
+	cellTweens: RefObject<{ [index: number]: gsap.core.Tween | undefined }>;
+	setDeathPosition: Dispatch<SetStateAction<[number, number, number] | null>>;
 }
 
 type Feed = { id: string; position: [number, number, number] };
@@ -88,34 +88,6 @@ export const BombZone = ({
 		};
 	}, [countdown, setCountdown, setBombActive]);
 
-	// 생존 점수
-	useEffect(() => {
-		if (!bombActive || !isInBombZone || isGameOver) return;
-		const interval = setInterval(() => {
-			useFishStore.setState((state) => ({ score: state.score + 1 }));
-		}, 1000);
-		return () => clearInterval(interval);
-	}, [bombActive, isInBombZone, isGameOver]);
-
-	// 먹이 생성
-	useEffect(() => {
-		if (!bombActive || isGameOver || !isInBombZone) return;
-
-		const interval = setInterval(() => {
-			setFeeds((prevFeeds) => {
-				if (prevFeeds.length === 0) {
-					const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
-					const z = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE;
-
-					return [{ id: crypto.randomUUID(), position: [x, 1, z] }];
-				}
-				return prevFeeds;
-			});
-		}, 1000);
-
-		return () => clearInterval(interval);
-	}, [bombActive, isGameOver, isInBombZone]);
-
 	// 충돌 검사
 	const checkCollision = useCallback(
 		(fish: Object3D, cellIndex: number) => {
@@ -134,21 +106,6 @@ export const BombZone = ({
 			return forwardDist < CELL_SIZE / 2 + hitLength / 2 && sideDist < CELL_SIZE / 2 + hitWidth / 2;
 		},
 		[fishScale, CELLS]
-	);
-
-	// 폭탄 피격 함수
-	const handleFishHit = useCallback(
-		(index: number) => {
-			if (fishRef.current) {
-				const pos = fishRef.current.position;
-				setDeathPosition([pos.x, pos.y, pos.z]);
-				gsap.killTweensOf(pos);
-			}
-			setIsGameOver(true);
-			setIsInBombZone(false);
-			hitTilesRef.current.push(index);
-		},
-		[setIsGameOver, setIsInBombZone, hitTilesRef]
 	);
 
 	// 폭탄 타일 애니메이션
@@ -234,7 +191,68 @@ export const BombZone = ({
 				activeBombsRef.current = updatedActive;
 			}, 3000);
 		},
-		[checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone, cellTweens] // score는 직접 getState()로 가져오므로 의존성 X
+		[checkCollision, isGameOver, meshRefs, hitTilesRef, setIsGameOver, setIsInBombZone, cellTweens]
+	);
+
+	useEffect(() => {
+		if (!bombActive || !isInBombZone || isGameOver) return;
+
+		let tickCount = 0;
+		let bombSpawnTimer = 0;
+
+		const interval = setInterval(() => {
+			tickCount++;
+			bombSpawnTimer += 1000;
+
+			// 점수 증가
+			useFishStore.setState((state) => ({ score: state.score + 1 }));
+
+			// 먹이 생성
+			if (tickCount % 2 === 0) {
+				setFeeds((prevFeeds) => {
+					if (prevFeeds.length === 0) {
+						const x = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE - 50;
+						const z = (Math.floor(Math.random() * (GRID_HALF * 2 + 1)) - GRID_HALF) * CELL_SIZE;
+						return [{ id: crypto.randomUUID(), position: [x, 1, z] }];
+					}
+					return prevFeeds;
+				});
+			}
+
+			// 폭탄 생성
+			if (bombSpawnTimer >= bombSpawnIntervalRef.current) {
+				const fish = fishRef.current;
+				if (fish) {
+					const availableIndexes = [...Array(CELLS.length).keys()].filter((i) => !activeBombsRef.current.has(i));
+					if (availableIndexes.length > 0) {
+						const selected: number[] = [];
+						for (let i = 0; i < bombSpawnCountRef.current && availableIndexes.length > 0; i++) {
+							const idx = availableIndexes.splice(Math.floor(Math.random() * availableIndexes.length), 1)[0];
+							selected.push(idx);
+						}
+						animateBomb(selected, fish);
+					}
+				}
+				bombSpawnTimer = 0;
+			}
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, [bombActive, isInBombZone, isGameOver, fishRef, animateBomb]);
+
+	// 폭탄 피격 함수
+	const handleFishHit = useCallback(
+		(index: number) => {
+			if (fishRef.current) {
+				const pos = fishRef.current.position;
+				setDeathPosition([pos.x, pos.y, pos.z]);
+				gsap.killTweensOf(pos);
+			}
+			setIsGameOver(true);
+			setIsInBombZone(false);
+			hitTilesRef.current.push(index);
+		},
+		[setIsGameOver, setIsInBombZone, hitTilesRef]
 	);
 
 	// 게임 오버 시
@@ -266,31 +284,6 @@ export const BombZone = ({
 			}
 		});
 	}, [isGameOver, hitTilesRef, meshRefs, blinkTweens, cellTweens]);
-
-	useEffect(() => {
-		if (!bombActive || isGameOver) return;
-		const fish = fishRef.current;
-		if (!fish) return;
-
-		const intervalId = setInterval(() => {
-			if (isGameOver) {
-				clearInterval(intervalId);
-				return;
-			}
-
-			const availableIndexes = [...Array(CELLS.length).keys()].filter((i) => !activeBombsRef.current.has(i));
-			if (availableIndexes.length === 0) return;
-
-			const selected: number[] = [];
-			for (let i = 0; i < bombSpawnCountRef.current && availableIndexes.length > 0; i++) {
-				const idx = availableIndexes.splice(Math.floor(Math.random() * availableIndexes.length), 1)[0];
-				selected.push(idx);
-			}
-			animateBomb(selected, fish);
-		}, bombSpawnIntervalRef.current);
-
-		return () => clearInterval(intervalId);
-	}, [bombActive, isGameOver, fishRef, animateBomb]);
 
 	return (
 		<>

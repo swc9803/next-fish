@@ -1,4 +1,3 @@
-import { Object3D } from "three";
 import { useFishStore } from "@/store/useFishStore";
 
 export type Feed = { id: string; position: [number, number, number] };
