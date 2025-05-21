@@ -78,7 +78,9 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 			setShowGuideShader(true);
 
 			requestAnimationFrame(() => {
-				setIsShowGuide(true);
+				requestAnimationFrame(() => {
+					setIsShowGuide(true);
+				});
 			});
 		}, 2000);
 

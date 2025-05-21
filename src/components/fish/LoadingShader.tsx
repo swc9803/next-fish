@@ -74,7 +74,7 @@ export const LoadingShader = ({ renderTarget, loadingComplete }: LoadingShaderPr
 			gsap.to(uniforms.progress, {
 				value: 1,
 				duration: 1.7,
-				ease: "power2.out",
+				ease: "none",
 			});
 		}, 500);
 		return () => clearTimeout(timeout);

@@ -97,8 +97,8 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 		if (!clicked) return;
 		gsap.to(uniforms.progress, {
 			value: 1,
-			duration: 2,
-			ease: "power2.inOut",
+			duration: 1,
+			ease: "none",
 			onComplete: onFinish,
 		});
 	}, [clicked, uniforms.progress, onFinish]);
