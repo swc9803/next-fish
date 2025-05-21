@@ -9,10 +9,9 @@ import fragment from "@/shaders/loadingFragment.glsl";
 interface LoadingShaderProps {
 	renderTarget: WebGLRenderTarget;
 	loadingComplete: boolean;
-	onFinish: () => void;
 }
 
-export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: LoadingShaderProps) => {
+export const LoadingShader = ({ renderTarget, loadingComplete }: LoadingShaderProps) => {
 	const meshRef = useRef<Mesh>(null);
 	const { size } = useThree();
 
@@ -76,11 +75,10 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 				value: 1,
 				duration: 1.7,
 				ease: "power2.out",
-				onComplete: onFinish,
 			});
 		}, 500);
 		return () => clearTimeout(timeout);
-	}, [loadingComplete, uniforms.progress, onFinish]);
+	}, [loadingComplete, uniforms.progress]);
 
 	useFrame(() => {
 		uniforms.time.value += 0.05;

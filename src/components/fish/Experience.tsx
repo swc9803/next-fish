@@ -1,15 +1,14 @@
 "use client";
 
-import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useGLTF, useTexture } from "@react-three/drei";
-import { Material, Mesh, MeshStandardMaterial, Object3D, WebGLRenderTarget } from "three";
+import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
 
 import { useFishStore } from "@/store/useFishStore";
 import { resetGameState } from "@/hooks/resetGameState";
 
-import { LoadingShader } from "./LoadingShader";
 import { GuideShader } from "./GuideShader";
 import { FishModel } from "./FishModel";
 import { FishConfig } from "./FishConfig";
@@ -20,7 +19,6 @@ import { BombZone } from "./BombZone";
 import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundWithFog } from "./BackgroundWithFog";
 
-// preload
 useGLTF.preload("/models/fish.glb");
 useTexture.preload([
 	"/textures/sand3/aerial_beach_01_diff_1k.jpg",
@@ -30,25 +28,17 @@ useTexture.preload([
 
 const GalleryTransitionOverlay = () => {
 	const [visible, setVisible] = useState(false);
-
 	useEffect(() => {
-		const raf = requestAnimationFrame(() => {
-			setVisible(true);
-		});
+		const raf = requestAnimationFrame(() => setVisible(true));
 		return () => cancelAnimationFrame(raf);
 	}, []);
-
 	return <div className={`move_gallery_overlay ${visible ? "show" : ""}`} />;
 };
 
-const Experience = () => {
-	const [isLoading, setIsLoading] = useState(true);
-	const [loadingComplete, setLoadingComplete] = useState(false);
-	const [showLoadingShader, setShowLoadingShader] = useState(true);
-	const [showGuideShader, setShowGuideShader] = useState(false);
+const Experience = ({ onReady }: { onReady: () => void }) => {
 	const [isShowGuide, setIsShowGuide] = useState(false);
+	const [showGuideShader, setShowGuideShader] = useState(false);
 	const [showGalleryTransitionOverlay, setShowGalleryTransitionOverlay] = useState(false);
-	const router = useRouter();
 
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
@@ -65,28 +55,22 @@ const Experience = () => {
 	const cellTweens = useRef<{ [index: number]: gsap.core.Tween | undefined }>({});
 	const meshRefs = useRef<Mesh[]>([]);
 
-	const renderTarget = useMemo(() => new WebGLRenderTarget(1024, 512), []);
+	const router = useRouter();
 	const { score, setScore, darkMode, backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
 
-	// loading shader 시작 타이밍 조정
+	const [hasNotified, setHasNotified] = useState(false);
+
 	useEffect(() => {
 		const timeout = setTimeout(() => {
-			setIsLoading(false);
-			setLoadingComplete(true);
-		}, 1500);
-		return () => clearTimeout(timeout);
-	}, []);
-
-	// guide shader 시작 타이밍 조정
-	useEffect(() => {
-		if (loadingComplete) {
-			const showDelay = setTimeout(() => {
+			if (!hasNotified) {
+				setHasNotified(true);
+				onReady();
 				setShowGuideShader(true);
 				requestAnimationFrame(() => setIsShowGuide(true));
-			}, 1000);
-			return () => clearTimeout(showDelay);
-		}
-	}, [loadingComplete]);
+			}
+		}, 1500);
+		return () => clearTimeout(timeout);
+	}, [hasNotified, onReady]);
 
 	const galleryTransitionOverlayHandler = () => {
 		setShowGalleryTransitionOverlay(true);
@@ -95,7 +79,6 @@ const Experience = () => {
 		}, 1000);
 	};
 
-	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
 		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
 	}, [setScore]);
@@ -103,19 +86,14 @@ const Experience = () => {
 	useEffect(() => {
 		if (isGameOver) {
 			setPreventClick(false);
-			const timeout = setTimeout(() => {
-				setPreventClick(true);
-			}, 1200);
+			const timeout = setTimeout(() => setPreventClick(true), 1200);
 			return () => clearTimeout(timeout);
 		}
 	}, [isGameOver]);
 
 	const handleReset = () => {
 		if (!preventClick) return;
-
 		blinkTweens.current.forEach((t) => t.kill());
-		blinkTweens.current = [];
-
 		hitTilesRef.current.forEach((index) => {
 			const mesh = meshRefs.current[index];
 			if (mesh) {
@@ -123,13 +101,11 @@ const Experience = () => {
 			}
 		});
 		hitTilesRef.current = [];
-
 		resetGame();
 	};
 
 	const SceneCleanup = () => {
 		const { scene } = useThree();
-
 		useEffect(() => {
 			return () => {
 				scene.traverse((child: Object3D) => {
@@ -145,7 +121,6 @@ const Experience = () => {
 				});
 			};
 		}, [scene]);
-
 		return null;
 	};
 
@@ -155,9 +130,12 @@ const Experience = () => {
 				shadows
 				camera={{ position: [0, 17, 14], fov: 75 }}
 				gl={{
+					alpha: true,
+					stencil: true,
+					depth: true,
+					antialias: true,
 					preserveDrawingBuffer: true,
 					powerPreference: "high-performance",
-					antialias: true,
 					failIfMajorPerformanceCaveat: false,
 				}}
 				onCreated={({ gl }) => {
@@ -187,56 +165,58 @@ const Experience = () => {
 
 				<VideoCaustics />
 
-				{!isLoading && (
-					<>
-						<FishModel
-							fishRef={fishRef}
-							setIsInBombZone={setIsInBombZone}
-							setCountdown={setCountdown}
-							isGameOver={isGameOver}
-							deathPosition={deathPosition}
-						/>
-						<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} />
-						<Ground planeRef={planeRef} />
-						<BombZone
-							fishRef={fishRef}
-							setIsGameOver={setIsGameOver}
-							setIsInBombZone={setIsInBombZone}
-							isInBombZone={isInBombZone}
-							bombActive={bombActive}
-							isGameOver={isGameOver}
-							feeds={feeds}
-							setFeeds={setFeeds}
-							countdown={countdown}
-							setCountdown={setCountdown}
-							setBombActive={setBombActive}
-							meshRefs={meshRefs}
-							hitTilesRef={hitTilesRef}
-							blinkTweens={blinkTweens}
-							cellTweens={cellTweens}
-							setDeathPosition={setDeathPosition}
-						/>
-						<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
-					</>
-				)}
+				<FishModel
+					fishRef={fishRef}
+					setIsInBombZone={setIsInBombZone}
+					setCountdown={setCountdown}
+					isGameOver={isGameOver}
+					deathPosition={deathPosition}
+				/>
+				<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} />
+				<Ground planeRef={planeRef} />
+				<BombZone
+					fishRef={fishRef}
+					setIsGameOver={setIsGameOver}
+					setIsInBombZone={setIsInBombZone}
+					isInBombZone={isInBombZone}
+					bombActive={bombActive}
+					isGameOver={isGameOver}
+					feeds={feeds}
+					setFeeds={setFeeds}
+					countdown={countdown}
+					setCountdown={setCountdown}
+					setBombActive={setBombActive}
+					meshRefs={meshRefs}
+					hitTilesRef={hitTilesRef}
+					blinkTweens={blinkTweens}
+					cellTweens={cellTweens}
+					setDeathPosition={setDeathPosition}
+				/>
+				<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 			</Canvas>
 
-			{/* 갤러리로 이동 오버레이 */}
 			{showGalleryTransitionOverlay && <GalleryTransitionOverlay />}
 
-			{/* 로딩 */}
-			{showLoadingShader && (
-				<div className="shader_container">
-					<Canvas orthographic camera={{ zoom: 1, position: [0, 0, 100] }}>
-						<LoadingShader renderTarget={renderTarget} loadingComplete={loadingComplete} onFinish={() => setShowLoadingShader(false)} />
-					</Canvas>
-				</div>
-			)}
-
-			{/* 가이드 */}
 			{showGuideShader && (
-				<div className={`guide_container ${isShowGuide ? "show" : ""}`}>
-					<Canvas orthographic camera={{ zoom: 1, position: [0, 0, 100] }}>
+				<div className={`guide_overlay ${isShowGuide ? "show" : ""}`}>
+					<Canvas
+						orthographic
+						camera={{ zoom: 1, position: [0, 0, 100] }}
+						gl={{
+							alpha: true,
+							depth: false,
+							stencil: false,
+							antialias: false,
+							preserveDrawingBuffer: true,
+							powerPreference: "low-power",
+							failIfMajorPerformanceCaveat: true,
+						}}
+						onCreated={({ gl }) => {
+							gl.getContext().canvas.addEventListener("webglcontextlost", (e) => {
+								e.preventDefault();
+							});
+						}}
+					>
 						<GuideShader onFinish={() => setShowGuideShader(false)} />
 					</Canvas>
 				</div>
