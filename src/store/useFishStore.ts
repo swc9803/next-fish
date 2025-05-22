@@ -5,7 +5,6 @@ interface FishStoreState {
 	fishSpeed: number;
 	fishScale: number;
 	darkMode: boolean;
-	score: number;
 	backgroundColor: string;
 	fogColor: string;
 	fogDensity: number;
@@ -16,7 +15,6 @@ interface FishStoreActions {
 	setFishSpeed: (speed: number) => void;
 	setFishScale: (scale: number | ((prev: number) => number)) => void;
 	toggleDarkMode: () => void;
-	setScore: (score: number) => void;
 	setBackgroundColor: (color: string) => void;
 	setFogColor: (color: string) => void;
 	setFogDensity: (density: number) => void;
@@ -27,7 +25,6 @@ export const useFishStore = create<FishStoreState & FishStoreActions>((set) => (
 	fishSpeed: 20,
 	fishScale: 1,
 	darkMode: false,
-	score: 0,
 
 	backgroundColor: "#0c6ceb",
 	fogColor: "#00bfff",
@@ -40,8 +37,6 @@ export const useFishStore = create<FishStoreState & FishStoreActions>((set) => (
 			fishScale: typeof value === "function" ? value(state.fishScale) : value,
 		})),
 	toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
-	setScore: (score) => set({ score }),
-
 	setBackgroundColor: (color: string) => set({ backgroundColor: color }),
 	setFogColor: (color: string) => set({ fogColor: color }),
 	setFogDensity: (density: number) => set({ fogDensity: density }),

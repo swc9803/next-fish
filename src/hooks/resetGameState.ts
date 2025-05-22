@@ -6,15 +6,11 @@ export const resetGameState = (
 	setIsGameOver: React.Dispatch<React.SetStateAction<boolean>>,
 	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>,
 	setBombActive: React.Dispatch<React.SetStateAction<boolean>>,
-	setScore: (value: number) => void,
-	setCountdown: React.Dispatch<React.SetStateAction<number | null>>,
 	setFeeds: React.Dispatch<React.SetStateAction<Feed[]>>
 ) => {
 	setIsGameOver(false);
 	setIsInBombZone(false);
 	setBombActive(false);
-	setScore(0);
-	setCountdown(null);
 	setFeeds([]);
 	useFishStore.getState().setFishScale(1);
 	useFishStore.getState().setFishSpeed(20);

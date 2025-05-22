@@ -12,7 +12,6 @@ useGLTF.preload("/models/fish_bone.glb");
 interface FishModelProps {
 	fishRef: React.RefObject<Object3D>;
 	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;
-	setCountdown: React.Dispatch<React.SetStateAction<number | null>>;
 	isGameOver: boolean;
 	deathPosition: [number, number, number] | null;
 	onLoaded: () => void;
@@ -24,7 +23,7 @@ const GRID_HALF_SIZE_Z = 21;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-export const FishModel = ({ fishRef, setIsInBombZone, setCountdown, isGameOver, deathPosition, onLoaded }: FishModelProps) => {
+export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition, onLoaded }: FishModelProps) => {
 	const { scene: fishScene, animations } = useGLTF("/models/fish.glb");
 	const { scene: deadScene } = useGLTF("/models/fish_bone.glb");
 	const { camera } = useThree();
@@ -152,8 +151,6 @@ export const FishModel = ({ fishRef, setIsInBombZone, setCountdown, isGameOver, 
 					duration,
 					ease: "power2.out",
 				});
-
-				setCountdown(3);
 			} else if (!inBombZone) {
 				hasMovedToCenter.current = false;
 			}

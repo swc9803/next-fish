@@ -13,8 +13,6 @@ interface BombZoneProps {
 	isGameOver: boolean;
 	feeds: Feed[];
 	setFeeds: Dispatch<SetStateAction<Feed[]>>;
-	countdown: number | null;
-	setCountdown: Dispatch<SetStateAction<number | null>>;
 	setBombActive: Dispatch<SetStateAction<boolean>>;
 	meshRefs: RefObject<Mesh[]>;
 	hitTilesRef: RefObject<number[]>;
@@ -37,8 +35,6 @@ export const BombZone = ({
 	isGameOver,
 	feeds,
 	setFeeds,
-	countdown,
-	setCountdown,
 	setBombActive,
 	meshRefs,
 	hitTilesRef,
@@ -47,12 +43,11 @@ export const BombZone = ({
 	setDeathPosition,
 }: BombZoneProps) => {
 	const fishScale = useFishStore((state) => state.fishScale);
-	const score = useFishStore((state) => state.score);
 
 	const activeBombsRef = useRef<Set<number>>(new Set());
 
-	const bombSpawnIntervalRef = useRef(Math.max(500, 2500 - score * 15));
-	const bombSpawnCountRef = useRef(Math.max(3, Math.min(1 + Math.floor(score / 15), 5)));
+	const bombSpawnIntervalRef = useRef(1500);
+	const bombSpawnCountRef = useRef(3);
 
 	const CELLS = useMemo(() => {
 		return Array.from({ length: (GRID_HALF * 2 + 1) ** 2 }, (_, i) => {
@@ -62,31 +57,19 @@ export const BombZone = ({
 		});
 	}, []);
 
-	useEffect(() => {
-		bombSpawnIntervalRef.current = Math.max(500, 2500 - score * 15);
-		bombSpawnCountRef.current = Math.max(3, Math.min(1 + Math.floor(score / 15), 5));
-	}, [score]);
-
 	// 폭탄 카운트다운
 	useEffect(() => {
 		let isCancelled = false;
-		const countdownAsync = async () => {
-			let current = countdown;
-			while (current && current > 0 && !isCancelled) {
-				await new Promise((res) => setTimeout(res, 1000));
-				current--;
-				setCountdown(current);
-			}
+		const startBomb = async () => {
 			if (!isCancelled) {
-				setCountdown(null);
 				setBombActive(true);
 			}
 		};
-		if (countdown !== null) countdownAsync();
+		startBomb();
 		return () => {
 			isCancelled = true;
 		};
-	}, [countdown, setCountdown, setBombActive]);
+	}, [setBombActive]);
 
 	// 충돌 검사
 	const checkCollision = useCallback(
@@ -126,16 +109,7 @@ export const BombZone = ({
 					cellTweens.current[index].kill();
 				}
 
-				const score = useFishStore.getState().score;
-
-				// score에 비례한 duration
-				const maxDuration = 3;
-				const minDuration = 1.5;
-				const maxScore = 300;
-
-				const ratio = Math.min(score, maxScore) / maxScore;
-				const easedRatio = Math.pow(ratio, 0.7);
-				const duration = maxDuration - (maxDuration - minDuration) * easedRatio;
+				const duration = 3;
 
 				const tween = gsap.to(color, {
 					r: 1,
@@ -203,9 +177,6 @@ export const BombZone = ({
 		const interval = setInterval(() => {
 			tickCount++;
 			bombSpawnTimer += 1000;
-
-			// 점수 증가
-			useFishStore.setState((state) => ({ score: state.score + 1 }));
 
 			// 먹이 생성
 			if (tickCount % 2 === 0) {
@@ -310,25 +281,7 @@ export const BombZone = ({
 					isGameOver={isGameOver}
 					onCollected={() => {
 						if (isGameOver) return;
-
 						setFeeds([]);
-
-						const currentScale = useFishStore.getState().fishScale;
-
-						// score 배율
-						const scoreGain = Math.floor(currentScale * 10);
-						useFishStore.setState((state) => ({ score: state.score + scoreGain }));
-
-						// scale 배율
-						const added = 0.141 * Math.exp(-currentScale);
-						const newScale = Math.min(2, parseFloat((currentScale + added).toFixed(2)));
-
-						// speed 배율
-						const BASE_SPEED = 20;
-						const newSpeed = Math.max(10, BASE_SPEED * Math.exp(-1.2 * (newScale - 1)));
-
-						useFishStore.getState().setFishScale(newScale);
-						useFishStore.getState().setFishSpeed(parseFloat(newSpeed.toFixed(2)));
 					}}
 					onExpire={() => setFeeds([])}
 				/>

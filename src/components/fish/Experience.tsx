@@ -42,7 +42,6 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
-	const [countdown, setCountdown] = useState<number | null>(null);
 	const [bombActive, setBombActive] = useState(false);
 	const [feeds, setFeeds] = useState<{ id: string; position: [number, number, number] }[]>([]);
 	const [preventClick, setPreventClick] = useState(false);
@@ -56,7 +55,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 	const meshRefs = useRef<Mesh[]>([]);
 
 	const router = useRouter();
-	const { score, setScore, darkMode, backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
+	const { darkMode, backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
 
 	const [hasNotified, setHasNotified] = useState(false);
 	const [fishLoaded, setFishLoaded] = useState(false);
@@ -96,8 +95,8 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
-		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, setScore, setCountdown, setFeeds);
-	}, [setScore]);
+		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, setFeeds);
+	}, []);
 
 	useEffect(() => {
 		if (isGameOver) {
@@ -181,7 +180,6 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 				<FishModel
 					fishRef={fishRef}
 					setIsInBombZone={setIsInBombZone}
-					setCountdown={setCountdown}
 					isGameOver={isGameOver}
 					deathPosition={deathPosition}
 					onLoaded={() => setFishLoaded(true)}
@@ -197,8 +195,6 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 					isGameOver={isGameOver}
 					feeds={feeds}
 					setFeeds={setFeeds}
-					countdown={countdown}
-					setCountdown={setCountdown}
 					setBombActive={setBombActive}
 					meshRefs={meshRefs}
 					hitTilesRef={hitTilesRef}
@@ -239,14 +235,14 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 
 			<FishConfig />
 
-			<div className="hud">
+			{/* <div className="hud">
 				{countdown !== null && (
-					<div key={countdown} className="countdown">
+					<div className="countdown">
 						{countdown}
 					</div>
 				)}
 				{bombActive && <div className="score">SCORE: {score}</div>}
-			</div>
+			</div> */}
 
 			{isGameOver && (
 				<div onClick={handleReset} className="gameover_overlay">

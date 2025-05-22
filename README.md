@@ -11,6 +11,7 @@ overlay 디자인 수정
 ga, favicon
 SEO 최적화 ( 후순위 )
 preload glb
+bombzone, feed 생성 로직 다시
 
 # 임시 아이디어
 
