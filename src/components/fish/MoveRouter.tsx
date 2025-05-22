@@ -53,7 +53,9 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	const triggeredRef = useRef(false);
 	const prevArcRef = useRef<number | null>(null);
 	const [isNear, setIsNear] = useState(false);
-	const typedText = useTyping(text || "", isNear, modelPath.includes("fishing_rod") ? 100 : 50);
+
+	const isFishingRod = modelPath.includes("fishing_rod");
+	const typedText = useTyping(text || "", isNear, isFishingRod ? 100 : 50);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
 
 	const DETECT_DISTANCE = 5;
@@ -102,13 +104,15 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		}
 	});
 
+	const rotation = isFishingRod ? ([0, Math.PI / 2, 0] as const) : undefined;
+
 	return (
-		<group ref={modelRef} position={position} scale={3.5}>
+		<group ref={modelRef} position={position} scale={3.5} rotation={rotation}>
 			<primitive object={scene} />
 			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
 			{text && isNear && (
-				<Html position={[0, 1.4, 0]} distanceFactor={15}>
-					<div className="speech_bubble rod">{typedText}</div>
+				<Html position={[0, 1.4, 0]} distanceFactor={15} wrapperClass="prevent-click">
+					<div className={`speech_bubble ${isFishingRod ? "rod" : ""}`}>{typedText}</div>
 				</Html>
 			)}
 		</group>

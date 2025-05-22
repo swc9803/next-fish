@@ -32,14 +32,12 @@ export const TalkativeModel = ({
 	const typedText = useTyping(text, visible);
 	const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
 
-	// 애니메이션 이름 매핑
+	// 애니메이션 필터
 	const getAnimationKeyword = (path: string): string | null => {
 		if (path.includes("fish_game")) return "Swim";
 		if (path.includes("fish_logo")) return "Swimming_Normal";
 		return null;
 	};
-
-	// 이름 포함 검색으로 clip 찾기
 	const getAnimationClip = (animations: AnimationClip[], keyword: string) => {
 		return animations.find((clip) => clip.name.toLowerCase().includes(keyword.toLowerCase()));
 	};
@@ -64,7 +62,9 @@ export const TalkativeModel = ({
 
 		return () => {
 			mixer.stopAllAction();
-			mixer.uncacheRoot(objRef.current as Object3D);
+			if (objRef.current) {
+				mixer.uncacheRoot(objRef.current);
+			}
 		};
 	}, [animations, modelPath]);
 
@@ -95,7 +95,7 @@ export const TalkativeModel = ({
 		<>
 			<primitive object={scene} position={modelPosition} scale={scale} ref={objRef} />
 			{visible && (
-				<Html position={bubblePosition || modelPosition} distanceFactor={10}>
+				<Html position={bubblePosition || modelPosition} distanceFactor={10} wrapperClass="prevent-click">
 					<div className="speech_bubble">{typedText}</div>
 				</Html>
 			)}

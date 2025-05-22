@@ -12,8 +12,7 @@ SEO 최적화 ( 후순위 )
 preload glb
 bombzone, feed 생성 로직 다시
 성능 테스트
-fish glb 수정 필요
+fish glb 디자인, 불필요한 애니메이션 제거 필요
+speech_bubble 거리계산, 위치 조정
 
 # 임시 아이디어
-
-갤러리로 페이지 전환 시 부드럽게 끊김 없이 하얗게 나오면서 큰 글자로 갤러리 표시

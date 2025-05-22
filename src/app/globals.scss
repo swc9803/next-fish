@@ -284,6 +284,10 @@ textarea {
 	}
 }
 
+.prevent-click {
+	pointer-events: none;
+}
+
 @keyframes fadeIn {
 	0% {
 		opacity: 0;
