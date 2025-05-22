@@ -1,6 +1,6 @@
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { AnimationAction, AnimationClip, AnimationMixer, LoopRepeat, Object3D, Vector3 } from "three";
+import { AnimationAction, AnimationMixer, LoopRepeat, Object3D, Vector3 } from "three";
 import { useEffect, useRef, useState } from "react";
 import { useTyping } from "@/hooks/useTyping";
 
@@ -32,16 +32,6 @@ export const TalkativeModel = ({
 	const typedText = useTyping(text, visible);
 	const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
 
-	// 애니메이션 필터
-	const getAnimationKeyword = (path: string): string | null => {
-		if (path.includes("fish_game")) return "Swim";
-		if (path.includes("fish_logo")) return "Swimming_Normal";
-		return null;
-	};
-	const getAnimationClip = (animations: AnimationClip[], keyword: string) => {
-		return animations.find((clip) => clip.name.toLowerCase().includes(keyword.toLowerCase()));
-	};
-
 	// 애니메이션 초기화
 	useEffect(() => {
 		if (!objRef.current || animations.length === 0) return;
@@ -49,10 +39,7 @@ export const TalkativeModel = ({
 		const mixer = new AnimationMixer(objRef.current);
 		mixerRef.current = mixer;
 
-		const keyword = getAnimationKeyword(modelPath);
-		if (!keyword) return;
-
-		const clip = getAnimationClip(animations, keyword);
+		const clip = animations.find((clip) => clip.name.toLowerCase().includes("swim"));
 		if (clip && clip.duration > 0) {
 			const action = mixer.clipAction(clip);
 			action.setLoop(LoopRepeat, Infinity);
@@ -66,7 +53,7 @@ export const TalkativeModel = ({
 				mixer.uncacheRoot(objRef.current);
 			}
 		};
-	}, [animations, modelPath]);
+	}, [animations]);
 
 	// 애니메이션 scrub
 	useEffect(() => {
@@ -80,7 +67,7 @@ export const TalkativeModel = ({
 		}
 	}, [visible]);
 
-	// 거리 계산
+	// 접근 거리 계산
 	useFrame((_, delta) => {
 		const fish = fishRef.current;
 		if (!fish) return;

@@ -28,7 +28,7 @@ const logoData = [
 	{
 		id: "gallery",
 		url: "/gallery",
-		modelPath: "/models/fishing_rod.glb",
+		modelPath: "/models/fishing.glb",
 		position: [20, 0.5, 10],
 		isInternal: true,
 		text: "갤러리로 이동",
