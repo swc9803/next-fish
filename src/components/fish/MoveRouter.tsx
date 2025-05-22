@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useEffect, useMemo } from "react";
-import { useGLTF } from "@react-three/drei";
+import { useRef, useEffect, useMemo, useState } from "react";
+import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
+import { useTyping } from "@/hooks/useTyping";
 
 const logoData = [
 	{
@@ -30,6 +31,7 @@ const logoData = [
 		modelPath: "/models/fishing_rod.glb",
 		position: [20, 0.5, 10],
 		isInternal: true,
+		text: "갤러리로 이동",
 	},
 ];
 
@@ -40,15 +42,18 @@ interface LogoProps {
 	fishRef: React.RefObject<Object3D>;
 	isInternal?: boolean;
 	showGalleryOverlay?: () => void;
+	text?: string;
 }
 
-const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay }: LogoProps) => {
+const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay, text }: LogoProps) => {
 	const { scene } = useGLTF(modelPath);
 	const modelRef = useRef<Object3D>(null);
 	const progressCircleRef = useRef<Mesh>(null);
 	const progressRef = useRef(0);
 	const triggeredRef = useRef(false);
 	const prevArcRef = useRef<number | null>(null);
+	const [isNear, setIsNear] = useState(false);
+	const typedText = useTyping(text || "", isNear);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
 
 	const DETECT_DISTANCE = 5;
@@ -64,17 +69,17 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		const ring = progressCircleRef.current;
 		const model = modelRef.current;
 		const fish = fishRef.current;
-
 		if (!model || !fish || !ring) return;
 
 		const dist = model.position.distanceTo(fish.position);
+		setIsNear(dist < DETECT_DISTANCE);
+
 		let progress = progressRef.current;
 
 		if (dist < DETECT_DISTANCE) {
 			progress = Math.min(1, progress + delta / 4);
 			if (progress >= 1 && !triggeredRef.current) {
 				triggeredRef.current = true;
-
 				if (isInternal && url === "/gallery") {
 					showGalleryOverlay?.();
 				} else {
@@ -101,6 +106,11 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		<group ref={modelRef} position={position} scale={3.5}>
 			<primitive object={scene} />
 			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
+			{text && isNear && (
+				<Html position={[0, 1.4, 0]} distanceFactor={15}>
+					<div className="speech_bubble">{typedText}</div>
+				</Html>
+			)}
 		</group>
 	);
 };
@@ -122,6 +132,7 @@ export const MoveRouter = ({ fishRef, showGalleryOverlay }: MoveRouterProps) => 
 					fishRef={fishRef}
 					isInternal={logo.isInternal}
 					showGalleryOverlay={showGalleryOverlay}
+					text={logo.text}
 				/>
 			))}
 		</group>
