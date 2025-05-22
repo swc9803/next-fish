@@ -31,7 +31,7 @@ const Home = () => {
 							orthographic
 							camera={{ zoom: 1, position: [0, 0, 100] }}
 							gl={{
-								alpha: false,
+								alpha: true,
 								stencil: false,
 								depth: false,
 								antialias: false,
