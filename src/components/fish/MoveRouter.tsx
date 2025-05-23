@@ -111,7 +111,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 			<primitive object={scene} />
 			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
 			{text && isNear && (
-				<Html position={[0, 1.4, 0]} distanceFactor={15} wrapperClass="prevent-click">
+				<Html position={[0, 1.4, 0]} distanceFactor={15} wrapperClass="prevent_click">
 					<div className={`speech_bubble ${isFishingRod ? "rod" : ""}`}>{typedText}</div>
 				</Html>
 			)}

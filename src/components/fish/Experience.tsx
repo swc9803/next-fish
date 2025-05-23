@@ -56,7 +56,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 	const meshRefs = useRef<Mesh[]>([]);
 
 	const router = useRouter();
-	const { darkMode, backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
+	const { backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
 
 	const [hasNotified, setHasNotified] = useState(false);
 	const [fishLoaded, setFishLoaded] = useState(false);
@@ -161,7 +161,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 				}}
 			>
 				<SceneCleanup />
-				<BackgroundWithFog darkMode={darkMode} backgroundColor={backgroundColor} fogColor={fogColor} fogDensity={fogDensity} />
+				<BackgroundWithFog backgroundColor={backgroundColor} fogColor={fogColor} fogDensity={fogDensity} />
 				<ambientLight color={0xffffff} intensity={0.8} />
 				<directionalLight
 					color={0xf8f8ff}

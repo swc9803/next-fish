@@ -4,13 +4,12 @@ import { Color, FogExp2 } from "three";
 import gsap from "gsap";
 
 interface BackgroundWithFogProps {
-	darkMode: boolean;
 	backgroundColor: string;
 	fogColor: string;
 	fogDensity: number;
 }
 
-export const BackgroundWithFog = ({ darkMode, backgroundColor, fogColor, fogDensity }: BackgroundWithFogProps) => {
+export const BackgroundWithFog = ({ backgroundColor, fogColor, fogDensity }: BackgroundWithFogProps) => {
 	const { scene } = useThree();
 	const initialized = useRef(false);
 
@@ -53,7 +52,7 @@ export const BackgroundWithFog = ({ darkMode, backgroundColor, fogColor, fogDens
 				ease: "power2.inOut",
 			});
 		}
-	}, [scene, darkMode, backgroundColor, fogColor, fogDensity]);
+	}, [scene, backgroundColor, fogColor, fogDensity]);
 
 	return null;
 };

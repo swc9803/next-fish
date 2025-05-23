@@ -10,16 +10,14 @@ export const FishConfig = () => {
 		fishSpeed,
 		fishScale,
 		fogDensity,
-		darkMode,
 		setFishColor,
 		setFishSpeed,
 		setFishScale,
 		setFogDensity,
-		toggleDarkMode,
 	} = useFishStore();
 
 	return (
-		<div className={`fish_config ${darkMode ? "dark" : ""}`}>
+		<div className={"fish_config"}>
 			<div>
 				<label>Fish Color: </label>
 				<input type="color" value={fishColor} onChange={(e) => setFishColor(e.target.value)} />
@@ -44,10 +42,6 @@ export const FishConfig = () => {
 				<label>Fog Density: </label>
 				<input type="number" value={fogDensity} onChange={(e) => setFogDensity(Number(e.target.value))} min={0.001} max={1} step={0.001} />
 			</div>
-
-			<button onClick={toggleDarkMode} type="button">
-				{darkMode ? "Set LightMode" : "Set DarkMode"}
-			</button>
 		</div>
 	);
 };

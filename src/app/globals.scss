@@ -97,14 +97,6 @@ textarea {
 		color: #222;
 		transition: border 0.3s ease-in-out, background 0.3s ease-in-out, color 0.3s ease-in-out;
 	}
-	&.dark {
-		background: #222;
-		color: #fff;
-		button {
-			border: 1px solid #fff;
-			color: #fff;
-		}
-	}
 }
 
 .gameover_overlay {
@@ -284,7 +276,7 @@ textarea {
 	}
 }
 
-.prevent-click {
+.prevent_click {
 	pointer-events: none;
 }
 
