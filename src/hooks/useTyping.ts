@@ -1,7 +1,6 @@
-// hooks/useTyping.ts
 import { useEffect, useRef, useState } from "react";
 
-export const useTyping = (text: string, trigger: boolean, speed = 50) => {
+export const useTyping = (text: string, trigger: boolean, speed: number) => {
 	const [displayed, setDisplayed] = useState("");
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 	const currentIndex = useRef(0);

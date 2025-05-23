@@ -43,9 +43,10 @@ interface LogoProps {
 	isInternal?: boolean;
 	showGalleryOverlay?: () => void;
 	text?: string;
+	hideSpeechBubble?: boolean;
 }
 
-const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay, text }: LogoProps) => {
+const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay, text, hideSpeechBubble = false }: LogoProps) => {
 	const { scene } = useGLTF(modelPath);
 	const modelRef = useRef<Object3D>(null);
 	const progressCircleRef = useRef<Mesh>(null);
@@ -55,7 +56,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	const [isNear, setIsNear] = useState(false);
 
 	const isFishingRod = modelPath.includes("fishing_rod");
-	const typedText = useTyping(text || "", isNear, isFishingRod ? 100 : 50);
+	const typedText = useTyping(text || "", isNear, 150);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
 
 	const DETECT_DISTANCE = 5;
@@ -110,7 +111,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		<group ref={modelRef} position={position} scale={3.5} rotation={rotation}>
 			<primitive object={scene} />
 			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
-			{text && isNear && (
+			{!hideSpeechBubble && text && isNear && (
 				<Html position={[0, 1.4, 0]} distanceFactor={15} wrapperClass="prevent_click">
 					<div className={`speech_bubble ${isFishingRod ? "rod" : ""}`}>{typedText}</div>
 				</Html>
@@ -122,9 +123,10 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 interface MoveRouterProps {
 	fishRef: React.RefObject<Object3D>;
 	showGalleryOverlay?: () => void;
+	hideSpeechBubble?: boolean;
 }
 
-export const MoveRouter = ({ fishRef, showGalleryOverlay }: MoveRouterProps) => {
+export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: MoveRouterProps) => {
 	return (
 		<group>
 			{logoData.map((logo) => (
@@ -137,6 +139,7 @@ export const MoveRouter = ({ fishRef, showGalleryOverlay }: MoveRouterProps) => 
 					isInternal={logo.isInternal}
 					showGalleryOverlay={showGalleryOverlay}
 					text={logo.text}
+					hideSpeechBubble={hideSpeechBubble}
 				/>
 			))}
 		</group>

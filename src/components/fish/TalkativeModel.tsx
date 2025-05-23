@@ -11,6 +11,7 @@ interface TalkativeModelProps {
 	text: string;
 	fishRef: React.RefObject<Object3D>;
 	scale?: number;
+	speed: number;
 	distanceThreshold?: number;
 }
 
@@ -19,6 +20,7 @@ export const TalkativeModel = ({
 	modelPosition,
 	bubblePosition,
 	text,
+	speed,
 	fishRef,
 	scale = 1,
 	distanceThreshold = 12,
@@ -29,7 +31,7 @@ export const TalkativeModel = ({
 	const actionRef = useRef<AnimationAction | null>(null);
 
 	const [visible, setVisible] = useState(false);
-	const typedText = useTyping(text, visible);
+	const typedText = useTyping(text, visible, speed);
 	const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
 
 	// 애니메이션 초기화

@@ -24,7 +24,7 @@ export const LoadingShader = ({ renderTarget, loadingComplete }: LoadingShaderPr
 
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.fillStyle = "#ffffff";
-		ctx.font = "bold 60px sans-serif";
+		ctx.font = "normal 40px sans-serif";
 		ctx.textAlign = "center";
 		ctx.textBaseline = "middle";
 		ctx.fillText("Loading...", canvas.width / 2, canvas.height / 2);

@@ -40,6 +40,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 	const [isShowGuide, setIsShowGuide] = useState(false);
 	const [showGuideShader, setShowGuideShader] = useState(false);
 	const [showGalleryTransitionOverlay, setShowGalleryTransitionOverlay] = useState(false);
+	const [isMovingToGallery, setIsNavigatingToGallery] = useState(false);
 
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [isGameOver, setIsGameOver] = useState(false);
@@ -88,6 +89,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 	}, [hasNotified]);
 
 	const galleryTransitionOverlayHandler = () => {
+		setIsNavigatingToGallery(true);
 		setShowGalleryTransitionOverlay(true);
 		setTimeout(() => {
 			router.push("/gallery");
@@ -185,7 +187,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 					deathPosition={deathPosition}
 					onLoaded={() => setFishLoaded(true)}
 				/>
-				<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} />
+				<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} hideSpeechBubble={isMovingToGallery} />
 				<Ground planeRef={planeRef} onLoaded={() => setGroundLoaded(true)} />
 				<TalkativeModel
 					modelPath="/models/fish_game.glb"
@@ -194,6 +196,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 					text="게임을 즐길 수 있는 곳 입니다."
 					fishRef={fishRef}
 					scale={1}
+					speed={80}
 				/>
 
 				<TalkativeModel
@@ -203,6 +206,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 					text="각 로고에 다가가면 해당하는 사이트가 열립니다."
 					fishRef={fishRef}
 					scale={1}
+					speed={80}
 				/>
 
 				<BombZone
