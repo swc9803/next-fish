@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect, useState } from "react";
+import { useRef, useMemo, useEffect, useState, memo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Vector4, CanvasTexture, Vector2 } from "three";
 import gsap from "gsap";
@@ -6,17 +6,16 @@ import gsap from "gsap";
 import vertex from "@/shaders/guideVertex.glsl";
 import fragment from "@/shaders/guideFragment.glsl";
 
-export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
+export const GuideShader = memo(({ onFinish }: { onFinish: () => void }) => {
 	const meshRef = useRef<Mesh>(null);
 	const { size } = useThree();
 	const [clicked, setClicked] = useState(false);
 
-	const texture: CanvasTexture = useMemo(() => {
+	const texture = useMemo(() => {
 		const canvas = document.createElement("canvas");
 		canvas.width = 1024;
 		canvas.height = 512;
 		const ctx = canvas.getContext("2d")!;
-
 		const centerX = canvas.width / 2;
 		const centerY = canvas.height / 2;
 
@@ -46,24 +45,15 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 		ctx.fill(cursorPath2);
 		ctx.restore();
 
-		const cursorPixelHeight = viewBoxHeight * scale;
-		const textY = centerY + cursorPixelHeight / 2 + 20;
-
 		ctx.fillStyle = "#ffffff";
 		ctx.textAlign = "center";
 		ctx.textBaseline = "top";
-
-		if (size.width <= 768) {
-			ctx.font = "bold 28px sans-serif";
-			const lines = ["Click the screen", "to move the fish!"];
-			const lineHeight = 36;
-			lines.forEach((line, i) => {
-				ctx.fillText(line, centerX, textY + i * lineHeight);
-			});
-		} else {
-			ctx.font = "bold 36px sans-serif";
-			ctx.fillText("Click the screen to move the fish!", centerX, textY);
-		}
+		ctx.font = size.width <= 768 ? "bold 28px sans-serif" : "bold 36px sans-serif";
+		const text = size.width <= 768 ? ["Click the screen", "to move the fish!"] : ["Click the screen to move the fish!"];
+		const lineHeight = 36;
+		text.forEach((line, i) => {
+			ctx.fillText(line, centerX, centerY + 80 + i * lineHeight);
+		});
 
 		const tex = new CanvasTexture(canvas);
 		tex.needsUpdate = true;
@@ -110,7 +100,6 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 		const a1 = aspect > imageAspect ? (size.width / size.height) * imageAspect : 1;
 		const a2 = aspect > imageAspect ? 1 : aspect / imageAspect;
 		uniforms.resolution.value.set(size.width, size.height, a1, a2);
-
 		meshRef.current?.scale.set(size.width, size.height, 1);
 	});
 
@@ -120,4 +109,4 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 			<shaderMaterial vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
 		</mesh>
 	);
-};
+});

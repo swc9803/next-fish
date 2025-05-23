@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useMemo, useRef } from "react";
+import { RefObject, useEffect, useMemo, useRef, memo } from "react";
 import { useTexture } from "@react-three/drei";
 import { Mesh, RepeatWrapping } from "three";
 import { isWebpSupported } from "@/utils/isWebpSupported";
@@ -10,7 +10,7 @@ interface PlaneProps {
 	onLoaded: () => void;
 }
 
-export const Ground = ({ planeRef, onLoaded }: PlaneProps) => {
+export const Ground = memo(({ planeRef, onLoaded }: PlaneProps) => {
 	const ext = useMemo(() => (isWebpSupported() ? "webp" : "jpg"), []);
 	const texturePaths = useMemo(
 		() => [
@@ -22,15 +22,14 @@ export const Ground = ({ planeRef, onLoaded }: PlaneProps) => {
 	);
 
 	const [colorMap, normalMap, roughnessMap] = useTexture(texturePaths);
-
-	// 준비 완료
 	const didNotify = useRef(false);
+
 	useEffect(() => {
 		if (!didNotify.current) {
 			onLoaded();
 			didNotify.current = true;
 		}
-	}, [colorMap, normalMap, roughnessMap, onLoaded]);
+	}, [onLoaded]);
 
 	// 메모리 해제
 	useEffect(() => {
@@ -58,4 +57,4 @@ export const Ground = ({ planeRef, onLoaded }: PlaneProps) => {
 			{material}
 		</mesh>
 	);
-};
+});

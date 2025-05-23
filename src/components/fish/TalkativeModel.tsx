@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useRef, useState, memo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { AnimationAction, AnimationMixer, LoopRepeat, Object3D, Vector3 } from "three";
@@ -15,84 +15,74 @@ interface TalkativeModelProps {
 	distanceThreshold?: number;
 }
 
-export const TalkativeModel = ({
-	modelPath,
-	modelPosition,
-	bubblePosition,
-	text,
-	speed,
-	fishRef,
-	scale = 1,
-	distanceThreshold = 12,
-}: TalkativeModelProps) => {
-	const { scene, animations } = useGLTF(modelPath);
-	const objRef = useRef<Object3D>(null);
-	const mixerRef = useRef<AnimationMixer | null>(null);
-	const actionRef = useRef<AnimationAction | null>(null);
+export const TalkativeModel = memo(
+	({ modelPath, modelPosition, bubblePosition, text, speed, fishRef, scale = 1, distanceThreshold = 12 }: TalkativeModelProps) => {
+		const { scene, animations } = useGLTF(modelPath);
+		const objRef = useRef<Object3D>(null);
+		const mixerRef = useRef<AnimationMixer | null>(null);
+		const actionRef = useRef<AnimationAction | null>(null);
 
-	const [visible, setVisible] = useState(false);
-	const typedText = useTyping(text, visible, speed);
-	const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
-	const prevVisible = useRef<boolean | null>(null);
+		const [visible, setVisible] = useState(false);
+		const typedText = useTyping(text, visible, speed);
+		const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
+		const prevVisible = useRef<boolean | null>(null);
 
-	// 애니메이션 초기화
-	useEffect(() => {
-		if (!objRef.current || animations.length === 0) return;
+		useEffect(() => {
+			if (!objRef.current || animations.length === 0) return;
 
-		const mixer = new AnimationMixer(objRef.current);
-		mixerRef.current = mixer;
+			const mixer = new AnimationMixer(objRef.current);
+			mixerRef.current = mixer;
 
-		const clip = animations.find((clip) => clip.name.toLowerCase().includes("swim"));
-		if (clip && clip.duration > 0) {
-			const action = mixer.clipAction(clip);
-			action.setLoop(LoopRepeat, Infinity);
-			action.clampWhenFinished = true;
-			actionRef.current = action;
-		}
-
-		return () => {
-			mixer.stopAllAction();
-			if (objRef.current) {
-				mixer.uncacheRoot(objRef.current);
+			const clip = animations.find((clip) => clip.name.toLowerCase().includes("swim"));
+			if (clip && clip.duration > 0) {
+				const action = mixer.clipAction(clip);
+				action.setLoop(LoopRepeat, Infinity);
+				action.clampWhenFinished = true;
+				actionRef.current = action;
 			}
-		};
-	}, [animations]);
 
-	// 애니메이션 scrub
-	useEffect(() => {
-		const action = actionRef.current;
-		if (!action) return;
+			return () => {
+				mixer.stopAllAction();
+				if (objRef.current) mixer.uncacheRoot(objRef.current);
+			};
+		}, [animations]);
 
-		if (visible) {
-			action.reset().fadeIn(0.4).play();
-		} else {
-			action.fadeOut(0.5);
-		}
-	}, [visible]);
+		// 애니메이션 scrub
+		useEffect(() => {
+			const action = actionRef.current;
+			if (!action) return;
 
-	// 접근 거리 계산
-	useFrame((_, delta) => {
-		const fish = fishRef.current;
-		if (!fish) return;
+			if (visible) {
+				action.reset().fadeIn(0.4).play();
+			} else {
+				action.fadeOut(0.5);
+			}
+		}, [visible]);
 
-		const dist = fish.position.distanceTo(bubbleVec.current);
-		const nextVisible = dist < distanceThreshold;
-		if (prevVisible.current !== nextVisible) {
-			setVisible(nextVisible);
-			prevVisible.current = nextVisible;
-		}
+		useFrame((_, delta) => {
+			const fish = fishRef.current;
+			if (!fish) return;
 
-		mixerRef.current?.update(delta);
-	});
+			const dist = fish.position.distanceTo(bubbleVec.current);
+			const nextVisible = dist < distanceThreshold;
 
-	return (
-		<>
-			<primitive object={scene} position={modelPosition} scale={scale} ref={objRef} />
-			{visible && (
-				<Html position={bubblePosition || modelPosition} distanceFactor={10} wrapperClass="prevent-click">
-					<div className="speech_bubble">{typedText}</div>
-				</Html>
-			)}
-		</>
-	);
-};
+			if (prevVisible.current !== nextVisible) {
+				setVisible(nextVisible);
+				prevVisible.current = nextVisible;
+			}
+
+			mixerRef.current?.update(delta);
+		});
+
+		return (
+			<>
+				<primitive object={scene} position={modelPosition} scale={scale} ref={objRef} />
+				{visible && (
+					<Html position={bubblePosition || modelPosition} distanceFactor={10} wrapperClass="prevent-click">
+						<div className="speech_bubble">{typedText}</div>
+					</Html>
+				)}
+			</>
+		);
+	}
+);

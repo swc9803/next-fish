@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, memo } from "react";
 import { useThree } from "@react-three/fiber";
 import { Color, FogExp2 } from "three";
 import gsap from "gsap";
@@ -9,12 +9,12 @@ interface BackgroundWithFogProps {
 	fogDensity: number;
 }
 
-export const BackgroundWithFog = ({ backgroundColor, fogColor, fogDensity }: BackgroundWithFogProps) => {
+export const BackgroundWithFog = memo(({ backgroundColor, fogColor, fogDensity }: BackgroundWithFogProps) => {
 	const { scene } = useThree();
 	const initialized = useRef(false);
 
 	useEffect(() => {
-		// 초기 설정
+		// 초기 환경 설정 ( 제거 필요 )
 		if (!initialized.current) {
 			if (!(scene.background instanceof Color)) {
 				scene.background = new Color(backgroundColor);
@@ -29,7 +29,6 @@ export const BackgroundWithFog = ({ backgroundColor, fogColor, fogDensity }: Bac
 			scene.fog.density = fogDensity;
 		}
 
-		// 다크모드 변경 애니메이션
 		const bgColor = new Color(backgroundColor);
 		const fogClr = new Color(fogColor);
 
@@ -43,7 +42,7 @@ export const BackgroundWithFog = ({ backgroundColor, fogColor, fogDensity }: Bac
 			});
 		}
 
-		if (scene.fog && scene.fog.color) {
+		if (scene.fog?.color) {
 			gsap.to(scene.fog.color, {
 				r: fogClr.r,
 				g: fogClr.g,
@@ -55,4 +54,4 @@ export const BackgroundWithFog = ({ backgroundColor, fogColor, fogDensity }: Bac
 	}, [scene, backgroundColor, fogColor, fogDensity]);
 
 	return null;
-};
+});

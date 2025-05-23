@@ -1,6 +1,4 @@
-"use client";
-
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
@@ -28,7 +26,7 @@ const GalleryTransitionOverlay = () => {
 	return <div className={`move_gallery_overlay ${visible ? "show" : ""}`} />;
 };
 
-const Experience = ({ onReady }: { onReady: () => void }) => {
+const Experience = memo(({ onReady }: { onReady: () => void }) => {
 	const [hasNotified, setHasNotified] = useState(false);
 	const [fishLoaded, setFishLoaded] = useState(false);
 	const [groundLoaded, setGroundLoaded] = useState(false);
@@ -70,27 +68,22 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 	// 가이드 오버레이 보이기 전 딜레이
 	useEffect(() => {
 		if (!hasNotified) return;
-
 		const delay = setTimeout(() => {
 			setShowGuideShader(true);
-
 			requestAnimationFrame(() => {
 				requestAnimationFrame(() => {
 					setIsShowGuide(true);
 				});
 			});
 		}, 2000);
-
 		return () => clearTimeout(delay);
 	}, [hasNotified]);
 
-	const galleryTransitionOverlayHandler = () => {
+	const galleryTransitionOverlayHandler = useCallback(() => {
 		setIsNavigatingToGallery(true);
 		setShowGalleryTransitionOverlay(true);
-		setTimeout(() => {
-			router.push("/gallery");
-		}, 1000);
-	};
+		setTimeout(() => router.push("/gallery"), 1000);
+	}, [router]);
 
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
@@ -110,9 +103,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 		blinkTweens.current.forEach((t) => t.kill());
 		hitTilesRef.current.forEach((index) => {
 			const mesh = meshRefs.current[index];
-			if (mesh) {
-				(mesh.material as MeshStandardMaterial).color.set("white");
-			}
+			if (mesh) (mesh.material as MeshStandardMaterial).color.set("white");
 		});
 		hitTilesRef.current = [];
 		resetGame();
@@ -153,9 +144,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 					failIfMajorPerformanceCaveat: false,
 				}}
 				onCreated={({ gl }) => {
-					gl.getContext().canvas.addEventListener("webglcontextlost", (e) => {
-						e.preventDefault();
-					});
+					gl.getContext().canvas.addEventListener("webglcontextlost", (e) => e.preventDefault());
 				}}
 			>
 				<SceneCleanup />
@@ -242,9 +231,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 							failIfMajorPerformanceCaveat: false,
 						}}
 						onCreated={({ gl }) => {
-							gl.getContext().canvas.addEventListener("webglcontextlost", (e) => {
-								e.preventDefault();
-							});
+							gl.getContext().canvas.addEventListener("webglcontextlost", (e) => e.preventDefault());
 						}}
 					>
 						<GuideShader onFinish={() => setShowGuideShader(false)} />
@@ -254,15 +241,6 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 
 			<FishConfig />
 
-			{/* <div className="hud">
-				{countdown !== null && (
-					<div className="countdown">
-						{countdown}
-					</div>
-				)}
-				{bombActive && <div className="score">SCORE: {score}</div>}
-			</div> */}
-
 			{isGameOver && (
 				<div onClick={handleReset} className="gameover_overlay">
 					<h1>YOU&apos;RE COOKED</h1>
@@ -271,6 +249,6 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 			)}
 		</>
 	);
-};
+});
 
 export default Experience;

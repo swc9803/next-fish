@@ -8,7 +8,7 @@ import { WebGLRenderTarget } from "three";
 import { LoadingShader } from "@/components/fish/LoadingShader";
 import styles from "./page.module.scss";
 
-const Experience = dynamic(() => import("@/components/fish/Experience"), { ssr: false });
+const Experience = dynamic(() => import("@/components/fish/Experience").then((mod) => mod.default), { ssr: false });
 
 const Home = () => {
 	const [loadingComplete, setLoadingComplete] = useState(false);

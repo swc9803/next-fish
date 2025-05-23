@@ -1,12 +1,17 @@
-"use client";
-
-import { useRef, useEffect, useMemo, useState, RefObject } from "react";
+import { useRef, useEffect, useMemo, useState, RefObject, memo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
 import { useTyping } from "@/hooks/useTyping";
 
-const logoData = [
+const logoData: {
+	id: string;
+	url: string;
+	modelPath: string;
+	position: [number, number, number];
+	isInternal?: boolean;
+	text?: string;
+}[] = [
 	{
 		id: "github",
 		url: "https://github.com/swc9803",
@@ -46,7 +51,7 @@ interface LogoProps {
 	hideSpeechBubble?: boolean;
 }
 
-const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay, text, hideSpeechBubble = false }: LogoProps) => {
+const LogoModel = memo(({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay, text, hideSpeechBubble = false }: LogoProps) => {
 	const { scene } = useGLTF(modelPath);
 	const modelRef = useRef<Object3D>(null);
 	const progressCircleRef = useRef<Mesh>(null);
@@ -97,7 +102,6 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		progressRef.current = progress;
 
 		const arc = -progress * Math.PI * 2;
-
 		if (prevArcRef.current === null || Math.abs(arc - prevArcRef.current) > 0.01) {
 			if (ring.geometry) ring.geometry.dispose();
 			ring.geometry = new TorusGeometry(1.125, 0.05, 16, 64, arc);
@@ -118,7 +122,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 			)}
 		</group>
 	);
-};
+});
 
 interface MoveRouterProps {
 	fishRef: RefObject<Object3D>;
@@ -126,7 +130,7 @@ interface MoveRouterProps {
 	hideSpeechBubble?: boolean;
 }
 
-export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: MoveRouterProps) => {
+export const MoveRouter = memo(({ fishRef, showGalleryOverlay, hideSpeechBubble }: MoveRouterProps) => {
 	return (
 		<group>
 			{logoData.map((logo) => (
@@ -134,7 +138,7 @@ export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: Mo
 					key={logo.id}
 					url={logo.url}
 					modelPath={logo.modelPath}
-					position={logo.position as [number, number, number]}
+					position={logo.position}
 					fishRef={fishRef}
 					isInternal={logo.isInternal}
 					showGalleryOverlay={showGalleryOverlay}
@@ -144,4 +148,4 @@ export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: Mo
 			))}
 		</group>
 	);
-};
+});

@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { VideoTexture, LinearFilter, RGBFormat, Mesh } from "three";
 
-export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
+export const VideoCaustics = memo(({ onLoaded }: { onLoaded: () => void }) => {
 	const [videoTexture, setVideoTexture] = useState<VideoTexture | null>(null);
 	const meshRef = useRef<Mesh>(null);
 
 	useEffect(() => {
-		if (!videoTexture || !videoTexture.image) return;
+		if (!videoTexture?.image) return;
 
 		const video = videoTexture.image;
 		if (!(video instanceof HTMLVideoElement)) return;
@@ -31,15 +31,6 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 		video.autoplay = true;
 		video.playsInline = true;
 
-		const tryPlay = () => {
-			const playPromise = video.play();
-			if (playPromise !== undefined) {
-				playPromise.catch((error) => {
-					console.warn(error);
-				});
-			}
-		};
-
 		const handleCanPlay = () => {
 			const texture = new VideoTexture(video);
 			texture.minFilter = LinearFilter;
@@ -50,6 +41,15 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 			video.removeEventListener("canplay", handleCanPlay);
 		};
 
+		const tryPlay = () => {
+			const playPromise = video.play();
+			if (playPromise !== undefined) {
+				playPromise.catch((error) => {
+					console.warn(error);
+				});
+			}
+		};
+
 		video.addEventListener("canplay", handleCanPlay);
 		requestAnimationFrame(tryPlay);
 
@@ -57,9 +57,7 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 			video.pause();
 			video.removeAttribute("src");
 			video.load();
-			if (videoTexture) {
-				videoTexture.dispose();
-			}
+			videoTexture?.dispose();
 		};
 	}, []);
 
@@ -71,4 +69,4 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 			</mesh>
 		)
 	);
-};
+});
