@@ -1,7 +1,8 @@
 import { useRef, useEffect, useMemo, useState, RefObject, memo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
+import gsap from "gsap";
 import { useTyping } from "@/hooks/useTyping";
 
 const logoData: {
@@ -59,6 +60,7 @@ const LogoModel = memo(({ modelPath, position, url, fishRef, isInternal = false,
 	const triggeredRef = useRef(false);
 	const prevArcRef = useRef<number | null>(null);
 	const [isNear, setIsNear] = useState(false);
+	const { camera } = useThree();
 
 	const isFishingRod = modelPath.includes("fishing_rod");
 	const typedText = useTyping(text || "", isNear, 150);
@@ -88,7 +90,17 @@ const LogoModel = memo(({ modelPath, position, url, fishRef, isInternal = false,
 			progress = Math.min(1, progress + delta / 4);
 			if (progress >= 1 && !triggeredRef.current) {
 				triggeredRef.current = true;
+
 				if (isInternal && url === "/gallery") {
+					fish.position.copy(model.position);
+					fish.rotation.copy(model.rotation);
+					fish.rotation.y = Math.PI / 2;
+					fish.position.x -= 2;
+
+					gsap.to([model.position, fish.position, camera.position], {
+						y: "+=20",
+						duration: 1.5,
+					});
 					showGalleryOverlay?.();
 				} else {
 					window.open(url, "_blank");
