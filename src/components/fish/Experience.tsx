@@ -9,6 +9,7 @@ import { resetGameState } from "@/hooks/resetGameState";
 import { GuideShader } from "./GuideShader";
 import { FishModel } from "./FishModel";
 import { FishConfig } from "./FishConfig";
+import { FishColorPicker } from "./FishColorPicker";
 import { MoveRouter } from "./MoveRouter";
 import { Ground } from "./Ground";
 import { ClickHandler } from "./ClickHandler";
@@ -244,6 +245,7 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 				</div>
 			)}
 
+			<FishColorPicker />
 			<FishConfig />
 
 			{isGameOver && (

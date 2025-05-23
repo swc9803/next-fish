@@ -16,5 +16,4 @@ speech_bubble 거리계산, 위치 조정
 
 # 임시 아이디어
 
-컬러 누르자마자 트렌지션 되며 변경
 fishing.glb scale 낮추기

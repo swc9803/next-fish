@@ -2,27 +2,11 @@ import { useFishStore } from "@/store/useFishStore";
 import { memo } from "react";
 
 export const FishConfig = memo(() => {
-	const {
-		backgroundColor,
-		setBackgroundColor,
-		fogColor,
-		setFogColor,
-		fishColor,
-		fishSpeed,
-		fishScale,
-		fogDensity,
-		setFishColor,
-		setFishSpeed,
-		setFishScale,
-		setFogDensity,
-	} = useFishStore();
+	const { backgroundColor, setBackgroundColor, fogColor, setFogColor, fishSpeed, fishScale, fogDensity, setFishSpeed, setFishScale, setFogDensity } =
+		useFishStore();
 
 	return (
 		<div className="fish_config">
-			<div>
-				<label>Fish Color:</label>
-				<input type="color" value={fishColor} onChange={(e) => setFishColor(e.target.value)} />
-			</div>
 			<div>
 				<label>Fish Speed:</label>
 				<input type="number" value={fishSpeed} onChange={(e) => setFishSpeed(Number(e.target.value))} min={10} max={200} />
