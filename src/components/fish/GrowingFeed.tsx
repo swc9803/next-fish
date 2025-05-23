@@ -10,24 +10,34 @@ interface GrowingFeedProps {
 	position: [number, number, number];
 	fishRef: RefObject<Object3D>;
 	isGameOver: boolean;
+	active: boolean;
 	onCollected: () => void;
 	onExpire: () => void;
 }
 
-export const GrowingFeed = memo(({ position, fishRef, isGameOver, onCollected, onExpire }: GrowingFeedProps) => {
+export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onCollected, onExpire }: GrowingFeedProps) => {
 	const meshRef = useRef<Mesh>(null);
 	const scaleRef = useRef(0.1);
-	const [isVisible, setIsVisible] = useState(true);
+	const [isVisible, setIsVisible] = useState(false);
+	const expirationTimer = useRef<NodeJS.Timeout | null>(null);
+	const shrinking = useRef(false);
 
-	const decreaseFeed = useCallback(() => {
+	useEffect(() => {
+		if (!active) return;
+		setIsVisible(true);
+		scaleRef.current = 0.1;
+		shrinking.current = false;
+		if (meshRef.current) meshRef.current.scale.setScalar(scaleRef.current);
+	}, [active, position]);
+
+	const startShrinking = useCallback(() => {
 		if (!meshRef.current || isGameOver || !isVisible) return;
-
+		shrinking.current = true;
 		const shrinkInterval = setInterval(() => {
-			if (!meshRef.current || !isVisible) {
+			if (!meshRef.current || !isVisible || !shrinking.current) {
 				clearInterval(shrinkInterval);
 				return;
 			}
-
 			if (!Number.isFinite(scaleRef.current) || scaleRef.current <= 0.01) {
 				clearInterval(shrinkInterval);
 				onExpire();
@@ -40,18 +50,15 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, onCollected, o
 		}, 1000 / 60);
 	}, [isGameOver, isVisible, onExpire]);
 
-	useEffect(() => {
-		if (scaleRef.current >= MAX_SCALE) {
-			setTimeout(decreaseFeed, 500);
-		}
-	}, [decreaseFeed]);
-
 	useFrame(() => {
 		if (isGameOver || !meshRef.current || !fishRef.current || !isVisible) return;
 
-		if (scaleRef.current < MAX_SCALE) {
+		if (scaleRef.current < MAX_SCALE && !shrinking.current) {
 			scaleRef.current += INCREASE_FEED_SPEED;
 			meshRef.current.scale.setScalar(scaleRef.current);
+			if (scaleRef.current >= MAX_SCALE) {
+				expirationTimer.current = setTimeout(() => startShrinking(), 2000);
+			}
 		}
 
 		const feedPos = meshRef.current.position;
@@ -60,6 +67,7 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, onCollected, o
 		if (dist < 1.5 && isVisible) {
 			setIsVisible(false);
 			scaleRef.current = 0;
+			if (expirationTimer.current) clearTimeout(expirationTimer.current);
 			onCollected();
 		}
 	});
@@ -70,10 +78,8 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, onCollected, o
 		}
 	}, [position]);
 
-	if (!isVisible) return null;
-
 	return (
-		<mesh ref={meshRef}>
+		<mesh ref={meshRef} visible={isVisible}>
 			<sphereGeometry args={[0.5, 16, 16]} />
 			<meshStandardMaterial color="limegreen" />
 		</mesh>

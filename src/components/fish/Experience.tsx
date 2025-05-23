@@ -38,9 +38,11 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 	const [isMovingToGallery, setIsNavigatingToGallery] = useState(false);
 
 	const [isInBombZone, setIsInBombZone] = useState(false);
+	const [score, setScore] = useState(0);
+	const incrementScore = () => setScore((prev) => Math.min(prev + 1, 1000));
 	const [isGameOver, setIsGameOver] = useState(false);
 	const [bombActive, setBombActive] = useState(false);
-	const [feeds, setFeeds] = useState<{ id: string; position: [number, number, number] }[]>([]);
+	const [feeds, setFeeds] = useState<{ id: string; position: [number, number, number]; active: boolean }[]>([]);
 	const [preventClick, setPreventClick] = useState(false);
 	const [deathPosition, setDeathPosition] = useState<[number, number, number] | null>(null);
 
@@ -168,6 +170,7 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 				<FishModel
 					fishRef={fishRef}
 					setIsInBombZone={setIsInBombZone}
+					setBombActive={setBombActive}
 					isGameOver={isGameOver}
 					deathPosition={deathPosition}
 					onLoaded={() => setFishLoaded(true)}
@@ -208,6 +211,8 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 					hitTilesRef={hitTilesRef}
 					blinkTweens={blinkTweens}
 					cellTweens={cellTweens}
+					score={score}
+					incrementScore={incrementScore}
 					setDeathPosition={setDeathPosition}
 				/>
 				<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />

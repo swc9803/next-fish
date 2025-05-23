@@ -8,6 +8,7 @@ import { useFishStore } from "@/store/useFishStore";
 interface FishModelProps {
 	fishRef: RefObject<Object3D>;
 	setIsInBombZone: Dispatch<SetStateAction<boolean>>;
+	setBombActive: Dispatch<SetStateAction<boolean>>;
 	isGameOver: boolean;
 	deathPosition: [number, number, number] | null;
 	onLoaded: () => void;
@@ -18,7 +19,7 @@ const GRID_HALF_SIZE_X = 21;
 const GRID_HALF_SIZE_Z = 21;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-const FishModelComponent = ({ fishRef, setIsInBombZone, isGameOver, deathPosition, onLoaded }: FishModelProps) => {
+const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOver, deathPosition, onLoaded }: FishModelProps) => {
 	const { scene: fishScene, animations } = useGLTF("/models/fish.glb");
 	const { scene: deadScene } = useGLTF("/models/fish_bone.glb");
 	const { camera } = useThree();
@@ -131,6 +132,7 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, isGameOver, deathPositio
 
 			if (inBombZone && !hasMovedToCenter.current) {
 				hasMovedToCenter.current = true;
+				setBombActive(true);
 				gsap.killTweensOf(pos);
 				tempTarget.set(GRID_CENTER.x, pos.y, GRID_CENTER.z);
 				fish.lookAt(tempTarget);

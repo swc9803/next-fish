@@ -71,11 +71,26 @@ textarea {
 	font-family: Nanum;
 }
 
+.prevent_click {
+	pointer-events: none;
+}
+
 .mobile {
 	display: none;
 	@media screen and (max-width: 480px) {
 		display: block;
 	}
+}
+
+// 로딩
+.loading_overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	inset: 0;
+	z-index: 1;
 }
 
 // 임시 설정
@@ -90,118 +105,12 @@ textarea {
 	border-radius: 10px;
 	background: #fff;
 	color: #222;
-	transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
 	button {
 		width: 100%;
 		min-height: 1.5rem;
 		border: 1px solid #222;
 		color: #222;
-		transition: border 0.3s ease-in-out, background 0.3s ease-in-out, color 0.3s ease-in-out;
 	}
-}
-
-.gameover_overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	text-align: center;
-	background: rgba(0, 0, 0, 0.5);
-	animation: fadeIn 1s ease-out forwards;
-	user-select: none;
-	cursor: pointer;
-	opacity: 0;
-	z-index: 1;
-	h1 {
-		position: relative;
-		padding: 0 1rem;
-		width: 100%;
-		background: rgba(0, 0, 0, 0.7);
-		color: #80221d;
-		font-family: "OptimusPrinceps";
-		font-size: 3.5rem;
-		letter-spacing: 0.05em;
-		transform: scaleY(1.4);
-		&::before,
-		&::after {
-			content: "";
-			position: absolute;
-			left: 0;
-			right: 0;
-			height: 1.5rem;
-			pointer-events: none;
-		}
-		&::before {
-			top: -1.5rem;
-			background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-		}
-		&::after {
-			bottom: -1.5rem;
-			background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
-		}
-	}
-	p {
-		position: absolute;
-		transform: translate3d(0, 10rem, 0);
-		color: #fff;
-		text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-		font-size: 1rem;
-		opacity: 0;
-		transition: opacity 0.3s ease-out;
-		&.show {
-			opacity: 1;
-		}
-	}
-}
-
-// 게임 ui
-.hud {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	color: white;
-	font-size: 1.5rem;
-	text-align: right;
-	z-index: 10;
-	overflow: hidden;
-	pointer-events: none;
-	.countdown {
-		position: absolute;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		width: 100%;
-		height: 100%;
-		color: #ff5252;
-		font-size: 2rem;
-		font-weight: bold;
-		animation: scaleBounce 0.5s ease-out;
-	}
-	.score {
-		position: absolute;
-		top: 1.25rem;
-		right: 1.25rem;
-		color: #00ffcc;
-		font-size: 1rem;
-	}
-}
-
-// 로딩
-.loading_overlay {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	inset: 0;
-	z-index: 1;
 }
 
 // 가이드
@@ -284,8 +193,89 @@ textarea {
 	}
 }
 
-.prevent_click {
+.game_overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 1;
 	pointer-events: none;
+	.countdown {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate3d(-50%, -50%, 0);
+		font-size: 6rem;
+		font-weight: bold;
+		color: white;
+	}
+	.score {
+		position: absolute;
+		top: 20px;
+		right: 30px;
+		font-size: 1.5rem;
+		color: white;
+	}
+}
+
+.gameover_overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+	background: rgba(0, 0, 0, 0.5);
+	animation: fadeIn 1s ease-out forwards;
+	user-select: none;
+	cursor: pointer;
+	opacity: 0;
+	z-index: 1;
+	h1 {
+		position: relative;
+		padding: 0 1rem;
+		width: 100%;
+		background: rgba(0, 0, 0, 0.7);
+		color: #80221d;
+		font-family: "OptimusPrinceps";
+		font-size: 3.5rem;
+		letter-spacing: 0.05em;
+		transform: scaleY(1.4);
+		&::before,
+		&::after {
+			content: "";
+			position: absolute;
+			left: 0;
+			right: 0;
+			height: 1.5rem;
+			pointer-events: none;
+		}
+		&::before {
+			top: -1.5rem;
+			background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+		}
+		&::after {
+			bottom: -1.5rem;
+			background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
+		}
+	}
+	p {
+		position: absolute;
+		transform: translate3d(0, 10rem, 0);
+		color: #fff;
+		text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+		font-size: 1rem;
+		opacity: 0;
+		transition: opacity 0.3s ease-out;
+		&.show {
+			opacity: 1;
+		}
+	}
 }
 
 @keyframes fadeIn {
