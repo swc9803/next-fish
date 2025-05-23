@@ -6,9 +6,6 @@ import gsap from "gsap";
 
 import { useFishStore } from "@/store/useFishStore";
 
-useGLTF.preload("/models/fish.glb");
-useGLTF.preload("/models/fish_bone.glb");
-
 interface FishModelProps {
 	fishRef: React.RefObject<Object3D>;
 	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;

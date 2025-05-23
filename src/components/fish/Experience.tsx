@@ -3,7 +3,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
-import { useTexture } from "@react-three/drei";
 import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
 
 import { useFishStore } from "@/store/useFishStore";
@@ -20,13 +19,6 @@ import { VideoCaustics } from "./VideoCaustics";
 import { BackgroundWithFog } from "./BackgroundWithFog";
 import { TalkativeModel } from "./TalkativeModel";
 
-// preload
-useTexture.preload([
-	"/textures/sand3/aerial_beach_01_diff_1k.jpg",
-	"/textures/sand3/aerial_beach_01_nor_gl_1k.jpg",
-	"/textures/sand3/aerial_beach_01_rough_1k.jpg",
-]);
-
 const GalleryTransitionOverlay = () => {
 	const [visible, setVisible] = useState(false);
 	useEffect(() => {
@@ -37,6 +29,11 @@ const GalleryTransitionOverlay = () => {
 };
 
 const Experience = ({ onReady }: { onReady: () => void }) => {
+	const [hasNotified, setHasNotified] = useState(false);
+	const [fishLoaded, setFishLoaded] = useState(false);
+	const [groundLoaded, setGroundLoaded] = useState(false);
+	const [videoLoaded, setVideoLoaded] = useState(false);
+
 	const [isShowGuide, setIsShowGuide] = useState(false);
 	const [showGuideShader, setShowGuideShader] = useState(false);
 	const [showGalleryTransitionOverlay, setShowGalleryTransitionOverlay] = useState(false);
@@ -59,17 +56,13 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 	const router = useRouter();
 	const { backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
 
-	const [hasNotified, setHasNotified] = useState(false);
-	const [fishLoaded, setFishLoaded] = useState(false);
-	const [groundLoaded, setGroundLoaded] = useState(false);
-
 	// 모든 리소스 준비 완료 체크
 	useEffect(() => {
-		if (fishLoaded && groundLoaded && !hasNotified) {
+		if (fishLoaded && groundLoaded && videoLoaded && !hasNotified) {
 			setHasNotified(true);
 			onReady();
 		}
-	}, [fishLoaded, groundLoaded, hasNotified]);
+	}, [fishLoaded, groundLoaded, videoLoaded, hasNotified]);
 
 	// 가이드 오버레이 보이기 전 딜레이
 	useEffect(() => {
@@ -148,11 +141,11 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 				shadows
 				camera={{ position: [0, 17, 14], fov: 75 }}
 				gl={{
-					alpha: true,
-					stencil: true,
+					alpha: false,
+					stencil: false,
 					depth: true,
 					antialias: true,
-					preserveDrawingBuffer: true,
+					preserveDrawingBuffer: false,
 					powerPreference: "high-performance",
 					failIfMajorPerformanceCaveat: false,
 				}}
@@ -179,7 +172,7 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 					shadow-camera-near={1}
 					shadow-camera-far={500}
 				/>
-				<VideoCaustics />
+				<VideoCaustics onLoaded={() => setVideoLoaded(true)} />
 				<FishModel
 					fishRef={fishRef}
 					setIsInBombZone={setIsInBombZone}
@@ -241,9 +234,9 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 							depth: false,
 							stencil: false,
 							antialias: false,
-							preserveDrawingBuffer: true,
+							preserveDrawingBuffer: false,
 							powerPreference: "low-power",
-							failIfMajorPerformanceCaveat: true,
+							failIfMajorPerformanceCaveat: false,
 						}}
 						onCreated={({ gl }) => {
 							gl.getContext().canvas.addEventListener("webglcontextlost", (e) => {

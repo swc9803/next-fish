@@ -16,8 +16,10 @@ const Home = () => {
 	const renderTarget = useMemo(() => new WebGLRenderTarget(1024, 512), []);
 
 	const handleExperienceReady = () => {
-		setFadeOut(true);
-		setTimeout(() => setLoadingComplete(true), 1700); // loading shader duration
+		requestAnimationFrame(() => {
+			setFadeOut(true);
+			setTimeout(() => setLoadingComplete(true), 1700);
+		});
 	};
 
 	return (
@@ -37,7 +39,7 @@ const Home = () => {
 								antialias: false,
 								preserveDrawingBuffer: false,
 								powerPreference: "low-power",
-								failIfMajorPerformanceCaveat: true,
+								failIfMajorPerformanceCaveat: false,
 							}}
 							onCreated={({ gl }) => {
 								gl.getContext().canvas.addEventListener("webglcontextlost", (e) => {

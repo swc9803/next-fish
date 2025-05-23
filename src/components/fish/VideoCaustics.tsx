@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { VideoTexture, LinearFilter, RGBFormat, Mesh } from "three";
 
-export const VideoCaustics = () => {
+export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 	const [videoTexture, setVideoTexture] = useState<VideoTexture | null>(null);
 	const meshRef = useRef<Mesh>(null);
 
@@ -46,6 +46,7 @@ export const VideoCaustics = () => {
 			texture.magFilter = LinearFilter;
 			texture.format = RGBFormat;
 			setVideoTexture(texture);
+			onLoaded();
 			video.removeEventListener("canplay", handleCanPlay);
 		};
 

@@ -145,5 +145,3 @@ export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: Mo
 		</group>
 	);
 };
-
-logoData.forEach((logo) => useGLTF.preload(logo.modelPath));

@@ -9,15 +9,11 @@ overlay 디자인 수정
 폭탄 터지는 이펙트
 ga, favicon
 SEO 최적화 ( 후순위 )
-preload glb
 bombzone, feed 생성 로직 다시
 성능 테스트
-fish glb 디자인, 불필요한 애니메이션 제거 필요
 speech_bubble 거리계산, 위치 조정
 글자 반응형 적용
 
 # 임시 아이디어
-
-갤러리로 이동 중에는 말풍선 제거
 
 컬러 누르자마자 트렌지션 되며 변경
