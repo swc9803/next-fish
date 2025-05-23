@@ -24,7 +24,7 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 		const viewBoxHeight = 299;
 		const scale = 0.25;
 
-		ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+		ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 		const cursorPath1 = new Path2D(`

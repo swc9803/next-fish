@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef } from "react";
+import { RefObject, useEffect, useMemo, useRef } from "react";
 import { useTexture } from "@react-three/drei";
 import { Mesh, RepeatWrapping } from "three";
 import { isWebpSupported } from "@/utils/isWebpSupported";
 
-type RefMesh = React.RefObject<Mesh>;
+type RefMesh = RefObject<Mesh>;
 
 interface PlaneProps {
 	planeRef: RefMesh;

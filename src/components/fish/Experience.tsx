@@ -54,7 +54,10 @@ const Experience = ({ onReady }: { onReady: () => void }) => {
 	const meshRefs = useRef<Mesh[]>([]);
 
 	const router = useRouter();
-	const { backgroundColor, fogColor, fogDensity } = useFishStore((state) => state);
+
+	const backgroundColor = useFishStore((s) => s.backgroundColor);
+	const fogColor = useFishStore((s) => s.fogColor);
+	const fogDensity = useFishStore((s) => s.fogDensity);
 
 	// 모든 리소스 준비 완료 체크
 	useEffect(() => {

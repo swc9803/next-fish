@@ -1,7 +1,7 @@
+import { RefObject, useEffect, useRef, useState } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { AnimationAction, AnimationMixer, LoopRepeat, Object3D, Vector3 } from "three";
-import { useEffect, useRef, useState } from "react";
 import { useTyping } from "@/hooks/useTyping";
 
 interface TalkativeModelProps {
@@ -9,7 +9,7 @@ interface TalkativeModelProps {
 	modelPosition: [number, number, number];
 	bubblePosition?: [number, number, number];
 	text: string;
-	fishRef: React.RefObject<Object3D>;
+	fishRef: RefObject<Object3D>;
 	scale?: number;
 	speed: number;
 	distanceThreshold?: number;
@@ -33,6 +33,7 @@ export const TalkativeModel = ({
 	const [visible, setVisible] = useState(false);
 	const typedText = useTyping(text, visible, speed);
 	const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
+	const prevVisible = useRef<boolean | null>(null);
 
 	// 애니메이션 초기화
 	useEffect(() => {
@@ -75,7 +76,11 @@ export const TalkativeModel = ({
 		if (!fish) return;
 
 		const dist = fish.position.distanceTo(bubbleVec.current);
-		setVisible(dist < distanceThreshold);
+		const nextVisible = dist < distanceThreshold;
+		if (prevVisible.current !== nextVisible) {
+			setVisible(nextVisible);
+			prevVisible.current = nextVisible;
+		}
 
 		mixerRef.current?.update(delta);
 	});

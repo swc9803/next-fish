@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, RefObject, Dispatch, SetStateAction } from "react";
 import { useGLTF } from "@react-three/drei";
 import { useThree, useFrame } from "@react-three/fiber";
 import { MeshStandardMaterial, Mesh, Object3D, Vector3, AnimationMixer, AnimationAction, LoopRepeat } from "three";
@@ -7,8 +7,8 @@ import gsap from "gsap";
 import { useFishStore } from "@/store/useFishStore";
 
 interface FishModelProps {
-	fishRef: React.RefObject<Object3D>;
-	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>;
+	fishRef: RefObject<Object3D>;
+	setIsInBombZone: Dispatch<SetStateAction<boolean>>;
 	isGameOver: boolean;
 	deathPosition: [number, number, number] | null;
 	onLoaded: () => void;
@@ -24,7 +24,8 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 	const { scene: fishScene, animations } = useGLTF("/models/fish.glb");
 	const { scene: deadScene } = useGLTF("/models/fish_bone.glb");
 	const { camera } = useThree();
-	const { fishColor, fishScale } = useFishStore();
+	const fishColor = useFishStore((s) => s.fishColor);
+	const fishScale = useFishStore((s) => s.fishScale);
 
 	const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 480);
 	const [showHitBox, setShowHitBox] = useState(false);
@@ -120,8 +121,10 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 		const inBombZone = Math.abs(pos.x - GRID_CENTER.x) < GRID_HALF_SIZE_X && Math.abs(pos.z - GRID_CENTER.z) < GRID_HALF_SIZE_Z;
 
 		if (inBombZone) {
-			camera.position.set(GRID_CENTER.x, isMobile ? 40 : 30, GRID_CENTER.z);
-			camera.lookAt(GRID_CENTER);
+			if (!camera.position.equals(new Vector3(GRID_CENTER.x, isMobile ? 40 : 30, GRID_CENTER.z))) {
+				camera.position.set(GRID_CENTER.x, isMobile ? 40 : 30, GRID_CENTER.z);
+				camera.lookAt(GRID_CENTER);
+			}
 		} else {
 			camera.position.set(pos.x, 20, pos.z + 14);
 			camera.lookAt(pos);
@@ -134,7 +137,9 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 			if (inBombZone && !hasMovedToCenter.current) {
 				hasMovedToCenter.current = true;
 
-				gsap.killTweensOf(pos);
+				if (!hasMovedToCenter.current) {
+					gsap.killTweensOf(pos);
+				}
 				tempTarget.set(GRID_CENTER.x, pos.y, GRID_CENTER.z);
 				fish.lookAt(tempTarget);
 

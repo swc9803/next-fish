@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useMemo, useState } from "react";
+import { useRef, useEffect, useMemo, useState, RefObject } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
@@ -39,7 +39,7 @@ interface LogoProps {
 	url: string;
 	modelPath: string;
 	position: [number, number, number];
-	fishRef: React.RefObject<Object3D>;
+	fishRef: RefObject<Object3D>;
 	isInternal?: boolean;
 	showGalleryOverlay?: () => void;
 	text?: string;
@@ -121,7 +121,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 };
 
 interface MoveRouterProps {
-	fishRef: React.RefObject<Object3D>;
+	fishRef: RefObject<Object3D>;
 	showGalleryOverlay?: () => void;
 	hideSpeechBubble?: boolean;
 }

@@ -1,12 +1,13 @@
+import { Dispatch, SetStateAction } from "react";
 import { useFishStore } from "@/store/useFishStore";
 
 export type Feed = { id: string; position: [number, number, number] };
 
 export const resetGameState = (
-	setIsGameOver: React.Dispatch<React.SetStateAction<boolean>>,
-	setIsInBombZone: React.Dispatch<React.SetStateAction<boolean>>,
-	setBombActive: React.Dispatch<React.SetStateAction<boolean>>,
-	setFeeds: React.Dispatch<React.SetStateAction<Feed[]>>
+	setIsGameOver: Dispatch<SetStateAction<boolean>>,
+	setIsInBombZone: Dispatch<SetStateAction<boolean>>,
+	setBombActive: Dispatch<SetStateAction<boolean>>,
+	setFeeds: Dispatch<SetStateAction<Feed[]>>
 ) => {
 	setIsGameOver(false);
 	setIsInBombZone(false);

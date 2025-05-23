@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Mesh, Object3D } from "three";
 
@@ -8,7 +8,7 @@ const DECREASE_FEED_SPEED = 0.05;
 
 interface GrowingFeedProps {
 	position: [number, number, number];
-	fishRef: React.RefObject<Object3D>;
+	fishRef: RefObject<Object3D>;
 	isGameOver: boolean;
 	onCollected: () => void;
 	onExpire: () => void;
@@ -59,6 +59,7 @@ export const GrowingFeed = ({ position, fishRef, isGameOver, onCollected, onExpi
 		const dist = feedPos.distanceTo(fishPos);
 		if (dist < 1.5 && isVisible) {
 			setIsVisible(false);
+			scaleRef.current = 0;
 			onCollected();
 		}
 	});

@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import { Vector2, Vector3, Raycaster, Mesh, Object3D, Intersection } from "three";
 import gsap from "gsap";
 import { useFishStore } from "@/store/useFishStore";
 
 interface ClickHandlerProps {
-	fishRef: React.RefObject<Object3D>;
-	planeRef: React.RefObject<Mesh>;
+	fishRef: RefObject<Object3D>;
+	planeRef: RefObject<Mesh>;
 	isInBombZone: boolean;
 	isGameOver: boolean;
 }
