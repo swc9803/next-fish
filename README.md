@@ -11,6 +11,5 @@ ga, favicon
 SEO 최적화 ( 후순위 )
 bombzone, feed 생성 로직 다시
 성능 테스트
-글자 반응형 적용
 
 # 임시 아이디어
