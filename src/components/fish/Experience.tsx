@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, memo } from "react";
+import { useRef, useState, useEffect, useCallback, memo, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
@@ -62,6 +62,18 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 
 	// 모든 리소스 준비 완료 체크
 	useEffect(() => {
+		if (fishLoaded && !groundLoaded) {
+			setTimeout(() => setGroundLoaded(true), 300);
+		}
+	}, [fishLoaded, groundLoaded]);
+
+	useEffect(() => {
+		if (fishLoaded && groundLoaded && !videoLoaded) {
+			setTimeout(() => setVideoLoaded(true), 300);
+		}
+	}, [fishLoaded, groundLoaded, videoLoaded]);
+
+	useEffect(() => {
 		if (fishLoaded && groundLoaded && videoLoaded && !hasNotified) {
 			setHasNotified(true);
 			onReady();
@@ -71,16 +83,28 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 	// 가이드 오버레이 보이기 전 딜레이
 	useEffect(() => {
 		if (!hasNotified) return;
-		const delay = setTimeout(() => {
-			setShowGuideShader(true);
-			requestAnimationFrame(() => {
+
+		let frame = 0;
+		const loop = () => {
+			frame++;
+			if (frame > 2) {
+				setShowGuideShader(true);
 				requestAnimationFrame(() => {
 					setIsShowGuide(true);
 				});
-			});
-		}, 2000);
-		return () => clearTimeout(delay);
+			} else {
+				requestAnimationFrame(loop);
+			}
+		};
+		requestAnimationFrame(loop);
 	}, [hasNotified]);
+
+	// 저사양 모드
+	const isLowSpec = useMemo(() => {
+		const cores = navigator.hardwareConcurrency || 4;
+		const memory = (navigator as any).deviceMemory || 4;
+		return cores <= 4 || memory <= 4;
+	}, []);
 
 	const galleryTransitionOverlayHandler = useCallback(() => {
 		setIsNavigatingToGallery(true);
@@ -141,7 +165,7 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 					alpha: false,
 					stencil: false,
 					depth: true,
-					antialias: true,
+					antialias: !isLowSpec,
 					preserveDrawingBuffer: false,
 					powerPreference: "high-performance",
 					failIfMajorPerformanceCaveat: false,
@@ -167,7 +191,9 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 					shadow-camera-near={1}
 					shadow-camera-far={500}
 				/>
-				<VideoCaustics onLoaded={() => setVideoLoaded(true)} />
+
+				{!isLowSpec && <VideoCaustics onLoaded={() => setVideoLoaded(true)} />}
+
 				<FishModel
 					fishRef={fishRef}
 					setIsInBombZone={setIsInBombZone}
@@ -187,7 +213,6 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 					scale={1}
 					speed={80}
 				/>
-
 				<TalkativeModel
 					modelPath="/models/fish_logo.glb"
 					modelPosition={[-10, 0.5, -10]}
@@ -197,7 +222,6 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 					scale={1}
 					speed={80}
 				/>
-
 				<BombZone
 					fishRef={fishRef}
 					setIsGameOver={setIsGameOver}
