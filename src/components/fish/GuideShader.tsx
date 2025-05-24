@@ -11,12 +11,18 @@ export const GuideShader = memo(({ onFinish }: { onFinish: () => void }) => {
 	const [clicked, setClicked] = useState(false);
 
 	const texture = useMemo(() => {
+		const DPR = window.devicePixelRatio || 1;
 		const canvas = document.createElement("canvas");
-		canvas.width = 1024;
-		canvas.height = 512;
+		canvas.width = 1024 * DPR;
+		canvas.height = 512 * DPR;
+		canvas.style.width = "1024px";
+		canvas.style.height = "512px";
+
 		const ctx = canvas.getContext("2d")!;
-		const centerX = canvas.width / 2;
-		const centerY = canvas.height / 2;
+		ctx.scale(DPR, DPR);
+
+		const centerX = 1024 / 2;
+		const centerY = 512 / 2;
 
 		const viewBoxWidth = 272;
 		const viewBoxHeight = 299;
@@ -47,9 +53,9 @@ export const GuideShader = memo(({ onFinish }: { onFinish: () => void }) => {
 		ctx.fillStyle = "#ffffff";
 		ctx.textAlign = "center";
 		ctx.textBaseline = "top";
-		ctx.font = size.width <= 768 ? "bold 28px sans-serif" : "bold 36px sans-serif";
+		ctx.font = size.width <= 768 ? "bold 20px sans-serif" : "bold 36px sans-serif";
 		const text = size.width <= 768 ? ["Click the screen", "to move the fish!"] : ["Click the screen to move the fish!"];
-		const lineHeight = 36;
+		const lineHeight = size.width <= 768 ? 24 : 36;
 		text.forEach((line, i) => {
 			ctx.fillText(line, centerX, centerY + 80 + i * lineHeight);
 		});

@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState, memo } from "react";
+import { RefObject, useEffect, useRef, useState, memo, useMemo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { AnimationAction, AnimationMixer, LoopRepeat, Object3D, Vector3 } from "three";
@@ -26,6 +26,13 @@ export const TalkativeModel = memo(
 		const typedText = useTyping(text, visible, speed);
 		const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
 		const prevVisible = useRef<boolean | null>(null);
+
+		// 모바일 말풍선 위치 조정
+		const isMobile = useMemo(() => typeof window !== "undefined" && window.innerWidth <= 768, []);
+		const adjustedBubblePosition = useMemo<[number, number, number]>(() => {
+			const [x, y, z] = bubblePosition || modelPosition;
+			return isMobile ? [x, y - 0.5, z - 0.5] : [x, y, z];
+		}, [isMobile, bubblePosition, modelPosition]);
 
 		useEffect(() => {
 			if (!objRef.current || animations.length === 0) return;
@@ -78,7 +85,7 @@ export const TalkativeModel = memo(
 			<>
 				<primitive object={scene} position={modelPosition} scale={scale} ref={objRef} />
 				{visible && (
-					<Html position={bubblePosition || modelPosition} distanceFactor={10} wrapperClass="prevent_click">
+					<Html position={adjustedBubblePosition} distanceFactor={10} wrapperClass="prevent_click">
 						<div className="speech_bubble">{typedText}</div>
 					</Html>
 				)}

@@ -26,7 +26,7 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOve
 	const fishColor = useFishStore((s) => s.fishColor);
 	const fishScale = useFishStore((s) => s.fishScale);
 
-	const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 480);
+	const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
 	const [showHitBox, setShowHitBox] = useState(false);
 
 	const hitBoxRef = useRef<Mesh>(null);
@@ -62,7 +62,7 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOve
 	}, [fishScene, onLoaded, fishRef]);
 
 	useEffect(() => {
-		const handleResize = () => setIsMobile(window.innerWidth <= 480);
+		const handleResize = () => setIsMobile(window.innerWidth <= 768);
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);

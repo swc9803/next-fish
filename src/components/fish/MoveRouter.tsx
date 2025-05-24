@@ -62,11 +62,15 @@ const LogoModel = memo(({ modelPath, position, url, fishRef, isInternal = false,
 	const [isNear, setIsNear] = useState(false);
 	const { camera } = useThree();
 
-	const isFishingRod = modelPath.includes("fishing_rod");
+	const isFishingRod = modelPath.includes("fishing");
 	const typedText = useTyping(text || "", isNear, 150);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
 
 	const DETECT_DISTANCE = 5;
+
+	// 모바일 말풍선 위치 변경
+	const isMobile = useMemo(() => typeof window !== "undefined" && window.innerWidth <= 768, []);
+	const bubblePosition: [number, number, number] = isMobile ? [-0.25, -0.5, -2.0] : [-0.25, 0.5, -1.5];
 
 	useEffect(() => {
 		if (progressCircleRef.current) {
@@ -121,14 +125,12 @@ const LogoModel = memo(({ modelPath, position, url, fishRef, isInternal = false,
 		}
 	});
 
-	const rotation = isFishingRod ? ([0, Math.PI / 2, 0] as const) : undefined;
-
 	return (
-		<group ref={modelRef} position={position} scale={3.5} rotation={rotation}>
+		<group ref={modelRef} position={position} scale={3.5}>
 			<primitive object={scene} />
 			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
 			{!hideSpeechBubble && text && isNear && (
-				<Html position={[-0.25, 1, -1.5]} distanceFactor={15} wrapperClass="prevent_click">
+				<Html position={bubblePosition} distanceFactor={15} wrapperClass="prevent_click">
 					<div className={`speech_bubble ${isFishingRod ? "rod" : ""}`}>{typedText}</div>
 				</Html>
 			)}

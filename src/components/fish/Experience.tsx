@@ -211,7 +211,7 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 					text="게임을 즐길 수 있는 곳 입니다."
 					fishRef={fishRef}
 					scale={1}
-					speed={100}
+					speed={70}
 				/>
 				<TalkativeModel
 					modelPath="/models/fish_logo.glb"
@@ -220,7 +220,7 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 					text="각 로고에 다가가면 해당하는 사이트가 열립니다."
 					fishRef={fishRef}
 					scale={1}
-					speed={100}
+					speed={70}
 				/>
 				<BombZone
 					fishRef={fishRef}
