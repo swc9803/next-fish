@@ -1,7 +1,6 @@
 import { useRef, useMemo, useEffect, useState, memo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Vector4, CanvasTexture, Vector2 } from "three";
-import gsap from "gsap";
 
 import vertex from "@/shaders/guideVertex.glsl";
 import fragment from "@/shaders/guideFragment.glsl";
@@ -85,12 +84,21 @@ export const GuideShader = memo(({ onFinish }: { onFinish: () => void }) => {
 
 	useEffect(() => {
 		if (!clicked) return;
-		gsap.to(uniforms.progress, {
-			value: 1,
-			duration: 1,
-			ease: "none",
-			onComplete: onFinish,
-		});
+		let raf: number;
+		const DURATION = 1000;
+		const steps = DURATION / (1000 / 60);
+		let frame = 0;
+
+		const animate = () => {
+			frame++;
+			const next = Math.min(frame / steps, 1);
+			uniforms.progress.value = next;
+			if (next < 1) raf = requestAnimationFrame(animate);
+			else onFinish();
+		};
+
+		raf = requestAnimationFrame(animate);
+		return () => cancelAnimationFrame(raf);
 	}, [clicked, uniforms.progress, onFinish]);
 
 	useFrame(() => {

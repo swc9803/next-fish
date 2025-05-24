@@ -206,21 +206,21 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 				<Ground planeRef={planeRef} onLoaded={() => setGroundLoaded(true)} />
 				<TalkativeModel
 					modelPath="/models/fish_game.glb"
-					modelPosition={[10, 0.5, -10]}
-					bubblePosition={[10, 1.4, -10]}
+					modelPosition={[20, 0.5, -10]}
+					bubblePosition={[19, 1, -15]}
 					text="게임을 즐길 수 있는 곳 입니다."
 					fishRef={fishRef}
 					scale={1}
-					speed={80}
+					speed={100}
 				/>
 				<TalkativeModel
 					modelPath="/models/fish_logo.glb"
-					modelPosition={[-10, 0.5, -10]}
-					bubblePosition={[-10, 1.4, -10]}
+					modelPosition={[-20, 0.5, -10]}
+					bubblePosition={[-21, 1, -15]}
 					text="각 로고에 다가가면 해당하는 사이트가 열립니다."
 					fishRef={fishRef}
 					scale={1}
-					speed={80}
+					speed={100}
 				/>
 				<BombZone
 					fishRef={fishRef}

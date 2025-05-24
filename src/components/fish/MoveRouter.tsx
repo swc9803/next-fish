@@ -128,7 +128,7 @@ const LogoModel = memo(({ modelPath, position, url, fishRef, isInternal = false,
 			<primitive object={scene} />
 			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
 			{!hideSpeechBubble && text && isNear && (
-				<Html position={[0, 1.4, 0]} distanceFactor={15} wrapperClass="prevent_click">
+				<Html position={[-0.25, 1, -1.5]} distanceFactor={15} wrapperClass="prevent_click">
 					<div className={`speech_bubble ${isFishingRod ? "rod" : ""}`}>{typedText}</div>
 				</Html>
 			)}

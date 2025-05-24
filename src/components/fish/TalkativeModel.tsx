@@ -78,7 +78,7 @@ export const TalkativeModel = memo(
 			<>
 				<primitive object={scene} position={modelPosition} scale={scale} ref={objRef} />
 				{visible && (
-					<Html position={bubblePosition || modelPosition} distanceFactor={10} wrapperClass="prevent-click">
+					<Html position={bubblePosition || modelPosition} distanceFactor={10} wrapperClass="prevent_click">
 						<div className="speech_bubble">{typedText}</div>
 					</Html>
 				)}

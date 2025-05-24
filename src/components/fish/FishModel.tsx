@@ -47,11 +47,19 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOve
 	const didNotify = useRef(false);
 
 	useEffect(() => {
-		if (!didNotify.current) {
+		if (!didNotify.current && fishRef.current) {
 			onLoaded();
 			didNotify.current = true;
+
+			gsap.to(fishRef.current.position, {
+				x: 0,
+				y: 1,
+				z: 0,
+				duration: 3,
+				ease: "power2.out",
+			});
 		}
-	}, [fishScene, onLoaded]);
+	}, [fishScene, onLoaded, fishRef]);
 
 	useEffect(() => {
 		const handleResize = () => setIsMobile(window.innerWidth <= 480);
@@ -171,7 +179,7 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOve
 			<primitive
 				ref={fishRef}
 				object={isGameOver ? deadScene : fishScene}
-				position={isGameOver && deathPosition ? deathPosition : [0, 1, 0]}
+				position={isGameOver && deathPosition ? deathPosition : [0, 1, -20]}
 				scale={[fishScale, fishScale, fishScale]}
 				castShadow
 				key={isGameOver ? "dead" : "alive"}

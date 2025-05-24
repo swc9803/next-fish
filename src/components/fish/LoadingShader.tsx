@@ -1,7 +1,6 @@
-import { useRef, useMemo, useEffect, memo } from "react";
+import { useRef, useMemo, useEffect, memo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Vector4, WebGLRenderTarget, CanvasTexture } from "three";
-import gsap from "gsap";
 
 import vertex from "@/shaders/loadingVertex.glsl";
 import fragment from "@/shaders/loadingFragment.glsl";
@@ -9,11 +8,13 @@ import fragment from "@/shaders/loadingFragment.glsl";
 interface LoadingShaderProps {
 	renderTarget: WebGLRenderTarget;
 	loadingComplete: boolean;
+	onFinish: () => void;
 }
 
-export const LoadingShader = memo(({ renderTarget, loadingComplete }: LoadingShaderProps) => {
+export const LoadingShader = memo(({ renderTarget, loadingComplete, onFinish }: LoadingShaderProps) => {
 	const meshRef = useRef<Mesh>(null);
 	const { size } = useThree();
+	const [progress, setProgress] = useState(0);
 
 	const canvasTexture = useMemo(() => {
 		const canvas = document.createElement("canvas");
@@ -46,21 +47,31 @@ export const LoadingShader = memo(({ renderTarget, loadingComplete }: LoadingSha
 	);
 
 	useEffect(() => {
-		let tween: gsap.core.Tween | null = null;
 		if (loadingComplete) {
+			let raf: number;
+			const DELAY = 500;
+			const DURATION = 1700;
+			const steps = DURATION / (1000 / 60);
+			let frame = 0;
+
+			const animate = () => {
+				frame++;
+				const next = Math.min(frame / steps, 1);
+				uniforms.progress.value = next;
+				if (next < 1) raf = requestAnimationFrame(animate);
+				else onFinish();
+			};
+
 			const timeout = setTimeout(() => {
-				tween = gsap.to(uniforms.progress, {
-					value: 1,
-					duration: 1.7,
-					ease: "none",
-				});
-			}, 500);
+				raf = requestAnimationFrame(animate);
+			}, DELAY);
+
 			return () => {
 				clearTimeout(timeout);
-				if (tween) tween.kill();
+				cancelAnimationFrame(raf);
 			};
 		}
-	}, [loadingComplete, uniforms.progress]);
+	}, [loadingComplete, uniforms.progress, onFinish]);
 
 	useEffect(() => {
 		return () => {

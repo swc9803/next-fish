@@ -57,7 +57,7 @@ const Home = () => {
 								});
 							}}
 						>
-							<LoadingShader renderTarget={renderTarget} loadingComplete={fadeOut} />
+							<LoadingShader renderTarget={renderTarget} loadingComplete={fadeOut} onFinish={() => setLoadingComplete(true)} />
 						</Canvas>
 					</div>
 				)}
