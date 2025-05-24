@@ -15,5 +15,3 @@ speech_bubble 거리계산, 위치 조정
 글자 반응형 적용
 
 # 임시 아이디어
-
-fishing.glb scale 낮추기

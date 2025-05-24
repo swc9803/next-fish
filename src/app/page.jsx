@@ -16,10 +16,20 @@ const Home = () => {
 	const renderTarget = useMemo(() => new WebGLRenderTarget(1024, 512), []);
 
 	const handleExperienceReady = () => {
-		requestAnimationFrame(() => {
-			setFadeOut(true);
-			setTimeout(() => setLoadingComplete(true), 1700);
-		});
+		let frameCount = 0;
+
+		// 로드 후 안정화
+		const waitForStabilization = () => {
+			frameCount++;
+			if (frameCount > 3) {
+				setFadeOut(true);
+				setTimeout(() => setLoadingComplete(true), 1700);
+			} else {
+				requestAnimationFrame(waitForStabilization);
+			}
+		};
+
+		requestAnimationFrame(waitForStabilization);
 	};
 
 	return (
