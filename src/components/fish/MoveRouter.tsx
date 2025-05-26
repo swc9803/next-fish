@@ -52,7 +52,16 @@ interface LogoProps {
 	hideSpeechBubble?: boolean;
 }
 
-const LogoModel = memo(({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay, text, hideSpeechBubble = false }: LogoProps) => {
+function LogoModelComponent({
+	modelPath,
+	position,
+	url,
+	fishRef,
+	isInternal = false,
+	showGalleryOverlay,
+	text,
+	hideSpeechBubble = false,
+}: LogoProps) {
 	const { scene } = useGLTF(modelPath);
 	const modelRef = useRef<Object3D>(null);
 	const progressCircleRef = useRef<Mesh>(null);
@@ -67,9 +76,7 @@ const LogoModel = memo(({ modelPath, position, url, fishRef, isInternal = false,
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
 
 	const DETECT_DISTANCE = 5;
-
-	// 모바일 말풍선 위치 변경
-	const isMobile = useMemo(() => typeof window !== "undefined" && window.innerWidth <= 768, []);
+	const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 	const bubblePosition: [number, number, number] = isMobile ? [-0.25, -0.5, -2.0] : [-0.25, 0.5, -1.5];
 
 	useEffect(() => {
@@ -136,7 +143,9 @@ const LogoModel = memo(({ modelPath, position, url, fishRef, isInternal = false,
 			)}
 		</group>
 	);
-});
+}
+
+const LogoModel = memo(LogoModelComponent);
 
 interface MoveRouterProps {
 	fishRef: RefObject<Object3D>;
@@ -144,7 +153,7 @@ interface MoveRouterProps {
 	hideSpeechBubble?: boolean;
 }
 
-export const MoveRouter = memo(({ fishRef, showGalleryOverlay, hideSpeechBubble }: MoveRouterProps) => {
+function MoveRouterComponent({ fishRef, showGalleryOverlay, hideSpeechBubble }: MoveRouterProps) {
 	return (
 		<group>
 			{logoData.map((logo) => (
@@ -162,4 +171,6 @@ export const MoveRouter = memo(({ fishRef, showGalleryOverlay, hideSpeechBubble 
 			))}
 		</group>
 	);
-});
+}
+
+export const MoveRouter = memo(MoveRouterComponent);

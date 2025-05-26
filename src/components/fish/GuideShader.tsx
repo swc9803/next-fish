@@ -5,7 +5,7 @@ import { Mesh, Vector4, CanvasTexture, Vector2 } from "three";
 import vertex from "@/shaders/guideVertex.glsl";
 import fragment from "@/shaders/guideFragment.glsl";
 
-export const GuideShader = memo(({ onFinish }: { onFinish: () => void }) => {
+function GuideShaderComponent({ onFinish }: { onFinish: () => void }) {
 	const meshRef = useRef<Mesh>(null);
 	const { size } = useThree();
 	const [clicked, setClicked] = useState(false);
@@ -124,4 +124,6 @@ export const GuideShader = memo(({ onFinish }: { onFinish: () => void }) => {
 			<shaderMaterial vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
 		</mesh>
 	);
-});
+}
+
+export const GuideShader = memo(GuideShaderComponent);

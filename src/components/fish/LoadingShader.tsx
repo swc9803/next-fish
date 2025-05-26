@@ -11,7 +11,7 @@ interface LoadingShaderProps {
 	onFinish: () => void;
 }
 
-export const LoadingShader = memo(({ renderTarget, loadingComplete, onFinish }: LoadingShaderProps) => {
+function LoadingShaderComponent({ renderTarget, loadingComplete, onFinish }: LoadingShaderProps) {
 	const meshRef = useRef<Mesh>(null);
 	const { size } = useThree();
 
@@ -113,4 +113,6 @@ export const LoadingShader = memo(({ renderTarget, loadingComplete, onFinish }: 
 			<shaderMaterial vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
 		</mesh>
 	);
-});
+}
+
+export const LoadingShader = memo(LoadingShaderComponent);

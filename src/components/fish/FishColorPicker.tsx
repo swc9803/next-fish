@@ -1,10 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, memo } from "react";
 import { useFishStore } from "@/store/useFishStore";
-import { memo } from "react";
 import gsap from "gsap";
 import { Color } from "three";
 
-export const FishColorPicker = memo(() => {
+function FishColorPickerComponent() {
 	const fishColor = useFishStore((s) => s.fishColor);
 	const setFishColor = useFishStore((s) => s.setFishColor);
 
@@ -25,8 +24,7 @@ export const FishColorPicker = memo(() => {
 			b: targetColor.b,
 			onUpdate: () => {
 				const { r, g, b } = colorRef.current;
-				const newColor = `#${new Color(r, g, b).getHexString()}`;
-				setFishColor(newColor);
+				setFishColor(`#${new Color(r, g, b).getHexString()}`);
 			},
 			ease: "power2.out",
 		});
@@ -39,4 +37,6 @@ export const FishColorPicker = memo(() => {
 			</label>
 		</div>
 	);
-});
+}
+
+export const FishColorPicker = memo(FishColorPickerComponent);

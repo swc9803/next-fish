@@ -10,7 +10,7 @@ interface PlaneProps {
 	onLoaded: () => void;
 }
 
-export const Ground = memo(({ planeRef, onLoaded }: PlaneProps) => {
+function GroundComponent({ planeRef, onLoaded }: PlaneProps) {
 	const ext = useMemo(() => (isWebpSupported() ? "webp" : "jpg"), []);
 	const texturePaths = useMemo(
 		() => [
@@ -41,20 +41,16 @@ export const Ground = memo(({ planeRef, onLoaded }: PlaneProps) => {
 	useMemo(() => {
 		[colorMap, normalMap, roughnessMap].forEach((tex) => {
 			tex.wrapS = tex.wrapT = RepeatWrapping;
-			tex.repeat.set(20, 4); // planeGeometry args 비율에 맞춰 수정
+			tex.repeat.set(20, 4);
 		});
 	}, [colorMap, normalMap, roughnessMap]);
 
-	const geometry = useMemo(() => <planeGeometry args={[350, 70]} />, []);
-	const material = useMemo(
-		() => <meshStandardMaterial map={colorMap} normalMap={normalMap} roughnessMap={roughnessMap} roughness={1} metalness={0} />,
-		[colorMap, normalMap, roughnessMap]
-	);
-
 	return (
 		<mesh ref={planeRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-			{geometry}
-			{material}
+			<planeGeometry args={[350, 70]} />
+			<meshStandardMaterial map={colorMap} normalMap={normalMap} roughnessMap={roughnessMap} roughness={1} metalness={0} />
 		</mesh>
 	);
-});
+}
+
+export const Ground = memo(GroundComponent);
