@@ -3,8 +3,6 @@ import { useFrame } from "@react-three/fiber";
 import { Mesh, Object3D } from "three";
 import { useFishStore } from "@/store/useFishStore";
 
-const MAX_SCALE = 1;
-const INCREASE_FEED_SPEED = 0.005;
 const DECREASE_FEED_SPEED = 0.05;
 
 interface GrowingFeedProps {
@@ -18,7 +16,7 @@ interface GrowingFeedProps {
 
 export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onCollected, onExpire }: GrowingFeedProps) => {
 	const meshRef = useRef<Mesh>(null);
-	const scaleRef = useRef(0.1);
+	const scaleRef = useRef(1);
 	const [isVisible, setIsVisible] = useState(false);
 	const isShrinking = useRef(false);
 	const fishScale = useFishStore((s) => s.fishScale);
@@ -62,15 +60,9 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 			return;
 		}
 
-		if (scaleRef.current < MAX_SCALE) {
-			scaleRef.current += INCREASE_FEED_SPEED;
-			mesh.scale.setScalar(scaleRef.current);
-			growTimer.current = 0;
-		} else {
-			growTimer.current += delta;
-			if (growTimer.current >= waitBeforeShrink) {
-				isShrinking.current = true;
-			}
+		growTimer.current += delta;
+		if (growTimer.current >= waitBeforeShrink) {
+			isShrinking.current = true;
 		}
 
 		// 충돌
@@ -80,6 +72,12 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 			visibleRef.current = false;
 			setIsVisible(false);
 			scaleRef.current = 0;
+
+			useFishStore.setState((prev) => ({
+				fishScale: prev.fishScale + 0.1,
+				fishSpeed: Math.max(prev.fishSpeed - 1, 10),
+			}));
+
 			onCollected();
 		}
 	});

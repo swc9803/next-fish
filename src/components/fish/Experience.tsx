@@ -60,7 +60,8 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [score, setScore] = useState(0);
-	const incrementScore = () => setScore((prev) => Math.min(prev + 1, 1000));
+	const [isCleared, setIsCleared] = useState(false);
+	const [countdown, setCountdown] = useState<number | null>(null);
 	const [isGameOver, setIsGameOver] = useState(false);
 	const [bombActive, setBombActive] = useState(false);
 	const [feed, setFeed] = useState<{ position: [number, number, number]; active: boolean }>({ position: [0, 1, 0], active: false });
@@ -127,6 +128,38 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 		setTimeout(() => router.push("/gallery"), 1000);
 	}, [router]);
 
+	useEffect(() => {
+		if (isInBombZone && countdown === null && !bombActive && !isCleared) {
+			console.log("Start countdown");
+			setCountdown(3);
+		}
+	}, [isInBombZone, countdown, bombActive, isCleared]);
+
+	useEffect(() => {
+		if (countdown === null) return;
+		if (countdown === 0) {
+			setBombActive(true);
+			setCountdown(null);
+			return;
+		}
+		const timeout = setTimeout(() => setCountdown((prev) => (prev ?? 1) - 1), 1000);
+		return () => clearTimeout(timeout);
+	}, [countdown]);
+
+	const incrementScore = () => {
+		setScore((prev) => {
+			const next = Math.min(prev + 1, 1000);
+			if (next === 1000 && !isCleared) {
+				setIsCleared(true);
+				setBombActive(false);
+				setIsInBombZone(false);
+				setFeed({ position: [0, 1, 0], active: false });
+				setTimeout(() => setIsCleared(false), 2000);
+			}
+			return next;
+		});
+	};
+
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
 		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, () => {});
@@ -143,12 +176,21 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 
 	const handleReset = () => {
 		if (!preventClick) return;
+
 		blinkTweens.current.forEach((t) => t.kill());
 		hitTilesRef.current.forEach((index) => {
 			const mesh = meshRefs.current[index];
 			if (mesh) (mesh.material as MeshStandardMaterial).color.set("white");
 		});
 		hitTilesRef.current = [];
+
+		setScore(0);
+		setFeed({ position: [0, 1, 0], active: false });
+		setIsCleared(false);
+		setCountdown(null);
+		setBombActive(false);
+		setIsInBombZone(false);
+
 		resetGame();
 	};
 
@@ -241,6 +283,14 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 
 				<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 			</Canvas>
+
+			{isInBombZone && (
+				<div className="game_overlay">
+					{countdown !== null && <div className="countdown">{countdown}</div>}
+					<div className="score_display">Score: {score}</div>
+					{isCleared && <div className="clear_message">CLEAR!</div>}
+				</div>
+			)}
 
 			{showGalleryTransitionOverlay && <GalleryTransitionOverlay />}
 
