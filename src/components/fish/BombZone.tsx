@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback, memo, RefObject, Dispatch, SetStateAction, useState } from "react";
+import { useMemo, useRef, useCallback, memo, RefObject, Dispatch, SetStateAction, useState } from "react";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import gsap from "gsap";
 import { useFrame } from "@react-three/fiber";
@@ -31,7 +31,7 @@ const GRID_HALF = 3;
 const MAX_SCORE = 1000;
 const FEED_POOL_SIZE = 1;
 
-export const BombZone = memo((props: BombZoneProps) => {
+function BombZoneComponent(props: BombZoneProps) {
 	const {
 		fishRef,
 		setIsGameOver,
@@ -44,11 +44,13 @@ export const BombZone = memo((props: BombZoneProps) => {
 		setDeathPosition,
 		score,
 		incrementScore,
+		setFeeds,
 	} = props;
 
 	const fishScale = useFishStore((s) => s.fishScale);
 	const activeBombsRef = useRef(new Set<number>());
 	const bombProgressRef = useRef<{ [index: number]: number }>({});
+	const bombTimer = useRef(0);
 
 	const [feeds, internalSetFeeds] = useState<Feed[]>(
 		Array.from({ length: FEED_POOL_SIZE }, (_, i) => ({ id: `feed-${i}`, position: [0, 1, 0], active: false }))
@@ -92,8 +94,8 @@ export const BombZone = memo((props: BombZoneProps) => {
 	);
 
 	const animateBomb = useCallback(
-		(index: number, fish: Object3D) => {
-			const MAX_BOMBS = 15;
+		(index: number) => {
+			const MAX_BOMBS = 10;
 			if (isGameOver || activeBombsRef.current.has(index) || activeBombsRef.current.size >= MAX_BOMBS) return;
 
 			const mesh = meshRefs.current[index];
@@ -106,6 +108,44 @@ export const BombZone = memo((props: BombZoneProps) => {
 	);
 
 	useFrame((_, delta) => {
+		if (!bombActive || !isInBombZone || isGameOver) return;
+
+		// 폭탄 생성 타이밍
+		bombTimer.current += delta;
+		const spawnDelay = Math.max(1 - (score / MAX_SCORE) * 0.7, 0.5);
+
+		if (bombTimer.current >= spawnDelay) {
+			bombTimer.current = 0;
+			incrementScore();
+
+			if (score >= MAX_SCORE) {
+				setIsGameOver(true);
+				setIsInBombZone(false);
+				internalSetFeeds((prev) => prev.map((f) => ({ ...f, active: false })));
+				setFeeds((prev) => prev.map((f) => ({ ...f, active: false })));
+				return;
+			}
+
+			internalSetFeeds((prev) =>
+				prev.map((f, i) => {
+					if (i === 0) {
+						const x = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE - 50;
+						const z = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE;
+						return { ...f, position: [x, 1, z], active: true };
+					}
+					return f;
+				})
+			);
+
+			const bombCount = Math.floor(4 + (score / MAX_SCORE) * 6);
+			const indexes = new Set<number>();
+			while (indexes.size < bombCount) {
+				indexes.add(Math.floor(Math.random() * CELLS.length));
+			}
+			fishRef.current && [...indexes].forEach((i) => animateBomb(i));
+		}
+
+		// 폭탄 색상 변화 및 충돌 체크
 		for (const index of Object.keys(bombProgressRef.current)) {
 			const i = Number(index);
 			const mesh = meshRefs.current[i];
@@ -128,41 +168,6 @@ export const BombZone = memo((props: BombZoneProps) => {
 			}
 		}
 	});
-
-	useEffect(() => {
-		if (!bombActive || !isInBombZone || isGameOver) return;
-
-		const interval = setInterval(() => {
-			incrementScore();
-
-			if (score >= MAX_SCORE) {
-				setIsGameOver(true);
-				setIsInBombZone(false);
-				internalSetFeeds((prev) => prev.map((f) => ({ ...f, active: false })));
-				return;
-			}
-
-			internalSetFeeds((prev) =>
-				prev.map((f, i) => {
-					if (i === 0) {
-						const x = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE - 50;
-						const z = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE;
-						return { ...f, position: [x, 1, z], active: true };
-					}
-					return f;
-				})
-			);
-
-			const bombCount = Math.floor(4 + (score / MAX_SCORE) * 6);
-			const indexes = new Set<number>();
-			while (indexes.size < bombCount) {
-				indexes.add(Math.floor(Math.random() * CELLS.length));
-			}
-			fishRef.current && [...indexes].forEach((i) => animateBomb(i, fishRef.current!));
-		}, Math.max(1000 - (score / MAX_SCORE) * 700, 500));
-
-		return () => clearInterval(interval);
-	}, [bombActive, isInBombZone, isGameOver, score, incrementScore, animateBomb]);
 
 	const memoizedMeshes = useMemo(() => {
 		return CELLS.map((pos, i) => (
@@ -197,12 +202,16 @@ export const BombZone = memo((props: BombZoneProps) => {
 					onCollected={() => {
 						incrementScore();
 						internalSetFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, active: false } : f)));
+						setFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, active: false } : f)));
 					}}
 					onExpire={() => {
 						internalSetFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, active: false } : f)));
+						setFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, active: false } : f)));
 					}}
 				/>
 			))}
 		</>
 	);
-});
+}
+
+export const BombZone = memo(BombZoneComponent);

@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useEffect, useRef, useState, memo } from "react";
+import { RefObject, useEffect, useRef, useState, memo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Mesh, Object3D } from "three";
 import { useFishStore } from "@/store/useFishStore";
@@ -20,65 +20,69 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 	const meshRef = useRef<Mesh>(null);
 	const scaleRef = useRef(0.1);
 	const [isVisible, setIsVisible] = useState(false);
-	const expirationTimer = useRef<NodeJS.Timeout | null>(null);
-	const shrinking = useRef(false);
+	const isShrinking = useRef(false);
 	const fishScale = useFishStore((s) => s.fishScale);
+	const activeRef = useRef(false);
+	const visibleRef = useRef(false);
+	const growTimer = useRef(0);
+	const waitBeforeShrink = 2;
 
 	useEffect(() => {
 		if (!active) return;
+
+		activeRef.current = true;
+		visibleRef.current = true;
 		setIsVisible(true);
 		scaleRef.current = 0.1;
-		shrinking.current = false;
-		if (meshRef.current) meshRef.current.scale.setScalar(scaleRef.current);
+		isShrinking.current = false;
+		growTimer.current = 0;
+
+		if (meshRef.current) {
+			meshRef.current.scale.setScalar(scaleRef.current);
+			meshRef.current.position.set(...position);
+		}
 	}, [active, position]);
 
-	const startShrinking = useCallback(() => {
-		if (!meshRef.current || isGameOver || !isVisible) return;
-		shrinking.current = true;
-		const shrinkInterval = setInterval(() => {
-			if (!meshRef.current || !isVisible || !shrinking.current) {
-				clearInterval(shrinkInterval);
-				return;
-			}
-			if (!Number.isFinite(scaleRef.current) || scaleRef.current <= 0.01) {
-				clearInterval(shrinkInterval);
-				onExpire();
+	useFrame((_, delta) => {
+		if (!fishRef.current || !meshRef.current || !activeRef.current || isGameOver) return;
+
+		const mesh = meshRef.current;
+		const fish = fishRef.current;
+
+		// 작아진 후 소멸
+		if (isShrinking.current) {
+			scaleRef.current = Math.max(0, scaleRef.current - DECREASE_FEED_SPEED);
+			mesh.scale.setScalar(scaleRef.current);
+			if (scaleRef.current <= 0.01) {
+				activeRef.current = false;
+				visibleRef.current = false;
 				setIsVisible(false);
-				scaleRef.current = 0;
-			} else {
-				scaleRef.current = Math.max(0, scaleRef.current - DECREASE_FEED_SPEED);
-				meshRef.current.scale.setScalar(scaleRef.current);
+				onExpire();
 			}
-		}, 1000 / 60);
-	}, [isGameOver, isVisible, onExpire]);
+			return;
+		}
 
-	useFrame(() => {
-		if (isGameOver || !meshRef.current || !fishRef.current || !isVisible) return;
-
-		if (scaleRef.current < MAX_SCALE && !shrinking.current) {
+		if (scaleRef.current < MAX_SCALE) {
 			scaleRef.current += INCREASE_FEED_SPEED;
-			meshRef.current.scale.setScalar(scaleRef.current);
-			if (scaleRef.current >= MAX_SCALE) {
-				expirationTimer.current = setTimeout(() => startShrinking(), 2000);
+			mesh.scale.setScalar(scaleRef.current);
+			growTimer.current = 0;
+		} else {
+			growTimer.current += delta;
+			if (growTimer.current >= waitBeforeShrink) {
+				isShrinking.current = true;
 			}
 		}
 
-		const feedPos = meshRef.current.position;
-		const fishPos = fishRef.current.position;
-		const dist = feedPos.distanceTo(fishPos);
-		if (dist < fishScale * 1.5 && isVisible) {
+		// 충돌
+		const dist = mesh.position.distanceTo(fish.position);
+		if (dist < fishScale * 1.5 && visibleRef.current) {
+			activeRef.current = false;
+			visibleRef.current = false;
 			setIsVisible(false);
 			scaleRef.current = 0;
-			if (expirationTimer.current) clearTimeout(expirationTimer.current);
 			onCollected();
 		}
 	});
-
-	useEffect(() => {
-		if (meshRef.current) {
-			meshRef.current.position.set(...position);
-		}
-	}, [position]);
 
 	return (
 		<mesh ref={meshRef} visible={isVisible}>

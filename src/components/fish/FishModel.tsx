@@ -19,7 +19,7 @@ const GRID_HALF_SIZE_X = 21;
 const GRID_HALF_SIZE_Z = 21;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOver, deathPosition, onLoaded }: FishModelProps) => {
+function FishModelComponent({ fishRef, setIsInBombZone, setBombActive, isGameOver, deathPosition, onLoaded }: FishModelProps) {
 	const { scene: fishScene, animations } = useGLTF("/models/fish.glb");
 	const { scene: deadScene } = useGLTF("/models/fish_bone.glb");
 	const { camera } = useThree();
@@ -43,14 +43,12 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOve
 	const offsetVec = useMemo(() => new Vector3(), []);
 	const tempTarget = useMemo(() => new Vector3(), []);
 	const currentPosition = useMemo(() => new Vector3(), []);
-
 	const didNotify = useRef(false);
 
 	useEffect(() => {
 		if (!didNotify.current && fishRef.current) {
 			onLoaded();
 			didNotify.current = true;
-
 			gsap.to(fishRef.current.position, {
 				x: 0,
 				y: 1,
@@ -59,7 +57,7 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOve
 				ease: "power2.out",
 			});
 		}
-	}, [fishScene, onLoaded, fishRef]);
+	}, [onLoaded, fishRef]);
 
 	useEffect(() => {
 		const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -86,9 +84,7 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOve
 
 	useEffect(() => {
 		const toggleDebug = (e: KeyboardEvent) => {
-			if (e.key.toLowerCase() === "d") {
-				setShowHitBox((prev) => !prev);
-			}
+			if (e.key.toLowerCase() === "d") setShowHitBox((prev) => !prev);
 		};
 		window.addEventListener("keydown", toggleDebug);
 		return () => window.removeEventListener("keydown", toggleDebug);
@@ -137,7 +133,6 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOve
 		if (lastInBombZone.current !== inBombZone) {
 			lastInBombZone.current = inBombZone;
 			setIsInBombZone(inBombZone);
-
 			if (inBombZone && !hasMovedToCenter.current) {
 				hasMovedToCenter.current = true;
 				setBombActive(true);
@@ -192,6 +187,6 @@ const FishModelComponent = ({ fishRef, setIsInBombZone, setBombActive, isGameOve
 			)}
 		</>
 	);
-};
+}
 
 export const FishModel = memo(FishModelComponent);

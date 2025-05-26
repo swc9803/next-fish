@@ -27,11 +27,31 @@ const GalleryTransitionOverlay = () => {
 	return <div className={`move_gallery_overlay ${visible ? "show" : ""}`} />;
 };
 
-const Experience = memo(({ onReady }: { onReady: () => void }) => {
-	const [hasNotified, setHasNotified] = useState(false);
+function SceneCleanup() {
+	const { scene } = useThree();
+	useEffect(() => {
+		return () => {
+			scene.traverse((child: Object3D) => {
+				if ((child as Mesh).isMesh) {
+					const mesh = child as Mesh;
+					mesh.geometry?.dispose();
+					if (Array.isArray(mesh.material)) {
+						mesh.material.forEach((m: Material) => m.dispose());
+					} else {
+						(mesh.material as Material)?.dispose();
+					}
+				}
+			});
+		};
+	}, [scene]);
+	return null;
+}
+
+function ExperienceComponent({ onReady }: { onReady: () => void }) {
 	const [fishLoaded, setFishLoaded] = useState(false);
 	const [groundLoaded, setGroundLoaded] = useState(false);
 	const [videoLoaded, setVideoLoaded] = useState(false);
+	const [hasNotified, setHasNotified] = useState(false);
 
 	const [isShowGuide, setIsShowGuide] = useState(false);
 	const [showGuideShader, setShowGuideShader] = useState(false);
@@ -60,7 +80,6 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 	const fogColor = useFishStore((s) => s.fogColor);
 	const fogDensity = useFishStore((s) => s.fogDensity);
 
-	// 모든 리소스 준비 완료 체크
 	useEffect(() => {
 		if (fishLoaded && !groundLoaded) {
 			setTimeout(() => setGroundLoaded(true), 300);
@@ -78,20 +97,17 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 			setHasNotified(true);
 			onReady();
 		}
-	}, [fishLoaded, groundLoaded, videoLoaded, hasNotified]);
+	}, [fishLoaded, groundLoaded, videoLoaded, hasNotified, onReady]);
 
 	// 가이드 오버레이 보이기 전 딜레이
 	useEffect(() => {
 		if (!hasNotified) return;
-
 		let frame = 0;
 		const loop = () => {
 			frame++;
 			if (frame > 2) {
 				setShowGuideShader(true);
-				requestAnimationFrame(() => {
-					setIsShowGuide(true);
-				});
+				requestAnimationFrame(() => setIsShowGuide(true));
 			} else {
 				requestAnimationFrame(loop);
 			}
@@ -136,26 +152,6 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 		resetGame();
 	};
 
-	const SceneCleanup = () => {
-		const { scene } = useThree();
-		useEffect(() => {
-			return () => {
-				scene.traverse((child: Object3D) => {
-					if ((child as Mesh).isMesh) {
-						const mesh = child as Mesh;
-						mesh.geometry?.dispose();
-						if (Array.isArray(mesh.material)) {
-							mesh.material.forEach((m: Material) => m.dispose());
-						} else {
-							(mesh.material as Material)?.dispose();
-						}
-					}
-				});
-			};
-		}, [scene]);
-		return null;
-	};
-
 	return (
 		<>
 			<Canvas
@@ -182,8 +178,8 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 					intensity={4}
 					position={[2, 1, 3]}
 					castShadow
-					shadow-mapSize-width={2048}
-					shadow-mapSize-height={2048}
+					shadow-mapSize-width={1024}
+					shadow-mapSize-height={1024}
 					shadow-camera-left={-200}
 					shadow-camera-right={200}
 					shadow-camera-top={200}
@@ -243,7 +239,6 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 				<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 			</Canvas>
 
-			{/* 갤러리로 이동 오버레이 */}
 			{showGalleryTransitionOverlay && <GalleryTransitionOverlay />}
 
 			{showGuideShader && (
@@ -280,6 +275,7 @@ const Experience = memo(({ onReady }: { onReady: () => void }) => {
 			)}
 		</>
 	);
-});
+}
 
+export const Experience = memo(ExperienceComponent);
 export default Experience;
