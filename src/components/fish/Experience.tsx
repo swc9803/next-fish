@@ -176,16 +176,16 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 				<directionalLight
 					color={0xf8f8ff}
 					intensity={4}
-					position={[2, 1, 3]}
+					position={[-1, 1, 3]}
 					castShadow
 					shadow-mapSize-width={1024}
 					shadow-mapSize-height={1024}
-					shadow-camera-left={-200}
-					shadow-camera-right={200}
-					shadow-camera-top={200}
-					shadow-camera-bottom={-200}
-					shadow-camera-near={1}
-					shadow-camera-far={500}
+					shadow-camera-left={-120}
+					shadow-camera-right={120}
+					shadow-camera-top={80}
+					shadow-camera-bottom={-40}
+					shadow-camera-near={10}
+					shadow-camera-far={150}
 				/>
 
 				{!isLowSpec && <VideoCaustics onLoaded={() => setVideoLoaded(true)} />}

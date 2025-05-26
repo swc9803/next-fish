@@ -86,6 +86,15 @@ function LogoModelComponent({
 		}
 	}, [circleMaterial]);
 
+	// 그림자
+	useEffect(() => {
+		scene.traverse((child) => {
+			if ((child as Mesh).isMesh) {
+				child.castShadow = true;
+			}
+		});
+	}, [scene]);
+
 	useFrame((_, delta) => {
 		const ring = progressCircleRef.current;
 		const model = modelRef.current;

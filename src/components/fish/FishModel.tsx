@@ -65,6 +65,15 @@ function FishModelComponent({ fishRef, setIsInBombZone, setBombActive, isGameOve
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
+	// 그림자
+	useEffect(() => {
+		fishScene.traverse((child) => {
+			if ((child as Mesh).isMesh) {
+				child.castShadow = true;
+			}
+		});
+	}, [fishScene]);
+
 	useEffect(() => {
 		const materials: MeshStandardMaterial[] = [];
 		fishScene.traverse((child) => {

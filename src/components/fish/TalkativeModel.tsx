@@ -1,7 +1,7 @@
 import { RefObject, useEffect, useRef, useState, memo, useMemo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { AnimationAction, AnimationMixer, LoopRepeat, Object3D, Vector3 } from "three";
+import { AnimationAction, AnimationMixer, LoopRepeat, Mesh, Object3D, Vector3 } from "three";
 import { useTyping } from "@/hooks/useTyping";
 
 interface TalkativeModelProps {
@@ -41,6 +41,15 @@ function TalkativeModelComponent({
 		const [x, y, z] = bubblePosition || modelPosition;
 		return isMobile ? [x, y - 0.5, z - 0.5] : [x, y, z];
 	}, [isMobile, bubblePosition, modelPosition]);
+
+	// 그림자
+	useEffect(() => {
+		scene.traverse((child) => {
+			if ((child as Mesh).isMesh) {
+				child.castShadow = true;
+			}
+		});
+	}, [scene]);
 
 	useEffect(() => {
 		if (!objRef.current || animations.length === 0) return;
