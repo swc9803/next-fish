@@ -1,6 +1,7 @@
 import { RefObject, useCallback, useEffect, useRef, useState, memo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Mesh, Object3D } from "three";
+import { useFishStore } from "@/store/useFishStore";
 
 const MAX_SCALE = 1;
 const INCREASE_FEED_SPEED = 0.005;
@@ -21,6 +22,7 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 	const [isVisible, setIsVisible] = useState(false);
 	const expirationTimer = useRef<NodeJS.Timeout | null>(null);
 	const shrinking = useRef(false);
+	const fishScale = useFishStore((s) => s.fishScale);
 
 	useEffect(() => {
 		if (!active) return;
@@ -64,7 +66,7 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 		const feedPos = meshRef.current.position;
 		const fishPos = fishRef.current.position;
 		const dist = feedPos.distanceTo(fishPos);
-		if (dist < 1.5 && isVisible) {
+		if (dist < fishScale * 1.5 && isVisible) {
 			setIsVisible(false);
 			scaleRef.current = 0;
 			if (expirationTimer.current) clearTimeout(expirationTimer.current);
