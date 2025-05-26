@@ -1,11 +1,9 @@
-import { useMemo, useRef, useCallback, memo, RefObject, Dispatch, SetStateAction, useState } from "react";
+import { useMemo, useRef, useCallback, memo, RefObject, Dispatch, SetStateAction } from "react";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import gsap from "gsap";
 import { useFrame } from "@react-three/fiber";
 import { useFishStore } from "@/store/useFishStore";
 import { GrowingFeed } from "./GrowingFeed";
-
-export type Feed = { id: string; position: [number, number, number]; active: boolean };
 
 interface BombZoneProps {
 	fishRef: RefObject<Object3D>;
@@ -14,8 +12,11 @@ interface BombZoneProps {
 	isInBombZone: boolean;
 	bombActive: boolean;
 	isGameOver: boolean;
-	feeds: Feed[];
-	setFeeds: Dispatch<SetStateAction<Feed[]>>;
+	feed: {
+		position: [number, number, number];
+		active: boolean;
+	};
+	setFeed: Dispatch<SetStateAction<{ position: [number, number, number]; active: boolean }>>;
 	setBombActive: Dispatch<SetStateAction<boolean>>;
 	meshRefs: RefObject<Mesh[]>;
 	hitTilesRef: RefObject<number[]>;
@@ -29,7 +30,6 @@ interface BombZoneProps {
 const CELL_SIZE = 6;
 const GRID_HALF = 3;
 const MAX_SCORE = 1000;
-const FEED_POOL_SIZE = 1;
 
 function BombZoneComponent(props: BombZoneProps) {
 	const {
@@ -44,17 +44,14 @@ function BombZoneComponent(props: BombZoneProps) {
 		setDeathPosition,
 		score,
 		incrementScore,
-		setFeeds,
+		feed,
+		setFeed,
 	} = props;
 
 	const fishScale = useFishStore((s) => s.fishScale);
 	const activeBombsRef = useRef(new Set<number>());
 	const bombProgressRef = useRef<{ [index: number]: number }>({});
 	const bombTimer = useRef(0);
-
-	const [feeds, internalSetFeeds] = useState<Feed[]>(
-		Array.from({ length: FEED_POOL_SIZE }, (_, i) => ({ id: `feed-${i}`, position: [0, 1, 0], active: false }))
-	);
 
 	const CELLS = useMemo(() => {
 		return Array.from({ length: (GRID_HALF * 2 + 1) ** 2 }, (_, i) => {
@@ -121,21 +118,16 @@ function BombZoneComponent(props: BombZoneProps) {
 			if (score >= MAX_SCORE) {
 				setIsGameOver(true);
 				setIsInBombZone(false);
-				internalSetFeeds((prev) => prev.map((f) => ({ ...f, active: false })));
-				setFeeds((prev) => prev.map((f) => ({ ...f, active: false })));
+				setFeed((prev) => ({ ...prev, active: false }));
 				return;
 			}
 
-			internalSetFeeds((prev) =>
-				prev.map((f, i) => {
-					if (i === 0) {
-						const x = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE - 50;
-						const z = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE;
-						return { ...f, position: [x, 1, z], active: true };
-					}
-					return f;
-				})
-			);
+			if (!feed.active) {
+				const x = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE - 50;
+				const z = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE;
+				console.log(`feed spawned at [${x}, 1, ${z}]`);
+				setFeed({ position: [x, 1, z], active: true });
+			}
 
 			const bombCount = Math.floor(4 + (score / MAX_SCORE) * 6);
 			const indexes = new Set<number>();
@@ -192,24 +184,19 @@ function BombZoneComponent(props: BombZoneProps) {
 		<>
 			<group position={[-50, 0, 0]}>{memoizedMeshes}</group>
 
-			{feeds.map(({ id, position, active }) => (
+			{feed.active && (
 				<GrowingFeed
-					key={id}
-					position={position}
+					position={feed.position}
 					fishRef={fishRef}
 					isGameOver={isGameOver}
-					active={active}
+					active={feed.active}
 					onCollected={() => {
 						incrementScore();
-						internalSetFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, active: false } : f)));
-						setFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, active: false } : f)));
+						setFeed((prev) => ({ ...prev, active: false }));
 					}}
-					onExpire={() => {
-						internalSetFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, active: false } : f)));
-						setFeeds((prev) => prev.map((f) => (f.id === id ? { ...f, active: false } : f)));
-					}}
+					onExpire={() => setFeed((prev) => ({ ...prev, active: false }))}
 				/>
-			))}
+			)}
 		</>
 	);
 }

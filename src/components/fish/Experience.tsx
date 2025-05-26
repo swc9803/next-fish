@@ -63,7 +63,7 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 	const incrementScore = () => setScore((prev) => Math.min(prev + 1, 1000));
 	const [isGameOver, setIsGameOver] = useState(false);
 	const [bombActive, setBombActive] = useState(false);
-	const [feeds, setFeeds] = useState<{ id: string; position: [number, number, number]; active: boolean }[]>([]);
+	const [feed, setFeed] = useState<{ position: [number, number, number]; active: boolean }>({ position: [0, 1, 0], active: false });
 	const [preventClick, setPreventClick] = useState(false);
 	const [deathPosition, setDeathPosition] = useState<[number, number, number] | null>(null);
 
@@ -99,7 +99,6 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 		}
 	}, [fishLoaded, groundLoaded, videoLoaded, hasNotified, onReady]);
 
-	// 가이드 오버레이 보이기 전 딜레이
 	useEffect(() => {
 		if (!hasNotified) return;
 		let frame = 0;
@@ -130,7 +129,8 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 
 	// 게임 오버 시 초기화
 	const resetGame = useCallback(() => {
-		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, setFeeds);
+		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, () => {});
+		setFeed({ position: [0, 1, 0], active: false });
 	}, []);
 
 	useEffect(() => {
@@ -200,6 +200,7 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 				/>
 				<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} hideSpeechBubble={isMovingToGallery} />
 				<Ground planeRef={planeRef} onLoaded={() => setGroundLoaded(true)} />
+
 				<TalkativeModel
 					modelPath="/models/fish_game.glb"
 					modelPosition={[20, 0.5, -10]}
@@ -218,6 +219,7 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 					scale={1}
 					speed={70}
 				/>
+
 				<BombZone
 					fishRef={fishRef}
 					setIsGameOver={setIsGameOver}
@@ -225,8 +227,8 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 					isInBombZone={isInBombZone}
 					bombActive={bombActive}
 					isGameOver={isGameOver}
-					feeds={feeds}
-					setFeeds={setFeeds}
+					feed={feed}
+					setFeed={setFeed}
 					setBombActive={setBombActive}
 					meshRefs={meshRefs}
 					hitTilesRef={hitTilesRef}
@@ -236,6 +238,7 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 					incrementScore={incrementScore}
 					setDeathPosition={setDeathPosition}
 				/>
+
 				<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 			</Canvas>
 

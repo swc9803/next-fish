@@ -25,7 +25,7 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 	const activeRef = useRef(false);
 	const visibleRef = useRef(false);
 	const growTimer = useRef(0);
-	const waitBeforeShrink = 2;
+	const waitBeforeShrink = 3;
 
 	useEffect(() => {
 		if (!active) return;
@@ -33,7 +33,7 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 		activeRef.current = true;
 		visibleRef.current = true;
 		setIsVisible(true);
-		scaleRef.current = 0.1;
+		scaleRef.current = 1;
 		isShrinking.current = false;
 		growTimer.current = 0;
 
@@ -86,7 +86,7 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 
 	return (
 		<mesh ref={meshRef} visible={isVisible}>
-			<sphereGeometry args={[0.5, 16, 16]} />
+			<sphereGeometry args={[0.6, 16, 16]} />
 			<meshStandardMaterial color="limegreen" />
 		</mesh>
 	);

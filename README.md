@@ -9,7 +9,7 @@ overlay 디자인 수정
 폭탄 터지는 이펙트
 ga, favicon
 SEO 최적화 ( 후순위 )
-bombzone, feed 생성 로직 다시
 성능 테스트
+npm run build 오류 해결
 
 # 임시 아이디어
