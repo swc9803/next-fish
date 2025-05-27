@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState, memo, useMemo } from "react";
+import { RefObject, useEffect, useRef, useState, useMemo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { AnimationAction, AnimationMixer, LoopRepeat, Mesh, Object3D, Vector3 } from "three";
@@ -15,7 +15,7 @@ interface TalkativeModelProps {
 	distanceThreshold?: number;
 }
 
-function TalkativeModelComponent({
+export const TalkativeModel = ({
 	modelPath,
 	modelPosition,
 	bubblePosition,
@@ -24,7 +24,7 @@ function TalkativeModelComponent({
 	fishRef,
 	scale = 1,
 	distanceThreshold = 12,
-}: TalkativeModelProps) {
+}: TalkativeModelProps) => {
 	const { scene, animations } = useGLTF(modelPath);
 	const objRef = useRef<Object3D>(null);
 	const mixerRef = useRef<AnimationMixer | null>(null);
@@ -107,6 +107,4 @@ function TalkativeModelComponent({
 			)}
 		</>
 	);
-}
-
-export const TalkativeModel = memo(TalkativeModelComponent);
+};

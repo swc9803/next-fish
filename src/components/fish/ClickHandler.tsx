@@ -1,4 +1,4 @@
-import { useEffect, useRef, RefObject, memo } from "react";
+import { useEffect, useRef, RefObject } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import { Vector2, Vector3, Raycaster, Mesh, Object3D } from "three";
 import gsap from "gsap";
@@ -15,7 +15,7 @@ const GRID_CENTER = new Vector3(-50, 0, 0);
 const GRID_SIZE_X = 42;
 const GRID_SIZE_Z = 42;
 
-function ClickHandlerComponent({ fishRef, planeRef, isInBombZone, isGameOver }: ClickHandlerProps) {
+export const ClickHandler = ({ fishRef, planeRef, isInBombZone, isGameOver }: ClickHandlerProps) => {
 	const { camera, gl } = useThree();
 	const raycaster = useRef(new Raycaster());
 	const mouse = useRef(new Vector2());
@@ -96,6 +96,4 @@ function ClickHandlerComponent({ fishRef, planeRef, isInBombZone, isGameOver }: 
 	});
 
 	return null;
-}
-
-export const ClickHandler = memo(ClickHandlerComponent);
+};

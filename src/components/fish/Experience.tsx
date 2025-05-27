@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, memo, useMemo } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
@@ -48,7 +48,7 @@ function SceneCleanup() {
 	return null;
 }
 
-function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void; startAnimation: boolean }) {
+export const Experience = ({ onReady, startAnimation }: { onReady: () => void; startAnimation: boolean }) => {
 	const [fishLoaded, setFishLoaded] = useState(false);
 	const [groundLoaded, setGroundLoaded] = useState(false);
 	const [videoLoaded, setVideoLoaded] = useState(false);
@@ -371,7 +371,6 @@ function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void;
 			)}
 		</>
 	);
-}
+};
 
-export const Experience = memo(ExperienceComponent);
 export default Experience;

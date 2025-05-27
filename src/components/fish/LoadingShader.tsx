@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect, memo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Vector4, WebGLRenderTarget, CanvasTexture } from "three";
 
@@ -11,7 +11,7 @@ interface LoadingShaderProps {
 	onFinish: () => void;
 }
 
-function LoadingShaderComponent({ renderTarget, loadingComplete, onFinish }: LoadingShaderProps) {
+export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: LoadingShaderProps) => {
 	const meshRef = useRef<Mesh>(null);
 	const { size } = useThree();
 
@@ -115,6 +115,4 @@ function LoadingShaderComponent({ renderTarget, loadingComplete, onFinish }: Loa
 			<shaderMaterial vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
 		</mesh>
 	);
-}
-
-export const LoadingShader = memo(LoadingShaderComponent);
+};

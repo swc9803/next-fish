@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useMemo, useRef, memo } from "react";
+import { RefObject, useEffect, useMemo, useRef } from "react";
 import { useTexture } from "@react-three/drei";
 import { Mesh, RepeatWrapping } from "three";
 import { isWebpSupported } from "@/utils/isWebpSupported";
@@ -10,7 +10,7 @@ interface PlaneProps {
 	onLoaded: () => void;
 }
 
-function GroundComponent({ planeRef, onLoaded }: PlaneProps) {
+export const Ground = ({ planeRef, onLoaded }: PlaneProps) => {
 	const ext = useMemo(() => (isWebpSupported() ? "webp" : "jpg"), []);
 	const texturePaths = useMemo(
 		() => [
@@ -51,6 +51,4 @@ function GroundComponent({ planeRef, onLoaded }: PlaneProps) {
 			<meshStandardMaterial map={colorMap} normalMap={normalMap} roughnessMap={roughnessMap} roughness={1} metalness={0} />
 		</mesh>
 	);
-}
-
-export const Ground = memo(GroundComponent);
+};

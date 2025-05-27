@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, RefObject, Dispatch, SetStateAction, memo } from "react";
+import { useEffect, useRef, useState, RefObject, Dispatch, SetStateAction } from "react";
 import { useGLTF } from "@react-three/drei";
 import { useThree, useFrame } from "@react-three/fiber";
 import { MeshStandardMaterial, Mesh, Object3D, Vector3, AnimationMixer, AnimationAction, LoopRepeat } from "three";
@@ -15,7 +15,7 @@ interface FishModelProps {
 	startAnimation: boolean;
 }
 
-function FishModelComponent({ fishRef, setIsInBombZone, isGameOver, deathPosition, onLoaded, startAnimation }: FishModelProps) {
+export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition, onLoaded, startAnimation }: FishModelProps) => {
 	const { scene: fishScene, animations } = useGLTF("/models/fish.glb");
 	const { scene: deadScene } = useGLTF("/models/fish_bone.glb");
 	const { camera } = useThree();
@@ -200,6 +200,4 @@ function FishModelComponent({ fishRef, setIsInBombZone, isGameOver, deathPositio
 			)}
 		</>
 	);
-}
-
-export const FishModel = memo(FishModelComponent);
+};

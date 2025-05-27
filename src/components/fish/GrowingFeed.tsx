@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState, memo } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Mesh, Object3D } from "three";
 import { useFishStore } from "@/store/useFishStore";
@@ -14,7 +14,7 @@ interface GrowingFeedProps {
 	onExpire: () => void;
 }
 
-export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onCollected, onExpire }: GrowingFeedProps) => {
+export const GrowingFeed = ({ position, fishRef, isGameOver, active, onCollected, onExpire }: GrowingFeedProps) => {
 	const meshRef = useRef<Mesh>(null);
 	const scaleRef = useRef(1);
 	const [isVisible, setIsVisible] = useState(false);
@@ -89,4 +89,4 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 			<meshStandardMaterial color="limegreen" />
 		</mesh>
 	);
-});
+};

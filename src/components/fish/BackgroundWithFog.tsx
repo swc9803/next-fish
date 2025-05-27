@@ -1,4 +1,4 @@
-import { useEffect, useRef, memo } from "react";
+import { useEffect, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import { Color, FogExp2 } from "three";
 
@@ -8,7 +8,7 @@ interface BackgroundWithFogProps {
 	fogDensity: number;
 }
 
-function BackgroundWithFogComponent({ backgroundColor, fogColor, fogDensity }: BackgroundWithFogProps) {
+export const BackgroundWithFog = ({ backgroundColor, fogColor, fogDensity }: BackgroundWithFogProps) => {
 	const { scene } = useThree();
 	const initialized = useRef(false);
 
@@ -48,6 +48,4 @@ function BackgroundWithFogComponent({ backgroundColor, fogColor, fogDensity }: B
 	}, [scene, backgroundColor, fogColor, fogDensity]);
 
 	return null;
-}
-
-export const BackgroundWithFog = memo(BackgroundWithFogComponent);
+};

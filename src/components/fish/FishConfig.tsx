@@ -1,7 +1,6 @@
 import { useFishStore } from "@/store/useFishStore";
-import { memo } from "react";
 
-function FishConfigComponent() {
+export const FishConfig = () => {
 	const { backgroundColor, setBackgroundColor, fogColor, setFogColor, fishSpeed, fishScale, fogDensity, setFishSpeed, setFishScale, setFogDensity } =
 		useFishStore();
 
@@ -29,6 +28,4 @@ function FishConfigComponent() {
 			</div>
 		</div>
 	);
-}
-
-export const FishConfig = memo(FishConfigComponent);
+};

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState, RefObject, memo } from "react";
+import { useRef, useEffect, useMemo, useState, RefObject } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
@@ -52,16 +52,7 @@ interface LogoProps {
 	hideSpeechBubble?: boolean;
 }
 
-function LogoModelComponent({
-	modelPath,
-	position,
-	url,
-	fishRef,
-	isInternal = false,
-	showGalleryOverlay,
-	text,
-	hideSpeechBubble = false,
-}: LogoProps) {
+const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay, text, hideSpeechBubble = false }: LogoProps) => {
 	const { scene } = useGLTF(modelPath);
 	const modelRef = useRef<Object3D>(null);
 	const progressCircleRef = useRef<Mesh>(null);
@@ -152,9 +143,7 @@ function LogoModelComponent({
 			)}
 		</group>
 	);
-}
-
-const LogoModel = memo(LogoModelComponent);
+};
 
 interface MoveRouterProps {
 	fishRef: RefObject<Object3D>;
@@ -162,7 +151,7 @@ interface MoveRouterProps {
 	hideSpeechBubble?: boolean;
 }
 
-function MoveRouterComponent({ fishRef, showGalleryOverlay, hideSpeechBubble }: MoveRouterProps) {
+export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: MoveRouterProps) => {
 	return (
 		<group>
 			{logoData.map((logo) => (
@@ -180,6 +169,4 @@ function MoveRouterComponent({ fishRef, showGalleryOverlay, hideSpeechBubble }: 
 			))}
 		</group>
 	);
-}
-
-export const MoveRouter = memo(MoveRouterComponent);
+};

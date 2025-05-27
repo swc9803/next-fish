@@ -1,9 +1,9 @@
-import { useEffect, useRef, memo } from "react";
+import { useEffect, useRef } from "react";
 import { useFishStore } from "@/store/useFishStore";
 import gsap from "gsap";
 import { Color } from "three";
 
-function FishColorPickerComponent() {
+export const FishColorPicker = () => {
 	const fishColor = useFishStore((s) => s.fishColor);
 	const setFishColor = useFishStore((s) => s.setFishColor);
 
@@ -37,6 +37,4 @@ function FishColorPickerComponent() {
 			</label>
 		</div>
 	);
-}
-
-export const FishColorPicker = memo(FishColorPickerComponent);
+};

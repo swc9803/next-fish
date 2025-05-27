@@ -1,4 +1,4 @@
-import { useMemo, useRef, useCallback, memo, RefObject, Dispatch, SetStateAction, useEffect } from "react";
+import { useMemo, useRef, useCallback, RefObject, Dispatch, SetStateAction, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import gsap from "gsap";
@@ -32,7 +32,7 @@ const CELL_SIZE = 6;
 const GRID_HALF = 3;
 const MAX_SCORE = 1000;
 
-function BombZoneComponent(props: BombZoneProps) {
+export const BombZone = (props: BombZoneProps) => {
 	const {
 		fishRef,
 		setIsGameOver,
@@ -242,6 +242,4 @@ function BombZoneComponent(props: BombZoneProps) {
 			)}
 		</>
 	);
-}
-
-export const BombZone = memo(BombZoneComponent);
+};

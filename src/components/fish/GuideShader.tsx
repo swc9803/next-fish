@@ -1,11 +1,11 @@
-import { useRef, useMemo, useEffect, useState, memo } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Mesh, Vector4, CanvasTexture, Vector2 } from "three";
 
 import vertex from "@/shaders/guideVertex.glsl";
 import fragment from "@/shaders/guideFragment.glsl";
 
-function GuideShaderComponent({ onFinish }: { onFinish: () => void }) {
+export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 	const meshRef = useRef<Mesh>(null);
 	const { size } = useThree();
 	const [clicked, setClicked] = useState(false);
@@ -124,6 +124,4 @@ function GuideShaderComponent({ onFinish }: { onFinish: () => void }) {
 			<shaderMaterial vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
 		</mesh>
 	);
-}
-
-export const GuideShader = memo(GuideShaderComponent);
+};
