@@ -12,9 +12,10 @@ interface FishModelProps {
 	isGameOver: boolean;
 	deathPosition: [number, number, number] | null;
 	onLoaded: () => void;
+	startAnimation: boolean;
 }
 
-function FishModelComponent({ fishRef, setIsInBombZone, isGameOver, deathPosition, onLoaded }: FishModelProps) {
+function FishModelComponent({ fishRef, setIsInBombZone, isGameOver, deathPosition, onLoaded, startAnimation }: FishModelProps) {
 	const { scene: fishScene, animations } = useGLTF("/models/fish.glb");
 	const { scene: deadScene } = useGLTF("/models/fish_bone.glb");
 	const { camera } = useThree();
@@ -45,6 +46,11 @@ function FishModelComponent({ fishRef, setIsInBombZone, isGameOver, deathPositio
 		if (!didNotify.current && fishRef.current) {
 			onLoaded();
 			didNotify.current = true;
+		}
+	}, [onLoaded, fishRef]);
+
+	useEffect(() => {
+		if (startAnimation && fishRef.current) {
 			gsap.to(fishRef.current.position, {
 				x: 0,
 				y: 1,
@@ -53,7 +59,7 @@ function FishModelComponent({ fishRef, setIsInBombZone, isGameOver, deathPositio
 				ease: "power2.out",
 			});
 		}
-	}, [onLoaded, fishRef]);
+	}, [startAnimation, fishRef]);
 
 	useEffect(() => {
 		const handleResize = () => setIsMobile(window.innerWidth <= 768);

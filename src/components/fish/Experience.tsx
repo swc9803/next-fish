@@ -47,7 +47,7 @@ function SceneCleanup() {
 	return null;
 }
 
-function ExperienceComponent({ onReady }: { onReady: () => void }) {
+function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void; startAnimation: boolean }) {
 	const [fishLoaded, setFishLoaded] = useState(false);
 	const [groundLoaded, setGroundLoaded] = useState(false);
 	const [videoLoaded, setVideoLoaded] = useState(false);
@@ -114,17 +114,18 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 
 	useEffect(() => {
 		if (!hasNotified) return;
-		let frame = 0;
-		const loop = () => {
-			frame++;
-			if (frame > 2) {
-				setShowGuideShader(true);
-				requestAnimationFrame(() => setIsShowGuide(true));
-			} else {
-				requestAnimationFrame(loop);
-			}
-		};
-		requestAnimationFrame(loop);
+
+		const timeout = setTimeout(() => {
+			setShowGuideShader(true);
+
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					setIsShowGuide(true);
+				});
+			});
+		}, 2000);
+
+		return () => clearTimeout(timeout);
 	}, [hasNotified]);
 
 	// 저사양 모드
@@ -268,6 +269,7 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 					isGameOver={isGameOver}
 					deathPosition={deathPosition}
 					onLoaded={() => setFishLoaded(true)}
+					startAnimation={startAnimation}
 				/>
 				<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} hideSpeechBubble={isMovingToGallery} />
 				<Ground planeRef={planeRef} onLoaded={() => setGroundLoaded(true)} />

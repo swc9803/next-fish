@@ -33,7 +33,7 @@ const Home = () => {
 	return (
 		<div className={styles.container}>
 			<main>
-				<Experience renderTarget={renderTarget} onReady={handleExperienceReady} />
+				<Experience renderTarget={renderTarget} onReady={handleExperienceReady} startAnimation={fadeOut} />
 
 				{!loadingComplete && (
 					<div className={"loading_overlay"}>
