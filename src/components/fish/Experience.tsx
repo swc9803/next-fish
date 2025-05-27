@@ -130,13 +130,6 @@ function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void;
 		return () => clearTimeout(timeout);
 	}, [hasNotified]);
 
-	// 저사양 모드
-	const isLowSpec = useMemo(() => {
-		const cores = navigator.hardwareConcurrency || 4;
-		const memory = (navigator as any).deviceMemory || 4;
-		return cores <= 4 || memory <= 4;
-	}, []);
-
 	const galleryTransitionOverlayHandler = useCallback(() => {
 		setIsNavigatingToGallery(true);
 		setShowGalleryTransitionOverlay(true);
@@ -248,7 +241,7 @@ function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void;
 					alpha: false,
 					stencil: false,
 					depth: true,
-					antialias: !isLowSpec,
+					antialias: true,
 					preserveDrawingBuffer: false,
 					powerPreference: "high-performance",
 					failIfMajorPerformanceCaveat: false,
@@ -275,7 +268,7 @@ function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void;
 					shadow-camera-far={150}
 				/>
 
-				{!isLowSpec && <VideoCaustics onLoaded={() => setVideoLoaded(true)} />}
+				<VideoCaustics onLoaded={() => setVideoLoaded(true)} />
 
 				<FishModel
 					fishRef={fishRef}

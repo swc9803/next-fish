@@ -51,6 +51,8 @@ function FishModelComponent({ fishRef, setIsInBombZone, isGameOver, deathPositio
 
 	useEffect(() => {
 		if (startAnimation && fishRef.current) {
+			fishRef.current.position.set(0, 1, -20);
+
 			gsap.to(fishRef.current.position, {
 				x: 0,
 				y: 1,
@@ -185,7 +187,7 @@ function FishModelComponent({ fishRef, setIsInBombZone, isGameOver, deathPositio
 			<primitive
 				ref={fishRef}
 				object={isGameOver && deathPosition ? deadScene : fishScene}
-				position={isGameOver && deathPosition ? deathPosition : [0, 1, -20]}
+				position={isGameOver && deathPosition ? deathPosition : [0, 1, 0]}
 				scale={[fishScale, fishScale, fishScale]}
 				castShadow
 				key={isGameOver ? "dead" : "alive"}
