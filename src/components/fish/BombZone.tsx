@@ -200,7 +200,7 @@ export const BombZone = (props: BombZoneProps) => {
 			blinkTweens.current.forEach((t) => t.kill());
 			blinkTweens.current = [];
 		};
-	}, [isGameOver]);
+	}, [isGameOver, hitTilesRef, meshRefs, blinkTweens]);
 
 	const memoizedMeshes = useMemo(() => {
 		return CELLS.map((pos, i) => (
@@ -219,7 +219,7 @@ export const BombZone = (props: BombZoneProps) => {
 				</lineSegments>
 			</group>
 		));
-	}, [CELLS]);
+	}, [CELLS, meshRefs]);
 
 	return (
 		<>

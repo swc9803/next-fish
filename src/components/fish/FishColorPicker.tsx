@@ -12,7 +12,7 @@ export const FishColorPicker = () => {
 	useEffect(() => {
 		const initial = new Color(fishColor);
 		colorRef.current = { r: initial.r, g: initial.g, b: initial.b };
-	}, []);
+	}, [fishColor]);
 
 	const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const targetColor = new Color(e.target.value);

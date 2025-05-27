@@ -84,14 +84,16 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 	}, [loadingComplete, uniforms.progress, onFinish]);
 
 	useEffect(() => {
+		const mesh = meshRef.current;
+
 		return () => {
 			canvasTexture.dispose();
-			if (meshRef.current) {
-				meshRef.current.geometry?.dispose();
-				if (Array.isArray(meshRef.current.material)) {
-					meshRef.current.material.forEach((m) => m.dispose());
+			if (mesh) {
+				mesh.geometry?.dispose();
+				if (Array.isArray(mesh.material)) {
+					mesh.material.forEach((m) => m.dispose());
 				} else {
-					meshRef.current.material?.dispose();
+					mesh.material?.dispose();
 				}
 			}
 		};

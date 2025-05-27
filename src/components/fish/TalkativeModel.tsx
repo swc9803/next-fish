@@ -54,7 +54,8 @@ export const TalkativeModel = ({
 	useEffect(() => {
 		if (!objRef.current || animations.length === 0) return;
 
-		const mixer = new AnimationMixer(objRef.current);
+		const targetObject = objRef.current;
+		const mixer = new AnimationMixer(targetObject);
 		mixerRef.current = mixer;
 
 		const clip = animations.find((clip) => clip.name.toLowerCase().includes("swim"));
@@ -67,7 +68,7 @@ export const TalkativeModel = ({
 
 		return () => {
 			mixer.stopAllAction();
-			if (objRef.current) mixer.uncacheRoot(objRef.current);
+			mixer.uncacheRoot(targetObject);
 		};
 	}, [animations]);
 

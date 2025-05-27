@@ -72,9 +72,11 @@ export const Background = () => {
 
 	// 메모리 해제
 	useEffect(() => {
+		const group = groupRef.current;
+
 		return () => {
-			if (!groupRef.current) return;
-			groupRef.current.children.forEach((child) => {
+			if (!group) return;
+			group.children.forEach((child) => {
 				if (child instanceof Mesh) {
 					child.geometry?.dispose();
 					if (Array.isArray(child.material)) {

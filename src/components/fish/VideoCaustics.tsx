@@ -31,8 +31,10 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 		video.autoplay = true;
 		video.playsInline = true;
 
+		let texture: VideoTexture;
+
 		const handleCanPlay = () => {
-			const texture = new VideoTexture(video);
+			texture = new VideoTexture(video);
 			texture.minFilter = LinearFilter;
 			texture.magFilter = LinearFilter;
 			texture.format = RGBFormat;
@@ -57,9 +59,9 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 			video.pause();
 			video.removeAttribute("src");
 			video.load();
-			videoTexture?.dispose();
+			if (texture) texture.dispose();
 		};
-	}, []);
+	}, [onLoaded]);
 
 	return (
 		videoTexture && (
