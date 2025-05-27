@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback, memo, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
+import gsap from "gsap";
 
 import { useFishStore } from "@/store/useFishStore";
 import { resetGameState } from "@/hooks/resetGameState";
@@ -58,6 +59,7 @@ function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void;
 	const [showGalleryTransitionOverlay, setShowGalleryTransitionOverlay] = useState(false);
 	const [isMovingToGallery, setIsNavigatingToGallery] = useState(false);
 
+	const countdownRef = useRef<HTMLDivElement | null>(null);
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [score, setScore] = useState(0);
 	const [isCleared, setIsCleared] = useState(false);
@@ -143,7 +145,6 @@ function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void;
 
 	useEffect(() => {
 		if (isInBombZone && countdown === null && !bombActive && !isCleared) {
-			console.log("Start countdown");
 			setCountdown(3);
 		}
 	}, [isInBombZone, countdown, bombActive, isCleared]);
@@ -161,6 +162,20 @@ function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void;
 
 		const timeout = setTimeout(() => setCountdown((prev) => (prev ?? 1) - 1), 1000);
 		return () => clearTimeout(timeout);
+	}, [countdown]);
+
+	useEffect(() => {
+		if (countdown !== null) {
+			const el = countdownRef.current;
+			if (!el) return;
+
+			gsap.to(el, {
+				scale: 1,
+				opacity: 1,
+				duration: 0.6,
+				ease: "back.out(4)",
+			});
+		}
 	}, [countdown]);
 
 	const incrementScore = () => {
@@ -318,10 +333,12 @@ function ExperienceComponent({ onReady, startAnimation }: { onReady: () => void;
 
 			{(countdown !== null || countdown === 0 || isCleared || isInBombZone || isGameOver) && (
 				<div className="game_overlay">
-					{countdown !== null && countdown > 0 && <div className="countdown">{countdown}</div>}
-					{countdown === 0 && <div className="countdown">START!</div>}
+					{(countdown !== null || isCleared) && (
+						<div key={countdown === 0 ? "start" : isCleared ? "clear" : countdown} ref={countdownRef} className="countdown">
+							{isCleared ? "CLEAR!" : countdown === 0 ? "START!" : countdown}
+						</div>
+					)}
 					{(isInBombZone || isGameOver) && <div className="score">Score: {score}</div>}
-					{isCleared && <div className="countdown">CLEAR!</div>}
 				</div>
 			)}
 
