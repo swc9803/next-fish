@@ -1,7 +1,7 @@
-import { useMemo, useRef, useCallback, memo, RefObject, Dispatch, SetStateAction } from "react";
+import { useMemo, useRef, useCallback, memo, RefObject, Dispatch, SetStateAction, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import gsap from "gsap";
-import { useFrame } from "@react-three/fiber";
 import { useFishStore } from "@/store/useFishStore";
 import { GrowingFeed } from "./GrowingFeed";
 
@@ -25,6 +25,7 @@ interface BombZoneProps {
 	setDeathPosition: Dispatch<SetStateAction<[number, number, number] | null>>;
 	score: number;
 	incrementScore: () => void;
+	onResetRef?: RefObject<() => void>;
 }
 
 const CELL_SIZE = 6;
@@ -46,6 +47,8 @@ function BombZoneComponent(props: BombZoneProps) {
 		incrementScore,
 		feed,
 		setFeed,
+		blinkTweens,
+		onResetRef,
 	} = props;
 
 	const fishScale = useFishStore((s) => s.fishScale);
@@ -94,20 +97,30 @@ function BombZoneComponent(props: BombZoneProps) {
 		(index: number) => {
 			const MAX_BOMBS = 10;
 			if (isGameOver || activeBombsRef.current.has(index) || activeBombsRef.current.size >= MAX_BOMBS) return;
-
 			const mesh = meshRefs.current[index];
 			if (!mesh) return;
-
 			bombProgressRef.current[index] = 0;
 			activeBombsRef.current.add(index);
 		},
 		[isGameOver, meshRefs]
 	);
 
+	useEffect(() => {
+		if (!onResetRef) return;
+		onResetRef.current = () => {
+			activeBombsRef.current.clear();
+			bombProgressRef.current = {};
+			meshRefs.current.forEach((mesh) => {
+				if (mesh && mesh.material) {
+					(mesh.material as MeshStandardMaterial).color.set("white");
+				}
+			});
+		};
+	}, [onResetRef, meshRefs]);
+
 	useFrame((_, delta) => {
 		if (!bombActive || !isInBombZone || isGameOver) return;
 
-		// 폭탄 생성 타이밍
 		bombTimer.current += delta;
 		const spawnDelay = Math.max(1 - (score / MAX_SCORE) * 0.7, 0.5);
 
@@ -125,7 +138,6 @@ function BombZoneComponent(props: BombZoneProps) {
 			if (!feed.active) {
 				const x = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE - 50;
 				const z = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE;
-				console.log(`feed spawned at [${x}, 1, ${z}]`);
 				setFeed({ position: [x, 1, z], active: true });
 			}
 
@@ -160,6 +172,34 @@ function BombZoneComponent(props: BombZoneProps) {
 			}
 		}
 	});
+
+	// 피격된 타일 반짝거림
+	useEffect(() => {
+		if (!isGameOver) return;
+
+		hitTilesRef.current.forEach((index) => {
+			const mesh = meshRefs.current[index];
+			if (!mesh) return;
+
+			const material = mesh.material as MeshStandardMaterial;
+			const tween = gsap.to(material.color, {
+				r: 1,
+				g: 0,
+				b: 0,
+				duration: 0.4,
+				yoyo: true,
+				repeat: -1,
+				ease: "power1.inOut",
+			});
+
+			blinkTweens.current.push(tween);
+		});
+
+		return () => {
+			blinkTweens.current.forEach((t) => t.kill());
+			blinkTweens.current = [];
+		};
+	}, [isGameOver]);
 
 	const memoizedMeshes = useMemo(() => {
 		return CELLS.map((pos, i) => (

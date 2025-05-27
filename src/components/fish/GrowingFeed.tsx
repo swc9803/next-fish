@@ -65,17 +65,18 @@ export const GrowingFeed = memo(({ position, fishRef, isGameOver, active, onColl
 			isShrinking.current = true;
 		}
 
-		// 충돌
-		const dist = mesh.position.distanceTo(fish.position);
-		if (dist < fishScale * 1.5 && visibleRef.current) {
+		// 충돌 계산
+		const distSq = mesh.position.distanceToSquared(fish.position);
+		const threshold = fishScale * 1.5;
+		if (distSq < threshold * threshold && visibleRef.current) {
 			activeRef.current = false;
 			visibleRef.current = false;
 			setIsVisible(false);
 			scaleRef.current = 0;
 
 			useFishStore.setState((prev) => ({
-				fishScale: prev.fishScale + 0.1,
-				fishSpeed: Math.max(prev.fishSpeed - 1, 10),
+				fishScale: parseFloat((prev.fishScale + 0.05).toFixed(2)),
+				fishSpeed: Math.max(prev.fishSpeed - 0.5, 10),
 			}));
 
 			onCollected();

@@ -67,6 +67,7 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 	const [feed, setFeed] = useState<{ position: [number, number, number]; active: boolean }>({ position: [0, 1, 0], active: false });
 	const [preventClick, setPreventClick] = useState(false);
 	const [deathPosition, setDeathPosition] = useState<[number, number, number] | null>(null);
+	const bombZoneResetRef = useRef<() => void>(() => {});
 
 	const fishRef = useRef<Object3D>(null);
 	const planeRef = useRef<Mesh>(null);
@@ -137,11 +138,15 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 
 	useEffect(() => {
 		if (countdown === null) return;
+
 		if (countdown === 0) {
-			setBombActive(true);
-			setCountdown(null);
-			return;
+			const startTimeout = setTimeout(() => {
+				setBombActive(true);
+				setCountdown(null);
+			}, 700);
+			return () => clearTimeout(startTimeout);
 		}
+
 		const timeout = setTimeout(() => setCountdown((prev) => (prev ?? 1) - 1), 1000);
 		return () => clearTimeout(timeout);
 	}, [countdown]);
@@ -164,6 +169,19 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 	const resetGame = useCallback(() => {
 		resetGameState(setIsGameOver, setIsInBombZone, setBombActive, () => {});
 		setFeed({ position: [0, 1, 0], active: false });
+
+		bombZoneResetRef.current?.();
+
+		blinkTweens.current.forEach((t) => t.kill());
+		blinkTweens.current = [];
+
+		hitTilesRef.current.forEach((index) => {
+			const mesh = meshRefs.current[index];
+			if (mesh) {
+				(mesh.material as MeshStandardMaterial).color.set("white");
+			}
+		});
+		hitTilesRef.current = [];
 	}, []);
 
 	useEffect(() => {
@@ -279,16 +297,18 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 					score={score}
 					incrementScore={incrementScore}
 					setDeathPosition={setDeathPosition}
+					onResetRef={bombZoneResetRef}
 				/>
 
 				<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 			</Canvas>
 
-			{isInBombZone && (
+			{(countdown !== null || countdown === 0 || isCleared || isInBombZone || isGameOver) && (
 				<div className="game_overlay">
-					{countdown !== null && <div className="countdown">{countdown}</div>}
-					<div className="score_display">Score: {score}</div>
-					{isCleared && <div className="clear_message">CLEAR!</div>}
+					{countdown !== null && countdown > 0 && <div className="countdown">{countdown}</div>}
+					{countdown === 0 && <div className="countdown">START!</div>}
+					{(isInBombZone || isGameOver) && <div className="score">Score: {score}</div>}
+					{isCleared && <div className="countdown">CLEAR!</div>}
 				</div>
 			)}
 

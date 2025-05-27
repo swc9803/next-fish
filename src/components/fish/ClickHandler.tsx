@@ -65,15 +65,14 @@ function ClickHandlerComponent({ fishRef, planeRef, isInBombZone, isGameOver }: 
 	}, [gl]);
 
 	useFrame(() => {
-		if (isGameOver || !isClicked.current || !fishRef.current || !planeRef.current) return;
+		if (!isClicked.current || isGameOver || !fishRef.current || !planeRef.current) return;
 
 		raycaster.current.setFromCamera(mouse.current, camera);
 		const intersects = raycaster.current.intersectObject(planeRef.current);
 		if (!intersects.length) return;
 
 		const point = intersects[0].point;
-		let targetX = point.x;
-		let targetZ = point.z;
+		let { x: targetX, z: targetZ } = point;
 
 		if (isNaN(targetX) || isNaN(targetZ)) return;
 
@@ -81,19 +80,19 @@ function ClickHandlerComponent({ fishRef, planeRef, isInBombZone, isGameOver }: 
 			targetX = clampToBounds(targetX, GRID_CENTER.x - GRID_SIZE_X / 2 + 1, GRID_CENTER.x + GRID_SIZE_X / 2 - 1);
 			targetZ = clampToBounds(targetZ, GRID_CENTER.z - GRID_SIZE_Z / 2 + 1, GRID_CENTER.z + GRID_SIZE_Z / 2 - 1);
 		} else {
-			const clamped = getClampedPlaneCoords(point.x, point.z);
+			const clamped = getClampedPlaneCoords(targetX, targetZ);
 			targetX = clamped.x;
 			targetZ = clamped.z;
 		}
 
 		const fish = fishRef.current;
-		const targetPosition = new Vector3(targetX, fish.position.y, targetZ);
-		const distance = fish.position.distanceTo(targetPosition);
-		const duration = distance / fishSpeed;
+		const currentPos = fish.position;
+		const targetPos = new Vector3(targetX, currentPos.y, targetZ);
+		const distance = currentPos.distanceTo(targetPos);
 
-		fish.lookAt(targetPosition);
+		fish.lookAt(targetPos);
 		gsap.killTweensOf(fish.position);
-		gsap.to(fish.position, { x: targetX, z: targetZ, duration });
+		gsap.to(fish.position, { x: targetX, z: targetZ, duration: distance / fishSpeed });
 	});
 
 	return null;
