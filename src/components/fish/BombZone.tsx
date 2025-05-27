@@ -122,11 +122,10 @@ function BombZoneComponent(props: BombZoneProps) {
 		if (!bombActive || !isInBombZone || isGameOver) return;
 
 		bombTimer.current += delta;
-		const spawnDelay = Math.max(1 - (score / MAX_SCORE) * 0.7, 0.5);
+		const spawnDelay = Math.max(2 - score / MAX_SCORE, 1);
 
 		if (bombTimer.current >= spawnDelay) {
 			bombTimer.current = 0;
-			incrementScore();
 
 			if (score >= MAX_SCORE) {
 				setIsGameOver(true);
@@ -165,6 +164,8 @@ function BombZoneComponent(props: BombZoneProps) {
 			if (nextProgress >= 1) {
 				if (!isGameOver && fishRef.current && checkCollision(fishRef.current, i)) {
 					handleFishHit(i);
+				} else {
+					incrementScore();
 				}
 				color.set("white");
 				delete bombProgressRef.current[i];
@@ -231,7 +232,9 @@ function BombZoneComponent(props: BombZoneProps) {
 					isGameOver={isGameOver}
 					active={feed.active}
 					onCollected={() => {
-						incrementScore();
+						const scale = useFishStore.getState().fishScale;
+						const bonus = Math.round(scale * 10);
+						for (let i = 0; i < bonus; i++) incrementScore();
 						setFeed((prev) => ({ ...prev, active: false }));
 					}}
 					onExpire={() => setFeed((prev) => ({ ...prev, active: false }))}

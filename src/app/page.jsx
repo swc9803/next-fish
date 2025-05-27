@@ -18,12 +18,10 @@ const Home = () => {
 	const handleExperienceReady = () => {
 		let frameCount = 0;
 
-		// 로드 후 안정화
 		const waitForStabilization = () => {
 			frameCount++;
 			if (frameCount > 3) {
 				setFadeOut(true);
-				setTimeout(() => setLoadingComplete(true), 1700);
 			} else {
 				requestAnimationFrame(waitForStabilization);
 			}

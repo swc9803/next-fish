@@ -94,10 +94,21 @@ function ExperienceComponent({ onReady }: { onReady: () => void }) {
 		}
 	}, [fishLoaded, groundLoaded, videoLoaded]);
 
+	// 로딩 대기
 	useEffect(() => {
 		if (fishLoaded && groundLoaded && videoLoaded && !hasNotified) {
 			setHasNotified(true);
-			onReady();
+
+			let frame = 0;
+			const wait = () => {
+				frame++;
+				if (frame >= 2) {
+					onReady();
+				} else {
+					requestAnimationFrame(wait);
+				}
+			};
+			requestAnimationFrame(wait);
 		}
 	}, [fishLoaded, groundLoaded, videoLoaded, hasNotified, onReady]);
 

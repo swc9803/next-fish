@@ -26,7 +26,6 @@ function LoadingShaderComponent({ renderTarget, loadingComplete, onFinish }: Loa
 
 		const ctx = canvas.getContext("2d")!;
 		ctx.scale(DPR, DPR);
-
 		ctx.clearRect(0, 0, size.width, size.height);
 		ctx.fillStyle = "#ffffff";
 		ctx.font = size.width <= 768 ? "normal 24px sans-serif" : "normal 40px sans-serif";
@@ -52,31 +51,31 @@ function LoadingShaderComponent({ renderTarget, loadingComplete, onFinish }: Loa
 		[canvasTexture, renderTarget.texture]
 	);
 
+	const progressRef = useRef(0);
+	const isAnimatingOut = useRef(false);
+
 	useEffect(() => {
-		if (loadingComplete) {
-			let raf: number;
-			const DELAY = 500;
-			const DURATION = 1700;
-			const steps = DURATION / (1000 / 60);
-			let frame = 0;
+		if (!loadingComplete || isAnimatingOut.current) return;
 
-			const animate = () => {
-				frame++;
-				const next = Math.min(frame / steps, 1);
-				uniforms.progress.value = next;
-				if (next < 1) raf = requestAnimationFrame(animate);
-				else onFinish();
-			};
+		isAnimatingOut.current = true;
+		let frame = 0;
+		const DURATION = 1700;
+		const steps = DURATION / (1000 / 60);
 
-			const timeout = setTimeout(() => {
-				raf = requestAnimationFrame(animate);
-			}, DELAY);
+		const animateOut = () => {
+			frame++;
+			const next = Math.min(frame / steps, 1);
+			uniforms.progress.value = next;
+			progressRef.current = next;
 
-			return () => {
-				clearTimeout(timeout);
-				cancelAnimationFrame(raf);
-			};
-		}
+			if (next < 1) {
+				requestAnimationFrame(animateOut);
+			} else {
+				onFinish();
+			}
+		};
+
+		requestAnimationFrame(animateOut);
 	}, [loadingComplete, uniforms.progress, onFinish]);
 
 	useEffect(() => {
@@ -102,9 +101,7 @@ function LoadingShaderComponent({ renderTarget, loadingComplete, onFinish }: Loa
 		const a2 = aspect > imageAspect ? 1 : aspect / imageAspect;
 
 		uniforms.resolution.value.set(size.width, size.height, a1, a2);
-		if (meshRef.current) {
-			meshRef.current.scale.set(size.width, size.height, 1);
-		}
+		meshRef.current?.scale.set(size.width, size.height, 1);
 	});
 
 	return (
