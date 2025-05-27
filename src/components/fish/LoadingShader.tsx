@@ -27,16 +27,21 @@ function LoadingShaderComponent({ renderTarget, loadingComplete, onFinish }: Loa
 		const ctx = canvas.getContext("2d")!;
 		ctx.scale(DPR, DPR);
 		ctx.clearRect(0, 0, size.width, size.height);
+
 		ctx.fillStyle = "#ffffff";
-		ctx.font = size.width <= 768 ? "normal 24px sans-serif" : "normal 40px sans-serif";
+		ctx.font = size.width <= 768 ? "bold 24px sans-serif" : "bold 40px sans-serif";
 		ctx.textAlign = "center";
 		ctx.textBaseline = "middle";
+
+		ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+		ctx.shadowBlur = 6;
+
 		ctx.fillText("Loading...", size.width / 2, size.height / 2);
 
 		const texture = new CanvasTexture(canvas);
 		texture.needsUpdate = true;
 		return texture;
-	}, [size]);
+	}, [size.width, size.height]);
 
 	const uniforms = useMemo(
 		() => ({
