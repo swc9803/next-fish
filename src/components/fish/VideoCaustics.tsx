@@ -5,6 +5,7 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 	const [videoTexture, setVideoTexture] = useState<VideoTexture | null>(null);
 	const meshRef = useRef<Mesh>(null);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
+	const textureRef = useRef<VideoTexture | null>(null);
 
 	useEffect(() => {
 		const video = document.createElement("video");
@@ -22,10 +23,11 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 				texture.minFilter = LinearFilter;
 				texture.magFilter = LinearFilter;
 				texture.format = RGBFormat;
+				textureRef.current = texture;
 				setVideoTexture(texture);
 				onLoaded();
 			} catch (error) {
-				console.warn("Video play failed:", error);
+				console.warn(error);
 			}
 			video.removeEventListener("canplaythrough", handleCanPlay);
 		};
@@ -40,7 +42,7 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 			video.pause();
 			video.removeAttribute("src");
 			video.load();
-			if (videoTexture) videoTexture.dispose();
+			textureRef.current?.dispose();
 		};
 	}, [onLoaded]);
 
