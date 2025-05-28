@@ -1,40 +1,55 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import gsap from "gsap";
 import styles from "./Overlay.module.scss";
 import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
+import { useActiveSlideIndex } from "@/hooks/useActiveSlideIndex";
 
 const COOLDOWN_DURATION = 1200;
-const SLIDE_DELAY = 500;
 
 export const Overlay = () => {
-	const { slide, focusIndex, freemode, isSliding, isIntroPlaying, isCameraIntroDone, setSlide, setFocusIndex, setFreemode } = useGallerySlide();
+	const { freemode, focusIndex, isSliding, isIntroPlaying, isCameraIntroDone, setSlide, setFocusIndex, setFreemode } = useGallerySlide();
 
-	const [visibleSlide, setVisibleSlide] = useState(slide);
-	const [lockedSlide, setLockedSlide] = useState(slide);
+	const activeSlideIndex = useActiveSlideIndex();
+	const [renderedIndex, setRenderedIndex] = useState(activeSlideIndex);
 	const [isCooldown, setIsCooldown] = useState(false);
 
+	const contentRef = useRef<HTMLDivElement>(null);
+	const logoWrapperRef = useRef<HTMLDivElement>(null);
+	const timelineRef = useRef<gsap.core.Timeline | null>(null);
+
 	const showOverlay = isCameraIntroDone && ((!freemode && focusIndex === null) || (freemode && focusIndex !== null));
+
 	const disabledToggle = isCooldown || isSliding || isIntroPlaying;
 	const showSlideNavigation = !freemode && isCameraIntroDone && !isIntroPlaying;
 
 	useEffect(() => {
-		if (!isIntroPlaying) {
-			const timeout = setTimeout(() => setVisibleSlide(slide), SLIDE_DELAY);
-			return () => clearTimeout(timeout);
-		}
-	}, [isIntroPlaying, slide]);
+		if (!contentRef.current || !logoWrapperRef.current) return;
 
-	useEffect(() => {
-		if (showOverlay) {
-			const timeout = setTimeout(() => setLockedSlide(slide), SLIDE_DELAY);
-			return () => clearTimeout(timeout);
+		if (timelineRef.current) {
+			timelineRef.current.kill();
 		}
-	}, [slide, showOverlay]);
 
-	const activeSlide = useMemo(() => {
-		return freemode && focusIndex !== null ? focusIndex : lockedSlide;
-	}, [freemode, focusIndex, lockedSlide]);
+		const tl = gsap.timeline();
+		timelineRef.current = tl;
+
+		tl.to([logoWrapperRef.current, contentRef.current], {
+			opacity: 0,
+			ease: "power2.out",
+			duration: 0.3,
+			onComplete: () => {
+				setRenderedIndex(activeSlideIndex);
+			},
+		});
+
+		tl.to([logoWrapperRef.current, contentRef.current], {
+			opacity: 1,
+			ease: "power2.out",
+			duration: 0.5,
+			delay: 1,
+		});
+	}, [activeSlideIndex]);
 
 	const handleToggleView = () => {
 		if (disabledToggle) return;
@@ -42,8 +57,6 @@ export const Overlay = () => {
 		if (freemode) {
 			if (focusIndex !== null) {
 				setSlide(focusIndex);
-				setLockedSlide(focusIndex);
-				setVisibleSlide(focusIndex);
 				setFocusIndex(null);
 				setFreemode(false);
 			} else {
@@ -62,8 +75,10 @@ export const Overlay = () => {
 		setFreemode(true);
 	};
 
-	const handlePrevSlide = () => setSlide((slide - 1 + slideArray.length) % slideArray.length);
-	const handleNextSlide = () => setSlide((slide + 1) % slideArray.length);
+	const handlePrevSlide = () => setSlide((renderedIndex - 1 + slideArray.length) % slideArray.length);
+	const handleNextSlide = () => setSlide((renderedIndex + 1) % slideArray.length);
+
+	const slide = slideArray[renderedIndex];
 
 	return (
 		<>
@@ -103,17 +118,17 @@ export const Overlay = () => {
 			</div>
 
 			<div className={`${styles.overlay} ${showOverlay ? styles.show : styles.hide}`}>
-				{slideArray[activeSlide].logo && (
-					<div className={styles.logo_wrapper}>
+				{slide.logo && (
+					<div className={styles.logo_wrapper} ref={logoWrapperRef}>
 						<div className={styles.logo_background} />
-						<Image className={styles.logo} src={slideArray[activeSlide].logo} alt="로고" fill sizes="7rem" priority />
+						<Image className={styles.logo} src={slide.logo} alt="로고" fill sizes="7rem" priority />
 					</div>
 				)}
 
-				<div className={styles.content}>
-					<h1>{slideArray[activeSlide].name}</h1>
-					<p>{slideArray[activeSlide].description}</p>
-					<a href={slideArray[activeSlide].url} target="_blank" rel="noopener noreferrer" className={styles.link_button}>
+				<div className={styles.content} ref={contentRef}>
+					<h1>{slide.name}</h1>
+					<p>{slide.description}</p>
+					<a href={slide.url} target="_blank" rel="noopener noreferrer" className={styles.link_button}>
 						사이트 바로가기 ↗
 					</a>
 				</div>

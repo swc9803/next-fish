@@ -4,6 +4,7 @@ import { useTexture } from "@react-three/drei";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
 import { useFrame, useThree } from "@react-three/fiber";
+import { useActiveSlideIndex } from "@/hooks/useActiveSlideIndex";
 
 interface SlideState {
 	current: Texture;
@@ -12,6 +13,7 @@ interface SlideState {
 	index: number;
 	isFading: boolean;
 }
+
 type SlideAction = { type: "SET_NEXT"; index: number; nextTexture: Texture } | { type: "INCREMENT_OPACITY" };
 
 const SLIDE_CHANGE_INTERVAL = 3000;
@@ -29,10 +31,10 @@ function slideReducer(state: SlideState[], action: SlideAction): SlideState[] {
 	switch (action.type) {
 		case "SET_NEXT": {
 			const { index, nextTexture } = action;
-			return state.map((s: SlideState, i: number) => (i === index ? { ...s, next: nextTexture, opacity: 0, isFading: true } : s));
+			return state.map((s, i) => (i === index ? { ...s, next: nextTexture, opacity: 0, isFading: true } : s));
 		}
 		case "INCREMENT_OPACITY": {
-			return state.map((s: SlideState, i: number) => {
+			return state.map((s) => {
 				if (!s.isFading || !s.next) return s;
 				const newOpacity = Math.min(s.opacity + 0.05, 1);
 				if (newOpacity >= 1) {
@@ -53,9 +55,11 @@ function slideReducer(state: SlideState[], action: SlideAction): SlideState[] {
 }
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
-	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setSlide, setHoverIndex, slide, isIntroPlaying } = useGallerySlide();
+	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setHoverIndex } = useGallerySlide();
 
+	const activeSlideIndex = useActiveSlideIndex();
 	const { scene } = useThree();
+	const { isIntroPlaying } = useGallerySlide();
 
 	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
 	const texturesArray = useTexture(allImagePaths) as Texture[];
@@ -88,33 +92,18 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 		};
 	}, [slideTextures, scene]);
 
-	const calculatedTargetIndex = useMemo(() => {
-		if (!freemode) return slide;
-		if (focusIndex !== null) return focusIndex;
-		if (hoverIndex !== null) return hoverIndex;
-		return null;
-	}, [freemode, slide, hoverIndex, focusIndex]);
-
-	const lastActiveSlideIndexRef = useRef<number | null>(null);
-
 	useEffect(() => {
-		if (calculatedTargetIndex !== null) {
-			lastActiveSlideIndexRef.current = calculatedTargetIndex;
-		}
-	}, [calculatedTargetIndex]);
+		if (isIntroPlaying) return; // 인트로 애니메이션 중 슬라이드 이미지 전환 방지
 
-	const activeSlideIndex = calculatedTargetIndex ?? lastActiveSlideIndexRef.current;
-
-	useEffect(() => {
 		const interval = setInterval(() => {
-			if (isIntroPlaying || activeSlideIndex === null) return;
-			const textures = slideTextures[activeSlideIndex];
-			const currentIndex = slideStatesRef.current[activeSlideIndex].index;
+			const index = activeSlideIndex;
+			const textures = slideTextures[index];
+			const currentIndex = slideStatesRef.current[index].index;
 			const nextIndex = (currentIndex + 1) % textures.length;
 
 			dispatch({
 				type: "SET_NEXT",
-				index: activeSlideIndex,
+				index,
 				nextTexture: textures[nextIndex],
 			});
 		}, SLIDE_CHANGE_INTERVAL);

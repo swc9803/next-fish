@@ -3,6 +3,7 @@ import { Vector3 } from "three";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { getSlidePosition } from "@/utils/slideUtils";
 import { useLightTransition } from "@/hooks/useLightTransition";
+import { useActiveSlideIndex } from "@/hooks/useActiveSlideIndex";
 
 interface HoverLightProps {
 	totalRadius: number;
@@ -45,27 +46,24 @@ const useResponsiveLightProps = () => {
 
 export const HoverLight = ({ totalRadius }: HoverLightProps) => {
 	const { bloomRef, lightRef, setTarget } = useLightTransition();
-	const { freemode, hoverIndex, focusIndex, slide } = useGallerySlide();
+	const { freemode } = useGallerySlide();
+	const activeSlideIndex = useActiveSlideIndex();
 
 	const lightProps = useResponsiveLightProps();
 
-	const targetIndex = useMemo(() => {
-		return !freemode ? slide : hoverIndex ?? focusIndex;
-	}, [freemode, hoverIndex, focusIndex, slide]);
-
-	const lastTargetRef = useRef<number | null>(null);
+	const lastIndexRef = useRef<number | null>(null);
 	const lastModeRef = useRef<boolean | null>(null);
 
 	useEffect(() => {
-		if (targetIndex === null) return;
-		if (targetIndex === lastTargetRef.current && freemode === lastModeRef.current) return;
+		if (activeSlideIndex === null) return;
+		if (activeSlideIndex === lastIndexRef.current && freemode === lastModeRef.current) return;
 
-		lastTargetRef.current = targetIndex;
+		lastIndexRef.current = activeSlideIndex;
 		lastModeRef.current = freemode;
 
-		const { x, z } = getSlidePosition(targetIndex, totalRadius);
+		const { x, z } = getSlidePosition(activeSlideIndex, totalRadius);
 		setTarget(new Vector3(x, 0.5, z));
-	}, [targetIndex, freemode, totalRadius, setTarget]);
+	}, [activeSlideIndex, freemode, totalRadius, setTarget]);
 
 	return (
 		<group ref={bloomRef}>
