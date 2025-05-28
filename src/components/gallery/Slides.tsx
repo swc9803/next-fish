@@ -30,14 +30,15 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 	const activeSlideIndex = useActiveSlideIndex();
 	const { scene } = useThree();
 
-	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), [slideArray]);
+	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
+
 	const texturesArray = useTexture(allImagePaths) as Texture[];
 	const displacementMap = useTexture("/textures/displacement.png");
 
 	const slideTextures = useMemo(() => {
 		let index = 0;
 		return slideArray.map((slide) => slide.imagePaths.map(() => texturesArray[index++]));
-	}, [slideArray, texturesArray]);
+	}, [texturesArray]);
 
 	const initialStates: SlideState[] = slideTextures.map((textures) => ({
 		current: textures[0],

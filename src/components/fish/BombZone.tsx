@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import gsap from "gsap";
 import { useFishStore } from "@/store/useFishStore";
+import { useDeathPositionGrow } from "@/hooks/useDeathPositionGrow";
 import { GrowingFeed } from "./GrowingFeed";
 
 interface BombZoneProps {
@@ -118,6 +119,13 @@ export const BombZone = (props: BombZoneProps) => {
 		};
 	}, [onResetRef, meshRefs]);
 
+	useDeathPositionGrow({
+		isGameOver,
+		hitTilesRef,
+		meshRefs,
+		blinkTweens,
+	});
+
 	useFrame((_, delta) => {
 		if (!bombActive || !isInBombZone || isGameOver) return;
 
@@ -173,34 +181,6 @@ export const BombZone = (props: BombZoneProps) => {
 			}
 		}
 	});
-
-	// 피격된 타일 반짝거림
-	useEffect(() => {
-		if (!isGameOver) return;
-
-		hitTilesRef.current.forEach((index) => {
-			const mesh = meshRefs.current[index];
-			if (!mesh) return;
-
-			const material = mesh.material as MeshStandardMaterial;
-			const tween = gsap.to(material.color, {
-				r: 1,
-				g: 0,
-				b: 0,
-				duration: 0.4,
-				yoyo: true,
-				repeat: -1,
-				ease: "power1.inOut",
-			});
-
-			blinkTweens.current.push(tween);
-		});
-
-		return () => {
-			blinkTweens.current.forEach((t) => t.kill());
-			blinkTweens.current = [];
-		};
-	}, [isGameOver, hitTilesRef, meshRefs, blinkTweens]);
 
 	const memoizedMeshes = useMemo(() => {
 		return CELLS.map((pos, i) => (

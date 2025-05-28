@@ -13,31 +13,17 @@ export const BackgroundWithFog = ({ backgroundColor, fogColor, fogDensity }: Bac
 	const initialized = useRef(false);
 
 	useEffect(() => {
-		const bgColor = new Color(backgroundColor);
-		const fogClr = new Color(fogColor);
+		if (!scene || initialized.current) return;
 
-		// 최초 1회만 scene 배경, 안개 설정
-		if (!initialized.current) {
-			if (!(scene.background instanceof Color)) {
-				scene.background = bgColor;
-			} else {
-				scene.background.copy(bgColor);
-			}
+		scene.background = new Color(backgroundColor);
+		scene.fog = new FogExp2(new Color(fogColor), fogDensity);
 
-			if (!scene.fog) {
-				scene.fog = new FogExp2(fogClr, fogDensity);
-			} else {
-				scene.fog.color.copy(fogClr);
-				if (scene.fog instanceof FogExp2) {
-					scene.fog.density = fogDensity;
-				}
-			}
+		initialized.current = true;
+	}, [scene, backgroundColor, fogColor, fogDensity]);
 
-			initialized.current = true;
-			return;
-		}
+	useEffect(() => {
+		if (!scene || !initialized.current) return;
 
-		// 이후에는 값만 업데이트
 		if (scene.background instanceof Color) {
 			scene.background.set(backgroundColor);
 		}

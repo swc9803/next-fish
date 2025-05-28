@@ -31,16 +31,28 @@ export const TalkativeModel = ({
 	const actionRef = useRef<AnimationAction | null>(null);
 
 	const [visible, setVisible] = useState(false);
-	const typedText = useTyping(text, visible, speed);
-	const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
 	const prevVisible = useRef<boolean | null>(null);
 
 	// 모바일 말풍선 위치 조정
-	const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+	const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+
+	useEffect(() => {
+		const onResize = () => {
+			setIsMobile(window.innerWidth <= 768);
+		};
+		window.addEventListener("resize", onResize);
+		return () => window.removeEventListener("resize", onResize);
+	}, []);
+
+	// 말풍선 위치 계산
 	const adjustedBubblePosition: [number, number, number] = useMemo(() => {
 		const [x, y, z] = bubblePosition || modelPosition;
 		return isMobile ? [x, y - 0.5, z - 0.5] : [x, y, z];
 	}, [isMobile, bubblePosition, modelPosition]);
+
+	const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
+
+	const typedText = useTyping(text, visible, speed);
 
 	// 그림자
 	useEffect(() => {
@@ -83,6 +95,7 @@ export const TalkativeModel = ({
 		}
 	}, [visible]);
 
+	// 거리 계산
 	useFrame((_, delta) => {
 		const fish = fishRef.current;
 		if (!fish) return;
