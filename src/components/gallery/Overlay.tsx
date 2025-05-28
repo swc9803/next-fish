@@ -18,13 +18,15 @@ export const Overlay = () => {
 	const contentRef = useRef<HTMLDivElement>(null);
 	const logoWrapperRef = useRef<HTMLDivElement>(null);
 	const timelineRef = useRef<gsap.core.Timeline | null>(null);
+	const prevFreemodeRef = useRef(freemode);
 
 	const showOverlay = isCameraIntroDone && ((!freemode && focusIndex === null) || (freemode && focusIndex !== null));
-
 	const disabledToggle = isCooldown || isSliding || isIntroPlaying;
 	const showSlideNavigation = !freemode && isCameraIntroDone && !isIntroPlaying;
 
 	useEffect(() => {
+		const prevFreemode = prevFreemodeRef.current;
+
 		if (!contentRef.current || !logoWrapperRef.current) return;
 
 		if (timelineRef.current) {
@@ -34,22 +36,43 @@ export const Overlay = () => {
 		const tl = gsap.timeline();
 		timelineRef.current = tl;
 
-		tl.to([logoWrapperRef.current, contentRef.current], {
-			opacity: 0,
-			ease: "power2.out",
-			duration: 0.3,
-			onComplete: () => {
-				setRenderedIndex(activeSlideIndex);
-			},
-		});
+		const isFromFreeToSlide = prevFreemode === true && freemode === false;
 
-		tl.to([logoWrapperRef.current, contentRef.current], {
-			opacity: 1,
-			ease: "power2.out",
-			duration: 0.5,
-			delay: 1,
-		});
-	}, [activeSlideIndex]);
+		if (isFromFreeToSlide) {
+			// 프리 모드
+			setRenderedIndex(activeSlideIndex);
+
+			tl.fromTo(
+				[logoWrapperRef.current, contentRef.current],
+				{ opacity: 0 },
+				{
+					opacity: 1,
+					ease: "power2.out",
+					duration: 0.5,
+					delay: 0.1,
+				}
+			);
+		} else {
+			// 슬라이드 모드
+			tl.to([logoWrapperRef.current, contentRef.current], {
+				opacity: 0,
+				ease: "power2.out",
+				duration: 0.3,
+				onComplete: () => {
+					setRenderedIndex(activeSlideIndex);
+				},
+			});
+
+			tl.to([logoWrapperRef.current, contentRef.current], {
+				opacity: 1,
+				ease: "power2.out",
+				duration: 0.5,
+				delay: 1,
+			});
+		}
+
+		prevFreemodeRef.current = freemode;
+	}, [activeSlideIndex, freemode]);
 
 	const handleToggleView = () => {
 		if (disabledToggle) return;
