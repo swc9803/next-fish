@@ -20,7 +20,7 @@ export const IntroOverlay = () => {
 				node.removeEventListener("animationend", handleEnd);
 			}
 		};
-	}, []);
+	}, [setIsIntroPlaying]);
 
 	return (
 		<div

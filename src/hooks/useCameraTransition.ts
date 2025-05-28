@@ -46,7 +46,7 @@ export const useCameraTransition = (cameraRadius: number, totalRadius: number) =
 
 			setTimeout(() => setState({ isSliding: false }), 300);
 		},
-		[cameraRadius, totalRadius]
+		[cameraRadius, totalRadius, setState]
 	);
 
 	const moveToFreeModePosition = useCallback(
@@ -63,7 +63,7 @@ export const useCameraTransition = (cameraRadius: number, totalRadius: number) =
 			await controls.setLookAt(camPos.x, 0, camPos.z, 0, 0, 0, true);
 			setTimeout(() => setState({ isSliding: false }), 300);
 		},
-		[cameraRadius]
+		[cameraRadius, setState]
 	);
 
 	return {

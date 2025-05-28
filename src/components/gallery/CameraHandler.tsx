@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Vector3 } from "three";
 import { CameraControls } from "@react-three/drei";
 import { useCameraTransition } from "@/hooks/useCameraTransition";
@@ -42,12 +42,7 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 		requestAnimationFrame(() => setIsReadyToStart(true));
 	}, []);
 
-	useEffect(() => {
-		if (!isReadyToStart || !startIntro || hasIntroPlayed || !cameraControlsRef.current) return;
-		playIntroAnimation();
-	}, [startIntro, isReadyToStart]);
-
-	const playIntroAnimation = () => {
+	const playIntroAnimation = useCallback(() => {
 		setHasIntroPlayed(true);
 		setIsIntroPlaying(true);
 		setIntroStarted(true);
@@ -82,7 +77,22 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 		};
 
 		animate();
-	};
+	}, [
+		cameraControlsRef,
+		setHasIntroPlayed,
+		setIsIntroPlaying,
+		setIntroStarted,
+		setLastFocusTarget,
+		setSlide,
+		setCameraIntroDone,
+		totalRadius,
+		cameraRadius,
+	]);
+
+	useEffect(() => {
+		if (!isReadyToStart || !startIntro || hasIntroPlayed || !cameraControlsRef.current) return;
+		playIntroAnimation();
+	}, [startIntro, isReadyToStart, hasIntroPlayed, cameraControlsRef, playIntroAnimation]);
 
 	useEffect(() => {
 		if (!isReadyToStart || isIntroPlaying || slide === lastSlideIndexRef.current) return;
@@ -108,24 +118,7 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 		prevFocusRef.current = focusIndex;
 	}, [freemode, focusIndex, moveToSlide, moveToFreeModePosition, lastFocusTarget, isReadyToStart, isIntroPlaying]);
 
-	// 모드 전환시 정면 슬라이드 줌인
-	useEffect(() => {
-		if (!isReadyToStart || isIntroPlaying) return;
-
-		const prevMode = prevFreemodeRef.current;
-		const currentMode = freemode;
-		prevFreemodeRef.current = currentMode;
-
-		if (prevMode && !currentMode && cameraControlsRef.current?.camera) {
-			requestAnimationFrame(() => zoomToNearestSlide());
-		}
-
-		if (!prevMode && currentMode) {
-			moveToFreeModePosition(lastFocusTarget);
-		}
-	}, [freemode, totalRadius, moveToSlide, moveToFreeModePosition, lastFocusTarget, isReadyToStart, isIntroPlaying]);
-
-	const zoomToNearestSlide = () => {
+	const zoomToNearestSlide = useCallback(() => {
 		const camera = cameraControlsRef.current!.camera;
 		camera.updateMatrixWorld();
 		const direction = new Vector3();
@@ -150,7 +143,34 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 		setSlide(nearestIndex);
 		moveToSlide(nearestIndex, true);
 		lastSlideIndexRef.current = nearestIndex;
-	};
+	}, [cameraControlsRef, setFocusIndex, setHoverIndex, setSlide, moveToSlide, totalRadius]);
+
+	// 모드 전환시 정면 슬라이드 줌인
+	useEffect(() => {
+		if (!isReadyToStart || isIntroPlaying) return;
+
+		const prevMode = prevFreemodeRef.current;
+		const currentMode = freemode;
+		prevFreemodeRef.current = currentMode;
+
+		if (prevMode && !currentMode && cameraControlsRef.current?.camera) {
+			requestAnimationFrame(() => zoomToNearestSlide());
+		}
+
+		if (!prevMode && currentMode) {
+			moveToFreeModePosition(lastFocusTarget);
+		}
+	}, [
+		freemode,
+		totalRadius,
+		moveToSlide,
+		moveToFreeModePosition,
+		lastFocusTarget,
+		isReadyToStart,
+		isIntroPlaying,
+		cameraControlsRef,
+		zoomToNearestSlide,
+	]);
 
 	const isInteractive = freemode && focusIndex === null;
 

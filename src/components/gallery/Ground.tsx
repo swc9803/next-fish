@@ -6,8 +6,9 @@ export const Ground = ({ positionY }) => {
 
 	// 메모리 해제
 	useEffect(() => {
+		const material = materialRef.current;
 		return () => {
-			materialRef.current?.dispose?.();
+			material?.dispose?.();
 		};
 	}, []);
 

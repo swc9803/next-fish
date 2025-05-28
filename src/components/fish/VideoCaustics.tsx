@@ -4,62 +4,43 @@ import { VideoTexture, LinearFilter, RGBFormat, Mesh } from "three";
 export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 	const [videoTexture, setVideoTexture] = useState<VideoTexture | null>(null);
 	const meshRef = useRef<Mesh>(null);
+	const videoRef = useRef<HTMLVideoElement | null>(null);
 
-	useEffect(() => {
-		if (!videoTexture?.image) return;
-
-		const video = videoTexture.image;
-		if (!(video instanceof HTMLVideoElement)) return;
-
-		const onCanPlay = () => {
-			video.removeEventListener("canplaythrough", onCanPlay);
-		};
-
-		video.addEventListener("canplaythrough", onCanPlay);
-		return () => {
-			video.removeEventListener("canplaythrough", onCanPlay);
-		};
-	}, [videoTexture]);
-
-	// 비디오 초기화 및 텍스처 생성
 	useEffect(() => {
 		const video = document.createElement("video");
 		video.src = "/videos/caustics.mp4";
 		video.crossOrigin = "anonymous";
 		video.loop = true;
 		video.muted = true;
-		video.autoplay = true;
 		video.playsInline = true;
+		videoRef.current = video;
 
-		let texture: VideoTexture;
-
-		const handleCanPlay = () => {
-			texture = new VideoTexture(video);
-			texture.minFilter = LinearFilter;
-			texture.magFilter = LinearFilter;
-			texture.format = RGBFormat;
-			setVideoTexture(texture);
-			onLoaded();
-			video.removeEventListener("canplay", handleCanPlay);
-		};
-
-		const tryPlay = () => {
-			const playPromise = video.play();
-			if (playPromise !== undefined) {
-				playPromise.catch((error) => {
-					console.warn(error);
-				});
+		const handleCanPlay = async () => {
+			try {
+				await video.play();
+				const texture = new VideoTexture(video);
+				texture.minFilter = LinearFilter;
+				texture.magFilter = LinearFilter;
+				texture.format = RGBFormat;
+				setVideoTexture(texture);
+				onLoaded();
+			} catch (error) {
+				console.warn("Video play failed:", error);
 			}
+			video.removeEventListener("canplaythrough", handleCanPlay);
 		};
 
-		video.addEventListener("canplay", handleCanPlay);
-		requestAnimationFrame(tryPlay);
+		video.addEventListener("canplaythrough", handleCanPlay);
+
+		if (video.readyState >= 3) {
+			handleCanPlay();
+		}
 
 		return () => {
 			video.pause();
 			video.removeAttribute("src");
 			video.load();
-			if (texture) texture.dispose();
+			if (videoTexture) videoTexture.dispose();
 		};
 	}, [onLoaded]);
 
