@@ -121,6 +121,7 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 	const zoomToNearestSlide = useCallback(() => {
 		const camera = cameraControlsRef.current!.camera;
 		camera.updateMatrixWorld();
+
 		const direction = new Vector3();
 		camera.getWorldDirection(direction);
 		const position = camera.position.clone();
@@ -132,6 +133,7 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 			const { x, z } = getSlidePosition(i, totalRadius);
 			const toSlide = new Vector3(x - position.x, 0, z - position.z).normalize();
 			const dot = direction.dot(toSlide);
+
 			if (dot > maxDot) {
 				maxDot = dot;
 				nearestIndex = i;

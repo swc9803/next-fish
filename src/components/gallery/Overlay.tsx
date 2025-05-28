@@ -14,7 +14,7 @@ export const Overlay = () => {
 	const [lockedSlide, setLockedSlide] = useState(slide);
 	const [isCooldown, setIsCooldown] = useState(false);
 
-	const showOverlay = isCameraIntroDone && !isSliding && ((!freemode && focusIndex === null) || (freemode && focusIndex !== null));
+	const showOverlay = isCameraIntroDone && ((!freemode && focusIndex === null) || (freemode && focusIndex !== null));
 	const disabledToggle = isCooldown || isSliding || isIntroPlaying;
 	const showSlideNavigation = !freemode && isCameraIntroDone && !isIntroPlaying;
 
@@ -39,12 +39,16 @@ export const Overlay = () => {
 	const handleToggleView = () => {
 		if (disabledToggle) return;
 
-		if (freemode && focusIndex !== null) {
-			setSlide(focusIndex);
-			setLockedSlide(focusIndex);
-			setVisibleSlide(focusIndex);
-			setFocusIndex(null);
-			setFreemode(false);
+		if (freemode) {
+			if (focusIndex !== null) {
+				setSlide(focusIndex);
+				setLockedSlide(focusIndex);
+				setVisibleSlide(focusIndex);
+				setFocusIndex(null);
+				setFreemode(false);
+			} else {
+				setFreemode(false);
+			}
 		} else {
 			setFreemode(true);
 		}
