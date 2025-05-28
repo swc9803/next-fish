@@ -52,6 +52,9 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	const [fishLoaded, setFishLoaded] = useState(false);
 	const [groundLoaded, setGroundLoaded] = useState(false);
 	const [videoLoaded, setVideoLoaded] = useState(false);
+	const handleVideoLoaded = useCallback(() => {
+		setVideoLoaded(true);
+	}, []);
 	const [hasNotified, setHasNotified] = useState(false);
 
 	const [isShowGuide, setIsShowGuide] = useState(false);
@@ -268,7 +271,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 					shadow-camera-far={150}
 				/>
 
-				<VideoCaustics onLoaded={() => setVideoLoaded(true)} />
+				<VideoCaustics onLoaded={handleVideoLoaded} />
 
 				<FishModel
 					fishRef={fishRef}

@@ -1,58 +1,19 @@
-import { useReducer, useEffect, useMemo, useCallback, useRef } from "react";
+import { useEffect, useMemo, useCallback, useRef, useState } from "react";
 import { Texture, Mesh } from "three";
-import { useTexture, shaderMaterial } from "@react-three/drei";
+import { useTexture } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
-import { useFrame, extend, useThree } from "@react-three/fiber";
 import { useActiveSlideIndex } from "@/hooks/useActiveSlideIndex";
 
-const DisplacementMaterial = shaderMaterial(
-	{
-		texture1: null,
-		texture2: null,
-		dispMap: null,
-		progress: 0,
-	},
-	`
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-  `,
-	`
-  uniform sampler2D texture1;
-	uniform sampler2D texture2;
-	uniform sampler2D dispMap;
-	uniform float progress;
-	uniform float slideIndex; // NEW
-	varying vec2 vUv;
+import vertex from "@/shaders/slideVertex.glsl";
+import fragment from "@/shaders/slideFragment.glsl";
 
-	void main() {
-		vec4 disp = texture2D(dispMap, vUv);
-
-		float seed = fract(sin(slideIndex * 91.3458) * 47458.453);
-		float angle = seed * 6.2831; // 0 ~ 2π
-		vec2 direction = vec2(cos(angle), sin(angle));
-
-		float strength = sin(progress * 3.1415);
-
-		vec2 offset = (disp.r - 0.5) * direction * 0.3 * strength;
-
-		vec2 distortedUv1 = vUv + offset * (1.0 - progress);
-		vec2 distortedUv2 = vUv + offset * progress;
-
-		vec4 tex1 = texture2D(texture1, distortedUv1);
-		vec4 tex2 = texture2D(texture2, distortedUv2);
-
-		gl_FragColor = mix(tex1, tex2, progress);
-	}
-  `
-);
-
-extend({ DisplacementMaterial });
-
-const SLIDE_CHANGE_INTERVAL = 3000;
+interface SlidesProps {
+	totalRadius: number;
+	slideWidth: number;
+	slideHeight: number;
+}
 
 interface SlideState {
 	current: Texture;
@@ -62,10 +23,23 @@ interface SlideState {
 	isFading: boolean;
 }
 
-type SlideAction = { type: "SET_NEXT"; index: number; nextTexture: Texture } | { type: "INCREMENT_OPACITY" };
+const SLIDE_CHANGE_INTERVAL = 3000;
 
-const initialState = (slideTextures: Texture[][]) =>
-	slideTextures.map((textures) => ({
+export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) => {
+	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setHoverIndex, isIntroPlaying } = useGallerySlide();
+	const activeSlideIndex = useActiveSlideIndex();
+	const { scene } = useThree();
+
+	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), [slideArray]);
+	const texturesArray = useTexture(allImagePaths) as Texture[];
+	const displacementMap = useTexture("/textures/displacement.png");
+
+	const slideTextures = useMemo(() => {
+		let index = 0;
+		return slideArray.map((slide) => slide.imagePaths.map(() => texturesArray[index++]));
+	}, [slideArray, texturesArray]);
+
+	const initialStates: SlideState[] = slideTextures.map((textures) => ({
 		current: textures[0],
 		next: null,
 		opacity: 0,
@@ -73,51 +47,9 @@ const initialState = (slideTextures: Texture[][]) =>
 		isFading: false,
 	}));
 
-function slideReducer(state: SlideState[], action: SlideAction): SlideState[] {
-	switch (action.type) {
-		case "SET_NEXT": {
-			const { index, nextTexture } = action;
-			return state.map((s, i) => (i === index ? { ...s, next: nextTexture, opacity: 0, isFading: true } : s));
-		}
-		case "INCREMENT_OPACITY": {
-			return state.map((s) => {
-				if (!s.isFading || !s.next) return s;
-				const newOpacity = Math.min(s.opacity + 0.03, 1);
-				if (newOpacity >= 1) {
-					return {
-						current: s.next,
-						next: null,
-						opacity: 0,
-						index: (s.index + 1) % slideArray[0].imagePaths.length,
-						isFading: false,
-					};
-				}
-				return { ...s, opacity: newOpacity };
-			});
-		}
-		default:
-			return state;
-	}
-}
-
-export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
-	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setHoverIndex } = useGallerySlide();
-	const activeSlideIndex = useActiveSlideIndex();
-	const { scene } = useThree();
-	const { isIntroPlaying } = useGallerySlide();
-
-	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
-	const texturesArray = useTexture(allImagePaths) as Texture[];
-
-	const displacementMap = useTexture("/textures/displacement.png");
-
-	const slideTextures = useMemo(() => {
-		let index = 0;
-		return slideArray.map((slide) => slide.imagePaths.map(() => texturesArray[index++]));
-	}, [texturesArray]);
-
-	const [slideStates, dispatch] = useReducer(slideReducer, slideTextures, initialState);
+	const [slideStates, setSlideStates] = useState<SlideState[]>(initialStates);
 	const slideStatesRef = useRef(slideStates);
+	const uniformsRef = useRef<{ [index: number]: any }>({});
 
 	useEffect(() => {
 		slideStatesRef.current = slideStates;
@@ -140,25 +72,71 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 	}, [slideTextures, scene]);
 
 	useEffect(() => {
-		if (isIntroPlaying) return; // 인트로 애니메이션 중 슬라이드 이미지 전환 방지
+		if (isIntroPlaying) return;
 
 		const interval = setInterval(() => {
-			const index = activeSlideIndex;
-			const textures = slideTextures[index];
-			const currentIndex = slideStatesRef.current[index].index;
-			const nextIndex = (currentIndex + 1) % textures.length;
+			setSlideStates((prev) => {
+				const index = activeSlideIndex;
+				const current = prev[index];
+				const nextIndex = (current.index + 1) % slideTextures[index].length;
+				const nextTexture = slideTextures[index][nextIndex];
 
-			dispatch({
-				type: "SET_NEXT",
-				index,
-				nextTexture: textures[nextIndex],
+				return prev.map((s, i) => (i === index ? { ...s, next: nextTexture, opacity: 0, isFading: true } : s));
 			});
 		}, SLIDE_CHANGE_INTERVAL);
 
 		return () => clearInterval(interval);
 	}, [activeSlideIndex, slideTextures, isIntroPlaying]);
 
-	useFrame(() => dispatch({ type: "INCREMENT_OPACITY" }));
+	useFrame(() => {
+		setSlideStates((prev) =>
+			prev.map((s) => {
+				if (!s.isFading || !s.next) return s;
+				const newOpacity = Math.min(s.opacity + 0.03, 1);
+				if (newOpacity >= 1) {
+					return {
+						current: s.next,
+						next: null,
+						opacity: 0,
+						index: (s.index + 1) % slideArray[0].imagePaths.length,
+						isFading: false,
+					};
+				}
+				return { ...s, opacity: newOpacity };
+			})
+		);
+
+		slideStatesRef.current.forEach((state, index) => {
+			const uniforms = uniformsRef.current[index];
+			if (!uniforms) return;
+
+			const nextTex = state.next || state.current;
+			if (
+				uniforms.texture1.value !== state.current ||
+				uniforms.texture2.value !== nextTex ||
+				uniforms.progress.value !== (state.isFading ? state.opacity : 0) ||
+				uniforms.slideIndex.value !== state.index
+			) {
+				uniforms.texture1.value = state.current;
+				uniforms.texture2.value = nextTex;
+				uniforms.progress.value = state.isFading ? state.opacity : 0;
+				uniforms.slideIndex.value = state.index;
+			}
+		});
+	});
+
+	const getUniforms = (index: number, state: SlideState) => {
+		if (!uniformsRef.current[index]) {
+			uniformsRef.current[index] = {
+				texture1: { value: state.current },
+				texture2: { value: state.next || state.current },
+				dispMap: { value: displacementMap },
+				progress: { value: state.isFading ? state.opacity : 0 },
+				slideIndex: { value: state.index },
+			};
+		}
+		return uniformsRef.current[index];
+	};
 
 	const handleClick = useCallback(
 		(index: number) => {
@@ -205,14 +183,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 							</mesh>
 							<mesh position={[0, 0, 0]}>
 								<planeGeometry args={[slideWidth, slideHeight]} />
-								<displacementMaterial
-									key={state.index}
-									texture1={state.current}
-									texture2={state.next || state.current}
-									dispMap={displacementMap}
-									progress={state.isFading ? state.opacity : 0}
-									transparent
-								/>
+								<shaderMaterial key={index} vertexShader={vertex} fragmentShader={fragment} uniforms={getUniforms(index, state)} transparent />
 							</mesh>
 						</group>
 					</group>

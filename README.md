@@ -11,5 +11,6 @@ ga, favicon
 SEO 최적화 ( 후순위 )
 성능 테스트
 npm run build 오류 해결
+tsconfig strict true 로 변경 후 오류 제거
 
 # 임시 아이디어

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { VideoTexture, LinearFilter, RGBFormat, Mesh } from "three";
 
-export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
+export const VideoCaustics = memo(({ onLoaded }: { onLoaded: () => void }) => {
 	const [videoTexture, setVideoTexture] = useState<VideoTexture | null>(null);
 	const meshRef = useRef<Mesh>(null);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -54,4 +54,4 @@ export const VideoCaustics = ({ onLoaded }: { onLoaded: () => void }) => {
 			</mesh>
 		)
 	);
-};
+});
