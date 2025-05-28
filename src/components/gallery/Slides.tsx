@@ -1,10 +1,58 @@
 import { useReducer, useEffect, useMemo, useCallback, useRef } from "react";
 import { Texture, Mesh } from "three";
-import { useTexture } from "@react-three/drei";
+import { useTexture, shaderMaterial } from "@react-three/drei";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { slideArray, getSlidePosition } from "@/utils/slideUtils";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame, extend, useThree } from "@react-three/fiber";
 import { useActiveSlideIndex } from "@/hooks/useActiveSlideIndex";
+
+const DisplacementMaterial = shaderMaterial(
+	{
+		texture1: null,
+		texture2: null,
+		dispMap: null,
+		progress: 0,
+	},
+	`
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+  `,
+	`
+  uniform sampler2D texture1;
+	uniform sampler2D texture2;
+	uniform sampler2D dispMap;
+	uniform float progress;
+	uniform float slideIndex; // NEW
+	varying vec2 vUv;
+
+	void main() {
+		vec4 disp = texture2D(dispMap, vUv);
+
+		float seed = fract(sin(slideIndex * 91.3458) * 47458.453);
+		float angle = seed * 6.2831; // 0 ~ 2π
+		vec2 direction = vec2(cos(angle), sin(angle));
+
+		float strength = sin(progress * 3.1415);
+
+		vec2 offset = (disp.r - 0.5) * direction * 0.3 * strength;
+
+		vec2 distortedUv1 = vUv + offset * (1.0 - progress);
+		vec2 distortedUv2 = vUv + offset * progress;
+
+		vec4 tex1 = texture2D(texture1, distortedUv1);
+		vec4 tex2 = texture2D(texture2, distortedUv2);
+
+		gl_FragColor = mix(tex1, tex2, progress);
+	}
+  `
+);
+
+extend({ DisplacementMaterial });
+
+const SLIDE_CHANGE_INTERVAL = 3000;
 
 interface SlideState {
 	current: Texture;
@@ -15,8 +63,6 @@ interface SlideState {
 }
 
 type SlideAction = { type: "SET_NEXT"; index: number; nextTexture: Texture } | { type: "INCREMENT_OPACITY" };
-
-const SLIDE_CHANGE_INTERVAL = 3000;
 
 const initialState = (slideTextures: Texture[][]) =>
 	slideTextures.map((textures) => ({
@@ -36,7 +82,7 @@ function slideReducer(state: SlideState[], action: SlideAction): SlideState[] {
 		case "INCREMENT_OPACITY": {
 			return state.map((s) => {
 				if (!s.isFading || !s.next) return s;
-				const newOpacity = Math.min(s.opacity + 0.05, 1);
+				const newOpacity = Math.min(s.opacity + 0.03, 1);
 				if (newOpacity >= 1) {
 					return {
 						current: s.next,
@@ -56,13 +102,14 @@ function slideReducer(state: SlideState[], action: SlideAction): SlideState[] {
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setHoverIndex } = useGallerySlide();
-
 	const activeSlideIndex = useActiveSlideIndex();
 	const { scene } = useThree();
 	const { isIntroPlaying } = useGallerySlide();
 
 	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
 	const texturesArray = useTexture(allImagePaths) as Texture[];
+
+	const displacementMap = useTexture("/textures/displacement.png");
 
 	const slideTextures = useMemo(() => {
 		let index = 0;
@@ -158,14 +205,15 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }) => {
 							</mesh>
 							<mesh position={[0, 0, 0]}>
 								<planeGeometry args={[slideWidth, slideHeight]} />
-								<meshBasicMaterial map={state.current} toneMapped={false} transparent />
+								<displacementMaterial
+									key={state.index}
+									texture1={state.current}
+									texture2={state.next || state.current}
+									dispMap={displacementMap}
+									progress={state.isFading ? state.opacity : 0}
+									transparent
+								/>
 							</mesh>
-							{state.next && (
-								<mesh position={[0, 0, 0]}>
-									<planeGeometry args={[slideWidth, slideHeight]} />
-									<meshBasicMaterial map={state.next} toneMapped={false} transparent opacity={state.opacity} />
-								</mesh>
-							)}
 						</group>
 					</group>
 				);
