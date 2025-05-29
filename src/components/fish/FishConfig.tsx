@@ -1,38 +1,44 @@
-import { memo, useState, useCallback } from "react";
+import { memo, useCallback } from "react";
 import { useFishStore } from "@/store/useFishStore";
 
-export const FishConfig = () => {
-	const { backgroundColor, setBackgroundColor, fogColor, setFogColor, fogDensity, setFogDensity, fishSpeed, setFishSpeed, fishScale, setFishScale } =
-		useFishStore();
+const FishConfigComponent = () => {
+	const fishSpeed = useFishStore((s) => s.fishSpeed);
+	const fishScale = useFishStore((s) => s.fishScale);
+	const setFishSpeed = useFishStore((s) => s.setFishSpeed);
+	const setFishScale = useFishStore((s) => s.setFishScale);
 
-	const [tempSpeed, setTempSpeed] = useState(fishSpeed);
-	const [tempScale, setTempScale] = useState(fishScale);
+	const backgroundColor = useFishStore((s) => s.backgroundColor);
+	const fogColor = useFishStore((s) => s.fogColor);
+	const fogDensity = useFishStore((s) => s.fogDensity);
+	const setBackgroundColor = useFishStore((s) => s.setBackgroundColor);
+	const setFogColor = useFishStore((s) => s.setFogColor);
+	const setFogDensity = useFishStore((s) => s.setFogDensity);
 
-	const applySpeed = useCallback(() => {
-		setFishSpeed(tempSpeed);
-	}, [tempSpeed, setFishSpeed]);
+	const handleSpeedChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const val = Number(e.target.value);
+			if (!isNaN(val)) setFishSpeed(val);
+		},
+		[setFishSpeed]
+	);
 
-	const applyScale = useCallback(() => {
-		setFishScale(tempScale);
-	}, [tempScale, setFishScale]);
+	const handleScaleChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const val = Number(e.target.value);
+			if (!isNaN(val)) setFishScale(val);
+		},
+		[setFishScale]
+	);
 
 	return (
 		<div className="fish_config">
 			<div>
 				<label>Fish Speed:</label>
-				<input type="number" value={tempSpeed} onChange={(e) => setTempSpeed(Number(e.target.value))} onBlur={applySpeed} min={10} max={200} />
+				<input type="number" value={fishSpeed} onChange={handleSpeedChange} min={10} max={200} />
 			</div>
 			<div>
 				<label>Fish Scale:</label>
-				<input
-					type="number"
-					value={tempScale}
-					onChange={(e) => setTempScale(Number(e.target.value))}
-					onBlur={applyScale}
-					min={0.1}
-					max={10}
-					step={0.1}
-				/>
+				<input type="number" value={fishScale} onChange={handleScaleChange} min={0.1} max={10} step={0.1} />
 			</div>
 			<div>
 				<label>Background Color:</label>
@@ -50,4 +56,4 @@ export const FishConfig = () => {
 	);
 };
 
-memo(FishConfig);
+export const FishConfig = memo(FishConfigComponent);

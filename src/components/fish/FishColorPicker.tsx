@@ -1,7 +1,7 @@
 import { memo, useCallback } from "react";
 import { useFishStore } from "@/store/useFishStore";
 
-export const FishColorPicker = () => {
+const FishColorPickerComponent = () => {
 	const fishColor = useFishStore((s) => s.fishColor);
 	const setFishColor = useFishStore((s) => s.setFishColor);
 
@@ -21,4 +21,4 @@ export const FishColorPicker = () => {
 	);
 };
 
-memo(FishColorPicker);
+export const FishColorPicker = memo(FishColorPickerComponent);

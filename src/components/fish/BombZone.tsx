@@ -1,11 +1,10 @@
 import { useMemo, useRef, useCallback, RefObject, Dispatch, SetStateAction, useEffect } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import gsap from "gsap";
 
 import { useFishStore } from "@/store/useFishStore";
 import { useDeathPositionGrow } from "@/hooks/useDeathPositionGrow";
-
 import { GrowingFeed } from "./GrowingFeed";
 
 interface BombZoneProps {
@@ -34,6 +33,19 @@ interface BombZoneProps {
 const CELL_SIZE = 6;
 const GRID_HALF = 3;
 const MAX_SCORE = 1000;
+const MAX_BOMBS = 10;
+
+const CELLS: [number, number, number][] = Array.from({ length: (GRID_HALF * 2 + 1) ** 2 }, (_, i) => {
+	const x = (i % (GRID_HALF * 2 + 1)) - GRID_HALF;
+	const z = Math.floor(i / (GRID_HALF * 2 + 1)) - GRID_HALF;
+	return [x * CELL_SIZE, 0.1, z * CELL_SIZE];
+});
+
+const cameraShakeRef = {
+	time: 0,
+	intensity: 0,
+	basePosition: new Vector3(),
+};
 
 export const BombZone = (props: BombZoneProps) => {
 	const {
@@ -54,18 +66,13 @@ export const BombZone = (props: BombZoneProps) => {
 		onResetRef,
 	} = props;
 
+	const { camera } = useThree();
 	const fishScale = useFishStore((s) => s.fishScale);
+
 	const activeBombsRef = useRef(new Set<number>());
 	const bombProgressRef = useRef<{ [index: number]: number }>({});
 	const bombTimer = useRef(0);
-
-	const CELLS = useMemo(() => {
-		return Array.from({ length: (GRID_HALF * 2 + 1) ** 2 }, (_, i) => {
-			const x = (i % (GRID_HALF * 2 + 1)) - GRID_HALF;
-			const z = Math.floor(i / (GRID_HALF * 2 + 1)) - GRID_HALF;
-			return [x * CELL_SIZE, 0.1, z * CELL_SIZE] as [number, number, number];
-		});
-	}, []);
+	const lastDelayRef = useRef(1.5);
 
 	const checkCollision = useCallback(
 		(fish: Object3D, cellIndex: number) => {
@@ -79,7 +86,7 @@ export const BombZone = (props: BombZoneProps) => {
 			const sideDist = Math.abs(toCell.dot(new Vector3().crossVectors(fishDir, new Vector3(0, 1, 0))));
 			return forwardDist < CELL_SIZE / 2 + hitLength / 2 && sideDist < CELL_SIZE / 2 + hitWidth / 2;
 		},
-		[fishScale, CELLS]
+		[fishScale]
 	);
 
 	const handleFishHit = useCallback(
@@ -98,10 +105,11 @@ export const BombZone = (props: BombZoneProps) => {
 
 	const animateBomb = useCallback(
 		(index: number) => {
-			const MAX_BOMBS = 10;
-			if (isGameOver || activeBombsRef.current.has(index) || activeBombsRef.current.size >= MAX_BOMBS) return;
+			if (isGameOver || activeBombsRef.current.size >= MAX_BOMBS || activeBombsRef.current.has(index)) return;
+
 			const mesh = meshRefs.current[index];
 			if (!mesh) return;
+
 			bombProgressRef.current[index] = 0;
 			activeBombsRef.current.add(index);
 		},
@@ -132,10 +140,11 @@ export const BombZone = (props: BombZoneProps) => {
 		if (!bombActive || !isInBombZone || isGameOver) return;
 
 		bombTimer.current += delta;
-		const spawnDelay = Math.max(2 - score / MAX_SCORE, 1);
+		const currentDelay = Math.max(1.5 - (score / MAX_SCORE) * 0.5, 1);
+		lastDelayRef.current = currentDelay;
 
-		if (bombTimer.current >= spawnDelay) {
-			bombTimer.current = 0;
+		while (bombTimer.current >= currentDelay) {
+			bombTimer.current -= currentDelay;
 
 			if (score >= MAX_SCORE) {
 				setIsGameOver(true);
@@ -150,16 +159,24 @@ export const BombZone = (props: BombZoneProps) => {
 				setFeed({ position: [x, 1, z], active: true });
 			}
 
-			const bombCount = Math.floor(4 + (score / MAX_SCORE) * 6);
+			const bombCount = Math.floor(5 + (score / MAX_SCORE) * 5);
 			const indexes = new Set<number>();
-			while (indexes.size < bombCount) {
-				indexes.add(Math.floor(Math.random() * CELLS.length));
+			let attempts = 0;
+
+			while (indexes.size < bombCount && attempts < 100) {
+				const i = Math.floor(Math.random() * CELLS.length);
+				if (!activeBombsRef.current.has(i) && meshRefs.current[i]) {
+					indexes.add(i);
+				}
+				attempts++;
 			}
-			fishRef.current && [...indexes].forEach((i) => animateBomb(i));
+
+			indexes.forEach((i) => animateBomb(i));
 		}
 
 		// 폭탄 색상 변화 및 충돌 체크
-		for (const index of Object.keys(bombProgressRef.current)) {
+		const explodedThisFrame: number[] = [];
+		for (const index in bombProgressRef.current) {
 			const i = Number(index);
 			const mesh = meshRefs.current[i];
 			if (!mesh) continue;
@@ -172,14 +189,44 @@ export const BombZone = (props: BombZoneProps) => {
 			color.setRGB(1, Math.max(1 - nextProgress, 0), Math.max(1 - nextProgress, 0));
 
 			if (nextProgress >= 1) {
+				explodedThisFrame.push(i);
+
 				if (!isGameOver && fishRef.current && checkCollision(fishRef.current, i)) {
 					handleFishHit(i);
 				} else {
 					incrementScore();
 				}
+
 				color.set("white");
 				delete bombProgressRef.current[i];
 				activeBombsRef.current.delete(i);
+			}
+		}
+
+		if (explodedThisFrame.length > 0) {
+			cameraShakeRef.intensity = Math.min(explodedThisFrame.length * 0.02, 0.2);
+			cameraShakeRef.time = 0;
+			cameraShakeRef.basePosition.copy(camera.position);
+		}
+	});
+
+	useFrame((_, delta) => {
+		if (cameraShakeRef.intensity > 0) {
+			cameraShakeRef.time += delta;
+
+			const decay = Math.exp(-cameraShakeRef.time * 15);
+			const shakeAmount = cameraShakeRef.intensity * decay;
+
+			const t = cameraShakeRef.time * 60;
+			const offsetX = Math.sin(t) * shakeAmount;
+			const offsetY = Math.sin(t * 1.3) * shakeAmount * 0.6;
+
+			camera.position.copy(cameraShakeRef.basePosition.clone().add(new Vector3(offsetX, offsetY, 0)));
+
+			if (shakeAmount < 0.001) {
+				cameraShakeRef.intensity = 0;
+				cameraShakeRef.time = 0;
+				camera.position.copy(cameraShakeRef.basePosition);
 			}
 		}
 	});
@@ -189,7 +236,9 @@ export const BombZone = (props: BombZoneProps) => {
 			<group key={i} position={pos}>
 				<mesh
 					ref={(el) => {
-						if (el) meshRefs.current[i] = el;
+						if (el && meshRefs.current[i] !== el) {
+							meshRefs.current[i] = el;
+						}
 					}}
 				>
 					<boxGeometry args={[CELL_SIZE, 0.1, CELL_SIZE]} />
@@ -201,7 +250,7 @@ export const BombZone = (props: BombZoneProps) => {
 				</lineSegments>
 			</group>
 		));
-	}, [CELLS, meshRefs]);
+	}, [meshRefs]);
 
 	return (
 		<>

@@ -13,6 +13,6 @@ export const resetGameState = (
 	setIsInBombZone(false);
 	setBombActive(false);
 	setFeeds([]);
+	useFishStore.getState().setFishSpeed(12);
 	useFishStore.getState().setFishScale(1);
-	useFishStore.getState().setFishSpeed(20);
 };

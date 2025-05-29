@@ -11,7 +11,7 @@ interface FishStoreState {
 
 interface FishStoreActions {
 	setFishColor: (color: string) => void;
-	setFishSpeed: (speed: number) => void;
+	setFishSpeed: (speed: number | ((prev: number) => number)) => void;
 	setFishScale: (scale: number | ((prev: number) => number)) => void;
 	setBackgroundColor: (color: string) => void;
 	setFogColor: (color: string) => void;
@@ -20,7 +20,7 @@ interface FishStoreActions {
 
 export const useFishStore = create<FishStoreState & FishStoreActions>((set) => ({
 	fishColor: "#e7b518",
-	fishSpeed: 20,
+	fishSpeed: 12,
 	fishScale: 1,
 
 	backgroundColor: "#0c6ceb",
@@ -28,7 +28,10 @@ export const useFishStore = create<FishStoreState & FishStoreActions>((set) => (
 	fogDensity: 0.02,
 
 	setFishColor: (color) => set({ fishColor: color }),
-	setFishSpeed: (speed) => set({ fishSpeed: speed }),
+	setFishSpeed: (value) =>
+		set((state) => ({
+			fishSpeed: typeof value === "function" ? value(state.fishSpeed) : value,
+		})),
 	setFishScale: (value) =>
 		set((state) => ({
 			fishScale: typeof value === "function" ? value(state.fishScale) : value,
