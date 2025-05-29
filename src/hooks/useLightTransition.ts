@@ -38,7 +38,7 @@ export const useLightTransition = () => {
 		const light = lightRef.current;
 		if (!light) return;
 
-		if (targetPos.current?.distanceTo(v) < 0.001) return;
+		if (targetPos.current && targetPos.current.distanceTo(v) < 0.001) return;
 
 		startPos.current = light.position.clone();
 		targetPos.current = v.clone();

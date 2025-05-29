@@ -1,12 +1,11 @@
 import { RefObject, useEffect, useMemo, useRef } from "react";
 import { useTexture } from "@react-three/drei";
 import { Mesh, RepeatWrapping } from "three";
+
 import { isWebpSupported } from "@/utils/isWebpSupported";
 
-type RefMesh = RefObject<Mesh>;
-
 interface PlaneProps {
-	planeRef: RefMesh;
+	planeRef: RefObject<Mesh | null>;
 	onLoaded: () => void;
 }
 

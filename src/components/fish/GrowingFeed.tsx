@@ -1,13 +1,14 @@
 import { RefObject, useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Mesh, Object3D } from "three";
+
 import { useFishStore } from "@/store/useFishStore";
 
 const DECREASE_FEED_SPEED = 0.05;
 
 interface GrowingFeedProps {
+	fishRef: RefObject<Object3D | null>;
 	position: [number, number, number];
-	fishRef: RefObject<Object3D>;
 	isGameOver: boolean;
 	active: boolean;
 	onCollected: () => void;

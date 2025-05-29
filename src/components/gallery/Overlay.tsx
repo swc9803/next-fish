@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+
 import gsap from "gsap";
+
 import styles from "./Overlay.module.scss";
-import { slideArray } from "@/utils/slideUtils";
+
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { useActiveSlideIndex } from "@/hooks/useActiveSlideIndex";
+import { slideArray } from "@/utils/slideUtils";
 
 const COOLDOWN_DURATION = 1200;
 

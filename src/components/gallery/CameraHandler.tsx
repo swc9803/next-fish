@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Vector3 } from "three";
 import { CameraControls } from "@react-three/drei";
+import { Vector3 } from "three";
+
 import { useCameraTransition } from "@/hooks/useCameraTransition";
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { getSlidePosition, slideArray } from "@/utils/slideUtils";

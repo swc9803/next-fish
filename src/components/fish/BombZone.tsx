@@ -2,12 +2,14 @@ import { useMemo, useRef, useCallback, RefObject, Dispatch, SetStateAction, useE
 import { useFrame } from "@react-three/fiber";
 import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Vector3 } from "three";
 import gsap from "gsap";
+
 import { useFishStore } from "@/store/useFishStore";
 import { useDeathPositionGrow } from "@/hooks/useDeathPositionGrow";
+
 import { GrowingFeed } from "./GrowingFeed";
 
 interface BombZoneProps {
-	fishRef: RefObject<Object3D>;
+	fishRef: RefObject<Object3D | null>;
 	setIsGameOver: Dispatch<SetStateAction<boolean>>;
 	setIsInBombZone: Dispatch<SetStateAction<boolean>>;
 	isInBombZone: boolean;

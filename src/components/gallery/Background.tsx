@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect } from "react";
-import { Group, Mesh, Material } from "three";
 import { useFrame } from "@react-three/fiber";
+import { Group, Mesh, Material } from "three";
 
 const randomPosition = (radius: number): [number, number, number] => {
 	const angle = Math.random() * 2 * Math.PI;

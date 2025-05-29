@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { useFishStore } from "@/store/useFishStore";
-import gsap from "gsap";
 import { Color } from "three";
+import gsap from "gsap";
+
+import { useFishStore } from "@/store/useFishStore";
 
 export const FishColorPicker = () => {
 	const fishColor = useFishStore((s) => s.fishColor);

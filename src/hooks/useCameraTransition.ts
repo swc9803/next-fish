@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import { CameraControls } from "@react-three/drei";
+
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { getSlidePosition } from "@/utils/slideUtils";
 

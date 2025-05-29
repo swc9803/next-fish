@@ -3,10 +3,11 @@ import { useGLTF } from "@react-three/drei";
 import { useThree, useFrame } from "@react-three/fiber";
 import { MeshStandardMaterial, Mesh, Object3D, Vector3, AnimationMixer, AnimationAction, LoopRepeat } from "three";
 import gsap from "gsap";
+
 import { useFishStore } from "@/store/useFishStore";
 
 interface FishModelProps {
-	fishRef: RefObject<Object3D>;
+	fishRef: RefObject<Object3D | null>;
 	setIsInBombZone: Dispatch<SetStateAction<boolean>>;
 	setBombActive: Dispatch<SetStateAction<boolean>>;
 	isGameOver: boolean;

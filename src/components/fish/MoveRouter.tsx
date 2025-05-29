@@ -3,6 +3,7 @@ import { useGLTF, Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
 import gsap from "gsap";
+
 import { useTyping } from "@/hooks/useTyping";
 
 const logoData: {
@@ -42,10 +43,10 @@ const logoData: {
 ];
 
 interface LogoProps {
+	fishRef: RefObject<Object3D | null>;
 	url: string;
 	modelPath: string;
 	position: [number, number, number];
-	fishRef: RefObject<Object3D>;
 	isInternal?: boolean;
 	showGalleryOverlay?: () => void;
 	text?: string;
@@ -146,7 +147,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 };
 
 interface MoveRouterProps {
-	fishRef: RefObject<Object3D>;
+	fishRef: RefObject<Object3D | null>;
 	showGalleryOverlay?: () => void;
 	hideSpeechBubble?: boolean;
 }

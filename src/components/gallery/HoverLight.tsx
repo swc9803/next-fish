@@ -1,5 +1,6 @@
-import { useEffect, useRef, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Vector3 } from "three";
+
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { getSlidePosition } from "@/utils/slideUtils";
 import { useLightTransition } from "@/hooks/useLightTransition";

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import { Mesh, Material, Object3D } from "three";
+
 import { slideArray } from "@/utils/slideUtils";
 import { useGallerySlide } from "@/store/useGallerySlide";
 
@@ -40,9 +41,7 @@ export const Experience = () => {
 		return -slideHeight / 2 - 0.1;
 	}, [cameraRadius, slideHeight]);
 
-	const isInitialized = cameraRadius !== undefined && slideGap !== undefined;
-
-	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const timeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -66,13 +65,13 @@ export const Experience = () => {
 		handleResize();
 
 		const onResize = () => {
-			clearTimeout(timeoutRef.current);
-			timeoutRef.current = setTimeout(resizeWithIntroCheck, 100);
+			if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
+			timeoutRef.current = window.setTimeout(resizeWithIntroCheck, 100);
 		};
 
 		window.addEventListener("resize", onResize);
 		return () => {
-			clearTimeout(timeoutRef.current);
+			if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
 			window.removeEventListener("resize", onResize);
 		};
 	}, [isIntroPlaying, hasIntroPlayed]);

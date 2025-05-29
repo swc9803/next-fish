@@ -2,14 +2,15 @@ import { RefObject, useEffect, useRef, useState, useMemo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { AnimationAction, AnimationMixer, LoopRepeat, Mesh, Object3D, Vector3 } from "three";
+
 import { useTyping } from "@/hooks/useTyping";
 
 interface TalkativeModelProps {
+	fishRef: RefObject<Object3D | null>;
 	modelPath: string;
 	modelPosition: [number, number, number];
 	bubblePosition?: [number, number, number];
 	text: string;
-	fishRef: RefObject<Object3D>;
 	scale?: number;
 	speed: number;
 	distanceThreshold?: number;
