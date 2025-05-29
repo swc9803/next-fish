@@ -39,6 +39,7 @@ export const Experience = () => {
 		return -slideHeight / 2 - 0.1;
 	}, [cameraRadius, slideHeight]);
 
+	const MIN_SLIDE_GAP = 2.2;
 	useEffect(() => {
 		const handleResize = () => {
 			const width = window.innerWidth;
@@ -46,7 +47,8 @@ export const Experience = () => {
 			const ratio = (clampedWidth - 320) / (1920 - 320);
 
 			const radius = 4 + ratio * (6.5 - 4);
-			const gap = radius * (1.0 + ratio * (1.5 - 1.0));
+			const rawGap = radius * (1.0 + ratio * (1.5 - 1.0));
+			const gap = Math.max(MIN_SLIDE_GAP, rawGap);
 
 			setCameraRadius(radius);
 			setSlideGap(gap);

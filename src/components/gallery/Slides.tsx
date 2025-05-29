@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, useRef, useState } from "react";
+import { useEffect, useMemo, useCallback, useRef, useState, memo } from "react";
 import { useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Texture, Mesh } from "three";
@@ -25,6 +25,21 @@ interface SlideState {
 }
 
 const SLIDE_CHANGE_INTERVAL = 3000;
+
+const SlideMesh = memo(({ index, state, position, rotation, slideWidth, slideHeight, borderColor, getUniforms, handleClick, handleHover }: any) => (
+	<group position={position} rotation={rotation} onClick={() => handleClick(index)} onPointerOver={() => handleHover(index)}>
+		<group>
+			<mesh position={[0, 0, -0.03]}>
+				<planeGeometry args={[slideWidth + 0.05, slideHeight + 0.05]} />
+				<meshLambertMaterial color={borderColor} />
+			</mesh>
+			<mesh position={[0, 0, 0]}>
+				<planeGeometry args={[slideWidth, slideHeight]} />
+				<shaderMaterial vertexShader={vertex} fragmentShader={fragment} uniforms={getUniforms(index, state)} transparent />
+			</mesh>
+		</group>
+	</group>
+));
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) => {
 	const freemode = useGallerySlide((s) => s.freemode);
@@ -111,7 +126,28 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 			updated = true;
 			return { ...s, opacity: newOpacity };
 		});
-		if (updated) setSlideStates(updatedStates);
+
+		if (updated) {
+			const prev = slideStatesRef.current;
+			let isDifferent = false;
+
+			for (let i = 0; i < prev.length; i++) {
+				if (
+					prev[i].current !== updatedStates[i].current ||
+					prev[i].next !== updatedStates[i].next ||
+					prev[i].opacity !== updatedStates[i].opacity ||
+					prev[i].index !== updatedStates[i].index ||
+					prev[i].isFading !== updatedStates[i].isFading
+				) {
+					isDifferent = true;
+					break;
+				}
+			}
+
+			if (isDifferent) {
+				setSlideStates(updatedStates);
+			}
+		}
 
 		updatedStates.forEach((state, index) => {
 			const uniforms = uniformsRef.current[index];
@@ -168,26 +204,23 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 				const state = slideStates[index];
 
 				return (
-					<group
+					<SlideMesh
 						key={index}
+						index={index}
+						state={state}
 						position={[x, 0, z]}
 						rotation={[0, rotationY, 0]}
-						onClick={() => handleClick(index)}
-						onPointerOver={() => handleHover(index)}
-					>
-						<group>
-							<mesh position={[0, 0, -0.03]}>
-								<planeGeometry args={[slideWidth + 0.05, slideHeight + 0.05]} />
-								<meshLambertMaterial color={slide.borderColor} />
-							</mesh>
-							<mesh position={[0, 0, 0]}>
-								<planeGeometry args={[slideWidth, slideHeight]} />
-								<shaderMaterial key={index} vertexShader={vertex} fragmentShader={fragment} uniforms={getUniforms(index, state)} transparent />
-							</mesh>
-						</group>
-					</group>
+						slideWidth={slideWidth}
+						slideHeight={slideHeight}
+						borderColor={slide.borderColor}
+						getUniforms={getUniforms}
+						handleClick={handleClick}
+						handleHover={handleHover}
+					/>
 				);
 			})}
 		</>
 	);
 };
+
+SlideMesh.displayName = "SlideMesh";

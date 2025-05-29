@@ -6,11 +6,8 @@ overlay 디자인 수정
 
 배포 후 1.1 패치 노트 작성
 
-폭탄 터지는 이펙트
 ga, favicon
 SEO 최적화 ( 후순위 )
 성능 테스트
-npm run build 오류 해결
-tsconfig strict true 로 변경 후 오류 제거
 
 # 임시 아이디어
