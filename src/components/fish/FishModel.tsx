@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, RefObject, Dispatch, SetStateAction } from "react";
 import { useGLTF } from "@react-three/drei";
 import { useThree, useFrame } from "@react-three/fiber";
-import { MeshStandardMaterial, Mesh, Object3D, Vector3, AnimationMixer, AnimationAction, LoopRepeat } from "three";
+import { MeshStandardMaterial, Mesh, Object3D, Vector3, AnimationMixer, AnimationAction, LoopRepeat, Color } from "three";
 import gsap from "gsap";
 
 import { useFishStore } from "@/store/useFishStore";
@@ -89,7 +89,16 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 	}, [fishScene]);
 
 	useEffect(() => {
-		meshMaterials.current.forEach((mat) => mat.color.set(fishColor));
+		const targetColor = new Color(fishColor);
+		meshMaterials.current.forEach((mat) => {
+			gsap.to(mat.color, {
+				r: targetColor.r,
+				g: targetColor.g,
+				b: targetColor.b,
+				duration: 1,
+				ease: "power2.out",
+			});
+		});
 	}, [fishColor]);
 
 	useEffect(() => {
