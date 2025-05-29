@@ -31,19 +31,7 @@ export const TalkativeModel = ({
 	const mixerRef = useRef<AnimationMixer | null>(null);
 	const actionRef = useRef<AnimationAction | null>(null);
 
-	const [visible, setVisible] = useState(false);
-	const prevVisible = useRef<boolean | null>(null);
-
-	// 모바일 말풍선 위치 조정
-	const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
-
-	useEffect(() => {
-		const onResize = () => {
-			setIsMobile(window.innerWidth <= 768);
-		};
-		window.addEventListener("resize", onResize);
-		return () => window.removeEventListener("resize", onResize);
-	}, []);
+	const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 
 	// 말풍선 위치 계산
 	const adjustedBubblePosition: [number, number, number] = useMemo(() => {
@@ -52,8 +40,11 @@ export const TalkativeModel = ({
 	}, [isMobile, bubblePosition, modelPosition]);
 
 	const bubbleVec = useRef(new Vector3(...(bubblePosition || modelPosition)));
+	const bubbleElemRef = useRef<HTMLDivElement>(null);
+	const isVisibleRef = useRef(false);
+	const [isVisible, setIsVisible] = useState(false);
 
-	const typedText = useTyping(text, visible, speed);
+	const typedText = useTyping(text, isVisible, speed); // visible 상태로 typing 제어
 
 	// 그림자
 	useEffect(() => {
@@ -65,10 +56,11 @@ export const TalkativeModel = ({
 	}, [scene]);
 
 	useEffect(() => {
-		if (!objRef.current || animations.length === 0) return;
+		const object = objRef.current;
 
-		const targetObject = objRef.current;
-		const mixer = new AnimationMixer(targetObject);
+		if (!object || animations.length === 0) return;
+
+		const mixer = new AnimationMixer(object);
 		mixerRef.current = mixer;
 
 		const clip = animations.find((clip) => clip.name.toLowerCase().includes("swim"));
@@ -76,37 +68,32 @@ export const TalkativeModel = ({
 			const action = mixer.clipAction(clip);
 			action.setLoop(LoopRepeat, Infinity);
 			action.clampWhenFinished = true;
+			action.play();
 			actionRef.current = action;
 		}
 
 		return () => {
 			mixer.stopAllAction();
-			mixer.uncacheRoot(targetObject);
+			mixer.uncacheRoot(object);
 		};
 	}, [animations]);
-
-	useEffect(() => {
-		const action = actionRef.current;
-		if (!action) return;
-
-		if (visible) {
-			action.reset().fadeIn(0.4).play();
-		} else {
-			action.fadeOut(0.5);
-		}
-	}, [visible]);
 
 	// 거리 계산
 	useFrame((_, delta) => {
 		const fish = fishRef.current;
-		if (!fish) return;
+		const model = objRef.current;
+		if (!fish || !model) return;
 
 		const dist = fish.position.distanceTo(bubbleVec.current);
-		const nextVisible = dist < distanceThreshold;
+		const shouldBeVisible = dist < distanceThreshold;
 
-		if (prevVisible.current !== nextVisible) {
-			setVisible(nextVisible);
-			prevVisible.current = nextVisible;
+		if (bubbleElemRef.current) {
+			bubbleElemRef.current.style.display = shouldBeVisible ? "block" : "none";
+		}
+
+		if (isVisibleRef.current !== shouldBeVisible) {
+			isVisibleRef.current = shouldBeVisible;
+			setIsVisible(shouldBeVisible);
 		}
 
 		mixerRef.current?.update(delta);
@@ -115,11 +102,11 @@ export const TalkativeModel = ({
 	return (
 		<>
 			<primitive object={scene} position={modelPosition} scale={scale} ref={objRef} />
-			{visible && (
-				<Html position={adjustedBubblePosition} distanceFactor={10} wrapperClass="prevent_click">
-					<div className="speech_bubble">{typedText}</div>
-				</Html>
-			)}
+			<Html position={adjustedBubblePosition} distanceFactor={10} wrapperClass="prevent_click">
+				<div className="speech_bubble" ref={bubbleElemRef}>
+					{typedText}
+				</div>
+			</Html>
 		</>
 	);
 };

@@ -91,13 +91,15 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 	useEffect(() => {
 		const targetColor = new Color(fishColor);
 		meshMaterials.current.forEach((mat) => {
-			gsap.to(mat.color, {
-				r: targetColor.r,
-				g: targetColor.g,
-				b: targetColor.b,
-				duration: 1,
-				ease: "power2.out",
-			});
+			if (!mat.color.equals(targetColor)) {
+				gsap.to(mat.color, {
+					r: targetColor.r,
+					g: targetColor.g,
+					b: targetColor.b,
+					duration: 1,
+					ease: "power2.out",
+				});
+			}
 		});
 	}, [fishColor]);
 

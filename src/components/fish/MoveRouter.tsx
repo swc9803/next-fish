@@ -1,7 +1,7 @@
-import { useRef, useEffect, useMemo, useState, RefObject } from "react";
+import { useRef, useEffect, useMemo, RefObject, useState } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
+import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial, Material } from "three";
 import gsap from "gsap";
 
 import { useTyping } from "@/hooks/useTyping";
@@ -60,16 +60,19 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	const progressRef = useRef(0);
 	const triggeredRef = useRef(false);
 	const prevArcRef = useRef<number | null>(null);
-	const [isNear, setIsNear] = useState(false);
+	const bubbleElemRef = useRef<HTMLDivElement>(null);
+
 	const { camera } = useThree();
 
 	const isFishingRod = modelPath.includes("fishing");
-	const typedText = useTyping(text || "", isNear, 150);
+	const [visible, setVisible] = useState(false);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
 
 	const DETECT_DISTANCE = 5;
 	const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 	const bubblePosition: [number, number, number] = isMobile ? [-0.25, -0.5, -2.0] : [-0.25, 0.5, -1.5];
+
+	const typedText = useTyping(text || "", visible, 150);
 
 	useEffect(() => {
 		if (progressCircleRef.current) {
@@ -78,7 +81,6 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		}
 	}, [circleMaterial]);
 
-	// 그림자
 	useEffect(() => {
 		scene.traverse((child) => {
 			if ((child as Mesh).isMesh) {
@@ -94,11 +96,21 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		if (!model || !fish || !ring) return;
 
 		const dist = model.position.distanceTo(fish.position);
-		setIsNear(dist < DETECT_DISTANCE);
+		const isNear = dist < DETECT_DISTANCE;
+
+		setVisible((prev) => {
+			if (prev !== isNear) {
+				return isNear;
+			}
+			return prev;
+		});
+
+		if (bubbleElemRef.current) {
+			bubbleElemRef.current.style.display = isNear && !hideSpeechBubble ? "block" : "none";
+		}
 
 		let progress = progressRef.current;
-
-		if (dist < DETECT_DISTANCE) {
+		if (isNear) {
 			progress = Math.min(1, progress + delta / 4);
 			if (progress >= 1 && !triggeredRef.current) {
 				triggeredRef.current = true;
@@ -133,13 +145,32 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		}
 	});
 
+	useEffect(() => {
+		return () => {
+			scene.traverse((child) => {
+				if ((child as Mesh).isMesh) {
+					const mesh = child as Mesh;
+					mesh.geometry?.dispose();
+					const material = mesh.material;
+					if (Array.isArray(material)) {
+						material.forEach((m: Material) => m.dispose());
+					} else {
+						material?.dispose();
+					}
+				}
+			});
+		};
+	}, [scene]);
+
 	return (
 		<group ref={modelRef} position={position} scale={3.5}>
 			<primitive object={scene} />
 			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
-			{!hideSpeechBubble && text && isNear && (
+			{text && (
 				<Html position={bubblePosition} distanceFactor={15} wrapperClass="prevent_click">
-					<div className={`speech_bubble ${isFishingRod ? "rod" : ""}`}>{typedText}</div>
+					<div className={`speech_bubble ${isFishingRod ? "rod" : ""}`} ref={bubbleElemRef}>
+						{typedText}
+					</div>
 				</Html>
 			)}
 		</group>

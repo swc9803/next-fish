@@ -1,12 +1,16 @@
+import { memo, useCallback } from "react";
 import { useFishStore } from "@/store/useFishStore";
 
 export const FishColorPicker = () => {
 	const fishColor = useFishStore((s) => s.fishColor);
 	const setFishColor = useFishStore((s) => s.setFishColor);
 
-	const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setFishColor(e.target.value);
-	};
+	const handleColorChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			setFishColor(e.target.value);
+		},
+		[setFishColor]
+	);
 
 	return (
 		<div className="fish_color_picker">
@@ -16,3 +20,5 @@ export const FishColorPicker = () => {
 		</div>
 	);
 };
+
+memo(FishColorPicker);

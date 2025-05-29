@@ -1,18 +1,38 @@
+import { memo, useState, useCallback } from "react";
 import { useFishStore } from "@/store/useFishStore";
 
 export const FishConfig = () => {
-	const { backgroundColor, setBackgroundColor, fogColor, setFogColor, fishSpeed, fishScale, fogDensity, setFishSpeed, setFishScale, setFogDensity } =
+	const { backgroundColor, setBackgroundColor, fogColor, setFogColor, fogDensity, setFogDensity, fishSpeed, setFishSpeed, fishScale, setFishScale } =
 		useFishStore();
+
+	const [tempSpeed, setTempSpeed] = useState(fishSpeed);
+	const [tempScale, setTempScale] = useState(fishScale);
+
+	const applySpeed = useCallback(() => {
+		setFishSpeed(tempSpeed);
+	}, [tempSpeed, setFishSpeed]);
+
+	const applyScale = useCallback(() => {
+		setFishScale(tempScale);
+	}, [tempScale, setFishScale]);
 
 	return (
 		<div className="fish_config">
 			<div>
 				<label>Fish Speed:</label>
-				<input type="number" value={fishSpeed} onChange={(e) => setFishSpeed(Number(e.target.value))} min={10} max={200} />
+				<input type="number" value={tempSpeed} onChange={(e) => setTempSpeed(Number(e.target.value))} onBlur={applySpeed} min={10} max={200} />
 			</div>
 			<div>
 				<label>Fish Scale:</label>
-				<input type="number" value={fishScale} onChange={(e) => setFishScale(Number(e.target.value))} min={0.1} max={10} step={0.1} />
+				<input
+					type="number"
+					value={tempScale}
+					onChange={(e) => setTempScale(Number(e.target.value))}
+					onBlur={applyScale}
+					min={0.1}
+					max={10}
+					step={0.1}
+				/>
 			</div>
 			<div>
 				<label>Background Color:</label>
@@ -29,3 +49,5 @@ export const FishConfig = () => {
 		</div>
 	);
 };
+
+memo(FishConfig);

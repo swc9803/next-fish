@@ -48,7 +48,7 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 			time: { value: 0 },
 			progress: { value: 0 },
 			width: { value: 0.35 },
-			radius: { value: 0.9 },
+			radius: { value: 1.4 },
 			texture1: { value: canvasTexture },
 			texture2: { value: renderTarget.texture },
 			resolution: { value: new Vector4() },

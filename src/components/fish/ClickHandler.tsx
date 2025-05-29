@@ -78,8 +78,11 @@ export const ClickHandler = ({ fishRef, planeRef, isInBombZone, isGameOver }: Cl
 		if (isNaN(targetX) || isNaN(targetZ)) return;
 
 		if (isInBombZone) {
-			targetX = clampToBounds(targetX, GRID_CENTER.x - GRID_SIZE_X / 2 + 1, GRID_CENTER.x + GRID_SIZE_X / 2 - 1);
-			targetZ = clampToBounds(targetZ, GRID_CENTER.z - GRID_SIZE_Z / 2 + 1, GRID_CENTER.z + GRID_SIZE_Z / 2 - 1);
+			const margin = fishScaleRef.current;
+			const halfGridX = GRID_SIZE_X / 2 - margin;
+			const halfGridZ = GRID_SIZE_Z / 2 - margin;
+			targetX = clampToBounds(targetX, GRID_CENTER.x - halfGridX, GRID_CENTER.x + halfGridX);
+			targetZ = clampToBounds(targetZ, GRID_CENTER.z - halfGridZ, GRID_CENTER.z + halfGridZ);
 		} else {
 			const clamped = getClampedPlaneCoords(targetX, targetZ);
 			targetX = clamped.x;

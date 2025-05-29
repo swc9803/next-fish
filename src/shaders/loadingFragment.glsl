@@ -28,11 +28,11 @@ void main() {
   vec2 start = vec2(0.5, 0.5);
   vec2 aspect = resolution.wz;
 
-  float prog = progress * 0.66;
+  float prog = progress;
   float d = distance(start * aspect, newUV * aspect);
   float n = noise(newUV * 8.0 + time * 0.2) * 0.2;
   float shaped = radius * (d + n);
-  float mask = 1.0 - smoothstep(-width, 0.0, shaped - prog * (1. + width));
+  float mask = 1.0 - smoothstep(-width, 0.0, shaped - prog * 2.0);
   float intpl = pow(abs(mask), 1.0);
 
   vec2 dir1 = normalize(vec2(sin(time * 0.4), cos(time * 0.5)));
