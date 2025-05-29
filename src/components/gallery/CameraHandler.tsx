@@ -17,22 +17,20 @@ const INTRO_DURATION = 5000;
 export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraHandlerProps) => {
 	const { cameraControlsRef, moveToSlide, moveToFreeModePosition } = useCameraTransition(cameraRadius, totalRadius);
 
-	const {
-		slide,
-		setSlide,
-		freemode,
-		focusIndex,
-		lastFocusTarget,
-		setLastFocusTarget,
-		setHoverIndex,
-		setFocusIndex,
-		isIntroPlaying,
-		setIsIntroPlaying,
-		hasIntroPlayed,
-		setHasIntroPlayed,
-		setCameraIntroDone,
-		setIntroStarted,
-	} = useGallerySlide();
+	const slide = useGallerySlide((s) => s.slide);
+	const freemode = useGallerySlide((s) => s.freemode);
+	const focusIndex = useGallerySlide((s) => s.focusIndex);
+	const lastFocusTarget = useGallerySlide((s) => s.lastFocusTarget);
+	const setSlide = useGallerySlide((s) => s.setSlide);
+	const setFocusIndex = useGallerySlide((s) => s.setFocusIndex);
+	const setHoverIndex = useGallerySlide((s) => s.setHoverIndex);
+	const setLastFocusTarget = useGallerySlide((s) => s.setLastFocusTarget);
+	const setIsIntroPlaying = useGallerySlide((s) => s.setIsIntroPlaying);
+	const setHasIntroPlayed = useGallerySlide((s) => s.setHasIntroPlayed);
+	const setCameraIntroDone = useGallerySlide((s) => s.setCameraIntroDone);
+	const setIntroStarted = useGallerySlide((s) => s.setIntroStarted);
+	const isIntroPlaying = useGallerySlide((s) => s.isIntroPlaying);
+	const hasIntroPlayed = useGallerySlide((s) => s.hasIntroPlayed);
 
 	const [isReadyToStart, setIsReadyToStart] = useState(false);
 	const prevFreemodeRef = useRef(false);
@@ -134,7 +132,6 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 			const { x, z } = getSlidePosition(i, totalRadius);
 			const toSlide = new Vector3(x - position.x, 0, z - position.z).normalize();
 			const dot = direction.dot(toSlide);
-
 			if (dot > maxDot) {
 				maxDot = dot;
 				nearestIndex = i;

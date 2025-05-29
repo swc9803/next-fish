@@ -57,11 +57,12 @@ export const Background = () => {
 
 	useFrame(({ clock }) => {
 		const t = clock.getElapsedTime();
-		if (!groupRef.current) return;
+		const group = groupRef.current;
+		if (!group) return;
 
-		groupRef.current.rotation.y = t * 0.01;
+		group.rotation.y = t * 0.01;
 
-		groupRef.current.children.forEach((child, i) => {
+		group.children.forEach((child, i) => {
 			const data = floatingObjects[i];
 			if (!(child instanceof Mesh) || !data) return;
 

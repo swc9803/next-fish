@@ -27,12 +27,15 @@ interface SlideState {
 const SLIDE_CHANGE_INTERVAL = 3000;
 
 export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) => {
-	const { freemode, focusIndex, hoverIndex, isSliding, setFocusIndex, setHoverIndex, isIntroPlaying } = useGallerySlide();
+	const freemode = useGallerySlide((s) => s.freemode);
+	const focusIndex = useGallerySlide((s) => s.focusIndex);
+	const hoverIndex = useGallerySlide((s) => s.hoverIndex);
+	const isSliding = useGallerySlide((s) => s.isSliding);
+	const isIntroPlaying = useGallerySlide((s) => s.isIntroPlaying);
 	const activeSlideIndex = useActiveSlideIndex();
 	const { scene } = useThree();
 
 	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
-
 	const texturesArray = useTexture(allImagePaths) as Texture[];
 	const displacementMap = useTexture("/textures/displacement.png");
 
@@ -91,39 +94,33 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 	}, [activeSlideIndex, slideTextures, isIntroPlaying]);
 
 	useFrame(() => {
-		setSlideStates((prev) =>
-			prev.map((s) => {
-				if (!s.isFading || !s.next) return s;
-				const newOpacity = Math.min(s.opacity + 0.03, 1);
-				if (newOpacity >= 1) {
-					return {
-						current: s.next,
-						next: null,
-						opacity: 0,
-						index: (s.index + 1) % slideArray[0].imagePaths.length,
-						isFading: false,
-					};
-				}
-				return { ...s, opacity: newOpacity };
-			})
-		);
+		let updated = false;
+		const updatedStates = slideStatesRef.current.map((s) => {
+			if (!s.isFading || !s.next) return s;
+			const newOpacity = Math.min(s.opacity + 0.03, 1);
+			if (newOpacity >= 1) {
+				updated = true;
+				return {
+					current: s.next,
+					next: null,
+					opacity: 0,
+					index: (s.index + 1) % slideArray[0].imagePaths.length,
+					isFading: false,
+				};
+			}
+			updated = true;
+			return { ...s, opacity: newOpacity };
+		});
+		if (updated) setSlideStates(updatedStates);
 
-		slideStatesRef.current.forEach((state, index) => {
+		updatedStates.forEach((state, index) => {
 			const uniforms = uniformsRef.current[index];
 			if (!uniforms) return;
 
-			const nextTex = state.next || state.current;
-			if (
-				uniforms.texture1.value !== state.current ||
-				uniforms.texture2.value !== nextTex ||
-				uniforms.progress.value !== (state.isFading ? state.opacity : 0) ||
-				uniforms.slideIndex.value !== state.index
-			) {
-				uniforms.texture1.value = state.current;
-				uniforms.texture2.value = nextTex;
-				uniforms.progress.value = state.isFading ? state.opacity : 0;
-				uniforms.slideIndex.value = state.index;
-			}
+			uniforms.texture1.value = state.current;
+			uniforms.texture2.value = state.next || state.current;
+			uniforms.progress.value = state.isFading ? state.opacity : 0;
+			uniforms.slideIndex.value = state.index;
 		});
 	});
 
@@ -144,23 +141,23 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 		(index: number) => {
 			if (freemode && !isSliding) {
 				if (focusIndex !== index) {
-					setFocusIndex(index);
+					useGallerySlide.getState().setFocusIndex(index);
 				} else {
-					setFocusIndex(null);
-					requestAnimationFrame(() => setFocusIndex(index));
+					useGallerySlide.getState().setFocusIndex(null);
+					requestAnimationFrame(() => useGallerySlide.getState().setFocusIndex(index));
 				}
 			}
 		},
-		[freemode, isSliding, focusIndex, setFocusIndex]
+		[freemode, isSliding, focusIndex]
 	);
 
 	const handleHover = useCallback(
 		(index: number) => {
 			if (freemode && focusIndex === null && hoverIndex !== index) {
-				setHoverIndex(index);
+				useGallerySlide.getState().setHoverIndex(index);
 			}
 		},
-		[freemode, focusIndex, hoverIndex, setHoverIndex]
+		[freemode, focusIndex, hoverIndex]
 	);
 
 	return (

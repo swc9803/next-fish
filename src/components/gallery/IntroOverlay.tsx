@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
-
 import { useGallerySlide } from "@/store/useGallerySlide";
 
 export const IntroOverlay = () => {
 	const overlayRef = useRef<HTMLDivElement>(null);
-	const { isIntroPlaying, isIntroStarted, setIsIntroPlaying } = useGallerySlide();
+
+	const isIntroPlaying = useGallerySlide((s) => s.isIntroPlaying);
+	const isIntroStarted = useGallerySlide((s) => s.isIntroStarted);
+	const setIsIntroPlaying = useGallerySlide((s) => s.setIsIntroPlaying);
 
 	useEffect(() => {
 		const handleEnd = () => {

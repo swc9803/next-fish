@@ -12,7 +12,14 @@ import { slideArray } from "@/utils/slideUtils";
 const COOLDOWN_DURATION = 1200;
 
 export const Overlay = () => {
-	const { freemode, focusIndex, isSliding, isIntroPlaying, isCameraIntroDone, setSlide, setFocusIndex, setFreemode } = useGallerySlide();
+	const freemode = useGallerySlide((s) => s.freemode);
+	const focusIndex = useGallerySlide((s) => s.focusIndex);
+	const isSliding = useGallerySlide((s) => s.isSliding);
+	const isIntroPlaying = useGallerySlide((s) => s.isIntroPlaying);
+	const isCameraIntroDone = useGallerySlide((s) => s.isCameraIntroDone);
+	const setSlide = useGallerySlide((s) => s.setSlide);
+	const setFocusIndex = useGallerySlide((s) => s.setFocusIndex);
+	const setFreemode = useGallerySlide((s) => s.setFreemode);
 
 	const activeSlideIndex = useActiveSlideIndex();
 	const [renderedIndex, setRenderedIndex] = useState(activeSlideIndex);
@@ -28,9 +35,8 @@ export const Overlay = () => {
 	const showSlideNavigation = !freemode && isCameraIntroDone && !isIntroPlaying;
 
 	useEffect(() => {
-		const prevFreemode = prevFreemodeRef.current;
-
 		if (!contentRef.current || !logoWrapperRef.current) return;
+		const prevFreemode = prevFreemodeRef.current;
 
 		if (timelineRef.current) {
 			timelineRef.current.kill();
@@ -47,13 +53,10 @@ export const Overlay = () => {
 
 			tl.fromTo(
 				[logoWrapperRef.current, contentRef.current],
-				{ opacity: 0 },
 				{
-					opacity: 1,
-					ease: "power2.out",
-					duration: 0.5,
-					delay: 0.1,
-				}
+					opacity: 0,
+				},
+				{ opacity: 1, ease: "power2.out", duration: 0.5, delay: 0.1 }
 			);
 		} else {
 			// 슬라이드 모드
@@ -61,11 +64,8 @@ export const Overlay = () => {
 				opacity: 0,
 				ease: "power2.out",
 				duration: 0.3,
-				onComplete: () => {
-					setRenderedIndex(activeSlideIndex);
-				},
+				onComplete: () => setRenderedIndex(activeSlideIndex),
 			});
-
 			tl.to([logoWrapperRef.current, contentRef.current], {
 				opacity: 1,
 				ease: "power2.out",

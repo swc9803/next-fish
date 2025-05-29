@@ -1,9 +1,8 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import { Mesh, Material, Object3D } from "three";
 
 import { slideArray } from "@/utils/slideUtils";
-import { useGallerySlide } from "@/store/useGallerySlide";
 
 import { Ground } from "./Ground";
 import { Background } from "./Background";
@@ -13,26 +12,25 @@ import { HoverLight } from "./HoverLight";
 
 export const Experience = () => {
 	const { camera, viewport, scene } = useThree();
-	const { isIntroPlaying, hasIntroPlayed } = useGallerySlide();
-
-	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
-	const aspect = viewport.aspect;
 
 	const [cameraRadius, setCameraRadius] = useState<number>(0);
 	const [slideGap, setSlideGap] = useState<number>(0);
 
+	const fov = "fov" in camera ? (camera.fov * Math.PI) / 180 : (75 * Math.PI) / 180;
+	const aspect = viewport.aspect;
+
 	const slideWidth = useMemo(() => {
-		if (!cameraRadius) return;
+		if (!cameraRadius) return undefined;
 		return 2 * cameraRadius * Math.tan(fov / 2) * aspect;
 	}, [cameraRadius, fov, aspect]);
 
 	const slideHeight = useMemo(() => {
-		if (!slideWidth) return;
+		if (!slideWidth) return undefined;
 		return slideWidth * (9 / 16);
 	}, [slideWidth]);
 
 	const totalRadius = useMemo(() => {
-		if (!slideGap) return;
+		if (!slideGap) return undefined;
 		return (slideGap * slideArray.length) / (2 * Math.PI);
 	}, [slideGap]);
 
@@ -40,8 +38,6 @@ export const Experience = () => {
 		if (!cameraRadius || !slideHeight) return 0;
 		return -slideHeight / 2 - 0.1;
 	}, [cameraRadius, slideHeight]);
-
-	const timeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -56,25 +52,13 @@ export const Experience = () => {
 			setSlideGap(gap);
 		};
 
-		const resizeWithIntroCheck = () => {
-			if (hasIntroPlayed && !isIntroPlaying) {
-				handleResize();
-			}
-		};
-
 		handleResize();
 
-		const onResize = () => {
-			if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
-			timeoutRef.current = window.setTimeout(resizeWithIntroCheck, 100);
-		};
-
-		window.addEventListener("resize", onResize);
+		window.addEventListener("resize", handleResize);
 		return () => {
-			if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
-			window.removeEventListener("resize", onResize);
+			window.removeEventListener("resize", handleResize);
 		};
-	}, [isIntroPlaying, hasIntroPlayed]);
+	}, []);
 
 	// 메모리 해제
 	useEffect(() => {
@@ -93,15 +77,15 @@ export const Experience = () => {
 		};
 	}, [scene]);
 
-	if (!cameraRadius || !slideGap) return null;
+	if (!cameraRadius || !slideGap || !slideWidth || !slideHeight || !totalRadius) return null;
 
 	return (
 		<>
 			<Background />
-			<CameraHandler cameraRadius={cameraRadius!} totalRadius={totalRadius!} startIntro={true} />
-			<HoverLight totalRadius={totalRadius!} />
+			<CameraHandler cameraRadius={cameraRadius} totalRadius={totalRadius} startIntro={true} />
+			<HoverLight totalRadius={totalRadius} />
 			<Ground positionY={groundY} />
-			<Slides totalRadius={totalRadius!} slideWidth={slideWidth!} slideHeight={slideHeight!} />
+			<Slides totalRadius={totalRadius} slideWidth={slideWidth} slideHeight={slideHeight} />
 		</>
 	);
 };
