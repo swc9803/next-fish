@@ -150,13 +150,19 @@ export const Overlay = () => {
 						<Image className={styles.logo} src={slide.logo} alt="로고" fill sizes="7rem" priority />
 					</div>
 				)}
-
 				<div className={styles.content} ref={contentRef}>
 					<h1>{slide.name}</h1>
 					<p>{slide.description}</p>
-					<a href={slide.url} target="_blank" rel="noopener noreferrer" className={styles.link_button}>
-						사이트 바로가기 ↗
-					</a>
+					<div className={styles.url_wrapper}>
+						<a href={slide.url} target="_blank" rel="noopener noreferrer" className={styles.link_button}>
+							사이트 바로가기 ↗
+						</a>
+						{slide.url2 && (
+							<a href={slide.url2} target="_blank" rel="noopener noreferrer" className={styles.link_button}>
+								스크린 보기 ↗
+							</a>
+						)}
+					</div>
 				</div>
 			</div>
 		</>

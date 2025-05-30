@@ -6,6 +6,7 @@ export interface slideInfo {
 	name: string;
 	description: string;
 	url: string;
+	url2?: string;
 	logo: string;
 	borderColor: string;
 }
@@ -56,6 +57,7 @@ const SlideArray: slideInfo[] = [
 		name: "WEMIX 실시간 콘텐츠 디스플레이 UI",
 		description: "코엑스와 DDP에 설치된 스크린에 실시간으로 사용자 조작에 따라 변경되는 스크린 디스플레이 페이지, 전시 환경에 맞춘 조작 UI 구현",
 		url: "https://lab.ddungsang.com/wemix2022/phone/dist/?auth=QX7UD931",
+		url2: "https://lab.ddungsang.com/wemix2022/screen.php?auth=QX7UD9311tsvdqggjs4a426my",
 		logo: "/images/gallery_logo6.png",
 		borderColor: "#66f0ff",
 	},
