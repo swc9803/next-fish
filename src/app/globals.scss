@@ -23,6 +23,14 @@
 	box-sizing: border-box;
 }
 
+html,
+body,
+#root canvas {
+	height: calc(var(--vh, 1vh) * 100);
+	overflow: hidden;
+	touch-action: none;
+}
+
 body {
 	margin: 0;
 	padding: 0;

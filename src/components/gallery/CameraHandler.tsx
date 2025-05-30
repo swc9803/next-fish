@@ -184,12 +184,12 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 				wheel: 0,
 			}}
 			touches={{
-				one: isInteractive ? 32 : 0, // 32 = touch
+				one: isInteractive ? 1 : 0, // 1 = TOUCH.ROTATE
 				two: 0,
 				three: 0,
 			}}
-			minPolarAngle={Math.PI / 2}
-			maxPolarAngle={Math.PI / 2}
+			minPolarAngle={Math.PI / 2 - 0.001}
+			maxPolarAngle={Math.PI / 2 + 0.001}
 			azimuthRotateSpeed={-0.5}
 			polarRotateSpeed={-0.5}
 			draggingSmoothTime={0.25}

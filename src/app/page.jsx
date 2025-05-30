@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
 import { WebGLRenderTarget } from "three";
@@ -14,6 +14,16 @@ const Home = () => {
 	const [loadingComplete, setLoadingComplete] = useState(false);
 	const [fadeOut, setFadeOut] = useState(false);
 	const renderTarget = useMemo(() => new WebGLRenderTarget(1024, 512), []);
+
+	useEffect(() => {
+		const setAppHeight = () => {
+			const vh = window.innerHeight * 0.01;
+			document.documentElement.style.setProperty("--vh", `${vh}px`);
+		};
+		setAppHeight();
+		window.addEventListener("resize", setAppHeight);
+		return () => window.removeEventListener("resize", setAppHeight);
+	}, []);
 
 	const handleExperienceReady = () => {
 		let frameCount = 0;
