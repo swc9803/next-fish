@@ -136,7 +136,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	const galleryTransitionOverlayHandler = useCallback(() => {
 		setIsNavigatingToGallery(true);
 		setShowGalleryTransitionOverlay(true);
-		setTimeout(() => router.push("/gallery"), 1000);
+		setTimeout(() => router.push("/gallery"), 800);
 	}, [router]);
 
 	useEffect(() => {

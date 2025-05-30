@@ -46,7 +46,7 @@ const SlideArray: slideInfo[] = [
 	{
 		imagePaths: ["images/gallery5-1.jpg", "images/gallery5-2.jpg", "images/gallery5-3.jpg"],
 		name: "피치바이피치 여행 플랫폼",
-		description: "여행 콘텐츠 플랫폼의 퍼블리싱 담당, 부트스트랩을 사요한 반응형 웹 구현, UI/UX 구성",
+		description: "여행 콘텐츠 플랫폼의 퍼블리싱 담당, 부트스트랩을 사용한 반응형 웹 구현, UI/UX 구성",
 		url: "https://pbp.co.kr",
 		logo: "/images/gallery_logo5.png",
 		borderColor: "#7ce9c1",

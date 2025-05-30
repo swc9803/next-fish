@@ -1,8 +1,7 @@
 import { useRef, useEffect, useMemo, RefObject, useState } from "react";
 import { useGLTF, Html } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial, Material } from "three";
-import gsap from "gsap";
 
 import { useTyping } from "@/hooks/useTyping";
 
@@ -62,9 +61,6 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	const prevArcRef = useRef<number | null>(null);
 	const bubbleElemRef = useRef<HTMLDivElement>(null);
 
-	const { camera } = useThree();
-
-	const isFishingRod = modelPath.includes("fishing");
 	const [visible, setVisible] = useState(false);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
 
@@ -116,15 +112,6 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 				triggeredRef.current = true;
 
 				if (isInternal && url === "/gallery") {
-					fish.position.copy(model.position);
-					fish.rotation.copy(model.rotation);
-					fish.rotation.y = Math.PI / 2;
-					fish.position.x -= 2;
-
-					gsap.to([model.position, fish.position, camera.position], {
-						y: "+=20",
-						duration: 1.5,
-					});
 					showGalleryOverlay?.();
 				} else {
 					window.open(url, "_blank");
@@ -168,7 +155,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
 			{text && (
 				<Html position={bubblePosition} distanceFactor={15} wrapperClass="prevent_click">
-					<div className={`speech_bubble ${isFishingRod ? "rod" : ""}`} ref={bubbleElemRef}>
+					<div className="speech_bubble" ref={bubbleElemRef}>
 						{typedText}
 					</div>
 				</Html>
