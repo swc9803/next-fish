@@ -184,9 +184,9 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 				wheel: 0,
 			}}
 			touches={{
-				one: isInteractive ? 1 : 0, // 1 = TOUCH.ROTATE
-				two: 0,
-				three: 0,
+				one: (isInteractive ? 1 : 0) as 0, // 1 = TOUCH.ROTATE
+				two: 0 as 0,
+				three: 0 as 0,
 			}}
 			minPolarAngle={Math.PI / 2 - 0.001}
 			maxPolarAngle={Math.PI / 2 + 0.001}

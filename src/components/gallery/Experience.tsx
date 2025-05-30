@@ -39,27 +39,35 @@ export const Experience = () => {
 		return -slideHeight / 2 - 0.1;
 	}, [cameraRadius, slideHeight]);
 
-	const MIN_SLIDE_GAP = 2.2;
 	useEffect(() => {
 		const handleResize = () => {
 			const width = window.innerWidth;
-			const clampedWidth = Math.min(Math.max(width, 320), 1920);
-			const ratio = (clampedWidth - 320) / (1920 - 320);
 
-			const radius = 4 + ratio * (6.5 - 4);
-			const rawGap = radius * (1.0 + ratio * (1.5 - 1.0));
-			const gap = Math.max(MIN_SLIDE_GAP, rawGap);
+			if (width <= 768) {
+				const clampedWidth = Math.min(Math.max(width, 320), 768);
+				const ratio = (clampedWidth - 320) / (768 - 320);
 
-			setCameraRadius(radius);
-			setSlideGap(gap);
+				const radius = 2.5 + ratio * (3.4 - 2.5);
+				const rawGap = radius * (0.8 + ratio * (1.1 - 0.8));
+				const gap = Math.max(1.6, rawGap);
+				setCameraRadius(radius);
+				setSlideGap(gap);
+			} else {
+				const clampedWidth = Math.min(Math.max(width, 320), 1920);
+				const ratio = (clampedWidth - 320) / (1920 - 320);
+
+				const radius = 4 + ratio * (6.5 - 4);
+				const rawGap = radius * (1.0 + ratio * (1.5 - 1.0));
+				const gap = Math.max(2.2, rawGap);
+
+				setCameraRadius(radius);
+				setSlideGap(gap);
+			}
 		};
 
 		handleResize();
-
 		window.addEventListener("resize", handleResize);
-		return () => {
-			window.removeEventListener("resize", handleResize);
-		};
+		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
 	// 메모리 해제

@@ -57,7 +57,10 @@ export const useCameraTransition = (cameraRadius: number, totalRadius: number) =
 
 			const { x, z } = focus ?? { x: 0, z: 0 };
 			const angle = Math.atan2(x, z);
-			const dist = cameraRadius * 2.5;
+
+			const isMobile = window.innerWidth <= 768;
+			const dist = isMobile ? cameraRadius * 1.6 : cameraRadius * 2.5;
+
 			const camPos = computeCameraPosition(x, z, angle, dist);
 
 			setState({ isSliding: true });
