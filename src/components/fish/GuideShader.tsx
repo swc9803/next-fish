@@ -93,14 +93,14 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 
 	useEffect(() => {
 		if (!clicked) return;
+
 		let raf: number;
 		const DURATION = 1000;
-		const steps = DURATION / (1000 / 60);
-		let frame = 0;
+		const startTime = performance.now();
 
-		const animate = () => {
-			frame++;
-			const next = Math.min(frame / steps, 1);
+		const animate = (now: number) => {
+			const elapsed = now - startTime;
+			const next = Math.min(elapsed / DURATION, 1);
 			uniforms.progress.value = next;
 			if (next < 1) raf = requestAnimationFrame(animate);
 			else onFinish();

@@ -63,13 +63,12 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 		if (!loadingComplete || isAnimatingOut.current) return;
 
 		isAnimatingOut.current = true;
-		let frame = 0;
 		const DURATION = 1700;
-		const steps = DURATION / (1000 / 60);
+		const startTime = performance.now();
 
-		const animateOut = () => {
-			frame++;
-			const next = Math.min(frame / steps, 1);
+		const animateOut = (now: number) => {
+			const elapsed = now - startTime;
+			const next = Math.min(elapsed / DURATION, 1);
 			uniforms.progress.value = next;
 			progressRef.current = next;
 

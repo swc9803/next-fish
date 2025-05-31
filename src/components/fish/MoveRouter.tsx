@@ -62,7 +62,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	const bubbleElemRef = useRef<HTMLDivElement>(null);
 
 	const [visible, setVisible] = useState(false);
-	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "white" }), []);
+	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "#000c44" }), []);
 
 	const DETECT_DISTANCE = 5;
 	const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
@@ -77,13 +77,16 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		}
 	}, [circleMaterial]);
 
+	// 특정 모델만 그림자 생성
 	useEffect(() => {
+		const isFishing = modelPath.includes("fishing");
+
 		scene.traverse((child) => {
 			if ((child as Mesh).isMesh) {
-				child.castShadow = true;
+				child.castShadow = isFishing;
 			}
 		});
-	}, [scene]);
+	}, [scene, modelPath]);
 
 	useFrame((_, delta) => {
 		const ring = progressCircleRef.current;

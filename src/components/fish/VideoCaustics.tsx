@@ -50,7 +50,7 @@ const VideoCausticsComponent = ({ onLoaded }: { onLoaded: () => void }) => {
 		videoTexture && (
 			<mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} renderOrder={10}>
 				<planeGeometry args={[350, 70]} />
-				<meshBasicMaterial map={videoTexture} transparent opacity={0.3} depthWrite={false} depthTest={false} />
+				<meshBasicMaterial map={videoTexture} transparent opacity={0.2} depthWrite={false} depthTest={false} />
 			</mesh>
 		)
 	);

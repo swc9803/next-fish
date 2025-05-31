@@ -4,19 +4,17 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
 import gsap from "gsap";
 
-import { useFishStore } from "@/store/useFishStore";
 import { resetGameState } from "@/hooks/resetGameState";
 
 import { GuideShader } from "./GuideShader";
 import { FishModel } from "./FishModel";
-import { FishConfig } from "./FishConfig";
 import { FishColorPicker } from "./FishColorPicker";
 import { MoveRouter } from "./MoveRouter";
 import { Ground } from "./Ground";
 import { ClickHandler } from "./ClickHandler";
 import { BombZone } from "./BombZone";
 import { VideoCaustics } from "./VideoCaustics";
-import { BackgroundWithFog } from "./BackgroundWithFog";
+import { OceanBackground } from "./OceanBackground";
 import { TalkativeModel } from "./TalkativeModel";
 
 const GalleryTransitionOverlay = () => {
@@ -82,10 +80,6 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	const meshRefs = useRef<Mesh[]>([]);
 
 	const router = useRouter();
-
-	const backgroundColor = useFishStore((s) => s.backgroundColor);
-	const fogColor = useFishStore((s) => s.fogColor);
-	const fogDensity = useFishStore((s) => s.fogDensity);
 
 	useEffect(() => {
 		if (fishLoaded && !groundLoaded) {
@@ -254,21 +248,21 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 				}}
 			>
 				<SceneCleanup />
-				<BackgroundWithFog backgroundColor={backgroundColor} fogColor={fogColor} fogDensity={fogDensity} />
-				<ambientLight color={0xffffff} intensity={0.8} />
+				<OceanBackground />
+				<ambientLight color={0xffffff} intensity={1.2} />
 				<directionalLight
 					color={0xf8f8ff}
-					intensity={4}
-					position={[-1, 1, 3]}
+					intensity={2}
+					position={[-30, 40, 20]}
 					castShadow
-					shadow-mapSize-width={1024}
-					shadow-mapSize-height={1024}
-					shadow-camera-left={-120}
-					shadow-camera-right={120}
-					shadow-camera-top={80}
-					shadow-camera-bottom={-40}
+					shadow-mapSize-width={2048}
+					shadow-mapSize-height={2048}
+					shadow-camera-left={-200}
+					shadow-camera-right={200}
+					shadow-camera-top={150}
+					shadow-camera-bottom={-100}
 					shadow-camera-near={10}
-					shadow-camera-far={150}
+					shadow-camera-far={200}
 				/>
 
 				<VideoCaustics onLoaded={handleVideoLoaded} />
@@ -364,7 +358,6 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 			)}
 
 			<FishColorPicker />
-			<FishConfig />
 
 			{isGameOver && (
 				<div onClick={handleReset} className="gameover_overlay">
