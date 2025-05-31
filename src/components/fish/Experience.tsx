@@ -280,19 +280,37 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 				<Ground planeRef={planeRef} onLoaded={() => setGroundLoaded(true)} />
 
 				<TalkativeModel
-					modelPath="/models/fish_game.glb"
-					modelPosition={[20, 0.5, -10]}
-					bubblePosition={[19, 1, -15]}
-					text="게임을 즐길 수 있는 곳 입니다."
+					modelPath="/models/fish_logo.glb"
+					modelPosition={[-40, 0.5, -10]}
+					bubblePosition={[-41, 1, -15]}
+					text="왼쪽 지형은 여러 게임들을 즐길 수 있는 곳 입니다."
 					fishRef={fishRef}
 					scale={1}
 					speed={70}
 				/>
 				<TalkativeModel
-					modelPath="/models/fish_logo.glb"
-					modelPosition={[-20, 0.5, -10]}
-					bubblePosition={[-21, 1, -15]}
-					text="각 로고에 다가가면 해당하는 사이트가 열립니다."
+					modelPath="/models/fish_car.glb"
+					modelPosition={[35, 0.5, -5]}
+					bubblePosition={[36, 1, -10]}
+					text="오른쪽으로 이동하시면 프로젝트들을 보실 수 있습니다."
+					fishRef={fishRef}
+					scale={1}
+					speed={70}
+				/>
+				<TalkativeModel
+					modelPath="/models/fish_game.glb"
+					modelPosition={[-18, 0.5, 16]}
+					bubblePosition={[-19, 1, 11]}
+					text="각 로고에 다가가면 각 사이트가 열립니다."
+					fishRef={fishRef}
+					scale={1}
+					speed={70}
+				/>
+				<TalkativeModel
+					modelPath="/models/update.glb"
+					modelPosition={[-125, 0.5, 10]}
+					bubblePosition={[-126, 1, 5]}
+					text="곧 게임이 추가될 예정입니다!"
 					fishRef={fishRef}
 					scale={1}
 					speed={70}

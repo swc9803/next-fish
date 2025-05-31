@@ -33,8 +33,8 @@ const logoData: {
 	{
 		id: "gallery",
 		url: "/gallery",
-		modelPath: "/models/bridge.glb",
-		position: [20, 0.5, 10],
+		modelPath: "/models/car.glb",
+		position: [35, 0.5, 7],
 		isInternal: true,
 	},
 ];
@@ -54,6 +54,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	const { scene } = useGLTF(modelPath);
 	const modelRef = useRef<Object3D>(null);
 	const progressCircleRef = useRef<Mesh>(null);
+	const backgroundCircleRef = useRef<Mesh>(null);
 	const progressRef = useRef(0);
 	const triggeredRef = useRef(false);
 	const prevArcRef = useRef<number | null>(null);
@@ -61,6 +62,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 
 	const [visible, setVisible] = useState(false);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "#000c44" }), []);
+	const backgroundMaterial = useMemo(() => new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 }), []);
 
 	const DETECT_DISTANCE = 5;
 	const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
@@ -69,19 +71,26 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	const typedText = useTyping(text || "", visible, 150);
 
 	useEffect(() => {
+		// 진행도 원 초기 세팅
 		if (progressCircleRef.current) {
 			progressCircleRef.current.material = circleMaterial;
 			progressCircleRef.current.rotation.set(Math.PI * -0.5, 0, Math.PI * 0.5);
 		}
-	}, [circleMaterial]);
+		// 배경 원 초기 세팅
+		if (backgroundCircleRef.current) {
+			backgroundCircleRef.current.material = backgroundMaterial;
+			backgroundCircleRef.current.geometry = new TorusGeometry(1.125, 0.05, 16, 64, Math.PI * 2);
+			backgroundCircleRef.current.rotation.set(Math.PI * -0.5, 0, Math.PI * 0.5);
+		}
+	}, [circleMaterial, backgroundMaterial]);
 
 	// 특정 모델만 그림자 생성
 	useEffect(() => {
-		const isBridge = modelPath.includes("bridge");
+		const isCar = modelPath.includes("car");
 
 		scene.traverse((child) => {
 			if ((child as Mesh).isMesh) {
-				child.castShadow = isBridge;
+				child.castShadow = isCar;
 			}
 		});
 	}, [scene, modelPath]);
@@ -133,6 +142,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		}
 	});
 
+	// 메모리 해제
 	useEffect(() => {
 		return () => {
 			scene.traverse((child) => {
@@ -153,6 +163,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	return (
 		<group ref={modelRef} position={position} scale={3.5}>
 			<primitive object={scene} />
+			<mesh ref={backgroundCircleRef} position={[0, 0.009, 0]} />
 			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
 			{text && (
 				<Html position={bubblePosition} distanceFactor={15} wrapperClass="prevent_click">
