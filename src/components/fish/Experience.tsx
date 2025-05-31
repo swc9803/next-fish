@@ -16,6 +16,7 @@ import { BombZone } from "./BombZone";
 import { VideoCaustics } from "./VideoCaustics";
 import { OceanBackground } from "./OceanBackground";
 import { TalkativeModel } from "./TalkativeModel";
+import { DecorationModel } from "./DecorationModel";
 
 const GalleryTransitionOverlay = () => {
 	const [visible, setVisible] = useState(false);
@@ -53,6 +54,14 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	const handleVideoLoaded = useCallback(() => {
 		setVideoLoaded(true);
 	}, []);
+
+	const [shell1Loaded, setShell1Loaded] = useState(false);
+	const [shell2Loaded, setShell2Loaded] = useState(false);
+	const [coral1Loaded, setCoral1Loaded] = useState(false);
+	const [coral2Loaded, setCoral2Loaded] = useState(false);
+
+	const allDecorationsLoaded = shell1Loaded && shell2Loaded && coral1Loaded && coral2Loaded;
+
 	const [hasNotified, setHasNotified] = useState(false);
 
 	const [isShowGuide, setIsShowGuide] = useState(false);
@@ -81,21 +90,9 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 
 	const router = useRouter();
 
-	useEffect(() => {
-		if (fishLoaded && !groundLoaded) {
-			setTimeout(() => setGroundLoaded(true), 300);
-		}
-	}, [fishLoaded, groundLoaded]);
-
-	useEffect(() => {
-		if (fishLoaded && groundLoaded && !videoLoaded) {
-			setTimeout(() => setVideoLoaded(true), 300);
-		}
-	}, [fishLoaded, groundLoaded, videoLoaded]);
-
 	// 로딩 대기
 	useEffect(() => {
-		if (fishLoaded && groundLoaded && videoLoaded && !hasNotified) {
+		if (fishLoaded && groundLoaded && videoLoaded && allDecorationsLoaded && !hasNotified) {
 			setHasNotified(true);
 
 			let frame = 0;
@@ -109,7 +106,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 			};
 			requestAnimationFrame(wait);
 		}
-	}, [fishLoaded, groundLoaded, videoLoaded, hasNotified, onReady]);
+	}, [fishLoaded, groundLoaded, videoLoaded, allDecorationsLoaded, hasNotified]);
 
 	useEffect(() => {
 		if (!hasNotified) return;
@@ -315,6 +312,17 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 					scale={1}
 					speed={70}
 				/>
+
+				<DecorationModel modelPath="/models/decoration/shell1.glb" position={[5, 0, 5]} scale={1.5} onLoaded={() => setShell1Loaded(true)} />
+				<DecorationModel
+					modelPath="/models/decoration/shell2.glb"
+					position={[-5, 0, 10]}
+					rotation={[0, Math.PI / 4, 0]}
+					scale={1.2}
+					onLoaded={() => setShell2Loaded(true)}
+				/>
+				<DecorationModel modelPath="/models/decoration/coral1.glb" position={[8, 0, -5]} scale={[2, 2, 2]} onLoaded={() => setCoral1Loaded(true)} />
+				<DecorationModel modelPath="/models/decoration/coral2.glb" position={[-7, 0, -6]} scale={2} onLoaded={() => setCoral2Loaded(true)} />
 
 				<BombZone
 					fishRef={fishRef}
