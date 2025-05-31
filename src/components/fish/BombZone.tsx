@@ -74,10 +74,12 @@ export const BombZone = (props: BombZoneProps) => {
 	const bombTimer = useRef(0);
 	const lastDelayRef = useRef(1.5);
 
+	const BOMB_ZONE_POSITION_X = -75;
+
 	const checkCollision = useCallback(
 		(fish: Object3D, cellIndex: number) => {
 			const fishPos = fish.position.clone();
-			const cellWorld = new Vector3(...CELLS[cellIndex]).add(new Vector3(-50, 0, 0));
+			const cellWorld = new Vector3(...CELLS[cellIndex]).add(new Vector3(BOMB_ZONE_POSITION_X, 0, 0));
 			const fishDir = new Vector3(0, 0, 1).applyEuler(fish.rotation).normalize();
 			const toCell = new Vector3().subVectors(cellWorld, fishPos);
 			const hitWidth = fishScale * 2;
@@ -154,7 +156,7 @@ export const BombZone = (props: BombZoneProps) => {
 			}
 
 			if (!feed.active) {
-				const x = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE - 50;
+				const x = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE + BOMB_ZONE_POSITION_X;
 				const z = (Math.floor(Math.random() * 7) - 3) * CELL_SIZE;
 				setFeed({ position: [x, 1, z], active: true });
 			}
@@ -254,7 +256,7 @@ export const BombZone = (props: BombZoneProps) => {
 
 	return (
 		<>
-			<group position={[-50, 0, 0]}>{memoizedMeshes}</group>
+			<group position={[BOMB_ZONE_POSITION_X, 0, 0]}>{memoizedMeshes}</group>
 
 			{feed.active && (
 				<GrowingFeed

@@ -41,6 +41,8 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 	const currentPosition = useRef(new Vector3());
 	const didNotify = useRef(false);
 
+	const BOMB_ZONE_POSITION_X = -75;
+
 	const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 	useEffect(() => {
@@ -140,12 +142,12 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 		}
 
 		// bombzone 진입
-		const inBombZone = Math.abs(pos.x + 50) < 21 && Math.abs(pos.z) < 21;
+		const inBombZone = Math.abs(pos.x - BOMB_ZONE_POSITION_X) < 21 && Math.abs(pos.z) < 21;
 		if (inBombZone) {
-			const camTarget = new Vector3(-50, isMobile ? 40 : 30, 0);
+			const camTarget = new Vector3(BOMB_ZONE_POSITION_X, isMobile ? 40 : 30, 0);
 			if (camera.position.distanceToSquared(camTarget) > 0.01) {
 				camera.position.copy(camTarget);
-				camera.lookAt(-50, 0, 0);
+				camera.lookAt(BOMB_ZONE_POSITION_X, 0, 0);
 			}
 		} else {
 			const camPos = new Vector3(pos.x, 20, pos.z + 14);
@@ -163,7 +165,7 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 				hasMovedToCenter.current = true;
 
 				gsap.killTweensOf(pos);
-				tempTarget.current.set(-50, pos.y, 0);
+				tempTarget.current.set(BOMB_ZONE_POSITION_X, pos.y, 0);
 				fish.lookAt(tempTarget.current);
 				const speed = useFishStore.getState().fishSpeed;
 				const distance = pos.distanceTo(tempTarget.current);

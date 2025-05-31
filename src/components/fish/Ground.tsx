@@ -75,8 +75,8 @@ export const Ground = ({ planeRef, onLoaded }: PlaneProps) => {
 	}, []);
 
 	return (
-		<mesh ref={planeRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-			<planeGeometry args={[350, 70]} />
+		<mesh ref={planeRef} rotation={[-Math.PI / 2, 0, 0]} position={[-45, -0.1, 0]} receiveShadow>
+			<planeGeometry args={[210, 70]} />
 			<meshStandardMaterial attach="material" {...material} />
 		</mesh>
 	);

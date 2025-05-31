@@ -12,7 +12,8 @@ interface ClickHandlerProps {
 	isGameOver: boolean;
 }
 
-const GRID_CENTER = new Vector3(-50, 0, 0);
+const BOMB_ZONE_POSITION_X = -75;
+const GRID_CENTER = new Vector3(BOMB_ZONE_POSITION_X, 0, 0);
 const GRID_SIZE_X = 42;
 const GRID_SIZE_Z = 42;
 

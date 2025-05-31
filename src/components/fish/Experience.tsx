@@ -253,7 +253,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 				<directionalLight
 					color={0xf8f8ff}
 					intensity={2}
-					position={[-30, 40, 20]}
+					position={[-70, 70, 50]}
 					castShadow
 					shadow-mapSize-width={2048}
 					shadow-mapSize-height={2048}

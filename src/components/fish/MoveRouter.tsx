@@ -11,7 +11,6 @@ const logoData: {
 	modelPath: string;
 	position: [number, number, number];
 	isInternal?: boolean;
-	text?: string;
 }[] = [
 	{
 		id: "github",
@@ -34,10 +33,9 @@ const logoData: {
 	{
 		id: "gallery",
 		url: "/gallery",
-		modelPath: "/models/fishing.glb",
+		modelPath: "/models/bridge.glb",
 		position: [20, 0.5, 10],
 		isInternal: true,
-		text: "갤러리로 이동",
 	},
 ];
 
@@ -79,11 +77,11 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 
 	// 특정 모델만 그림자 생성
 	useEffect(() => {
-		const isFishing = modelPath.includes("fishing");
+		const isBridge = modelPath.includes("bridge");
 
 		scene.traverse((child) => {
 			if ((child as Mesh).isMesh) {
-				child.castShadow = isFishing;
+				child.castShadow = isBridge;
 			}
 		});
 	}, [scene, modelPath]);
@@ -185,7 +183,6 @@ export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: Mo
 					fishRef={fishRef}
 					isInternal={logo.isInternal}
 					showGalleryOverlay={showGalleryOverlay}
-					text={logo.text}
 					hideSpeechBubble={hideSpeechBubble}
 				/>
 			))}
