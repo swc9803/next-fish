@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
 import { WebGLRenderTarget } from "three";
@@ -25,9 +25,8 @@ const Home = () => {
 		return () => window.removeEventListener("resize", setAppHeight);
 	}, []);
 
-	const handleExperienceReady = () => {
+	const handleExperienceReady = useCallback(() => {
 		let frameCount = 0;
-
 		const waitForStabilization = () => {
 			frameCount++;
 			if (frameCount > 3) {
@@ -36,9 +35,8 @@ const Home = () => {
 				requestAnimationFrame(waitForStabilization);
 			}
 		};
-
 		requestAnimationFrame(waitForStabilization);
-	};
+	}, []);
 
 	return (
 		<div className={styles.container}>

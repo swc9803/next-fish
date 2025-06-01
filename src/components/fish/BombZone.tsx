@@ -47,6 +47,8 @@ const cameraShakeRef = {
 	basePosition: new Vector3(),
 };
 
+const BOMB_ZONE_POSITION_X = -75;
+
 export const BombZone = (props: BombZoneProps) => {
 	const {
 		fishRef,
@@ -73,8 +75,6 @@ export const BombZone = (props: BombZoneProps) => {
 	const bombProgressRef = useRef<{ [index: number]: number }>({});
 	const bombTimer = useRef(0);
 	const lastDelayRef = useRef(1.5);
-
-	const BOMB_ZONE_POSITION_X = -75;
 
 	const checkCollision = useCallback(
 		(fish: Object3D, cellIndex: number) => {

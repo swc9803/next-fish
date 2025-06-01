@@ -89,7 +89,15 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 		sushi: false,
 		crab: false,
 	}));
-	const setLoaded = useCallback((key: keyof typeof loadedFlags) => () => setLoadedFlags((prev) => ({ ...prev, [key]: true })), []);
+	const loadedCallbacks = useMemo(() => {
+		const result: Record<string, () => void> = {};
+		for (const item of decorationArray) {
+			result[item.key] = () => {
+				setLoadedFlags((prev) => ({ ...prev, [item.key]: true }));
+			};
+		}
+		return result;
+	}, [decorationArray]);
 
 	const allDecorationsLoaded = useMemo(() => Object.values(loadedFlags).every(Boolean), [loadedFlags]);
 
@@ -125,7 +133,6 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	useEffect(() => {
 		if (fishLoaded && groundLoaded && videoLoaded && allDecorationsLoaded && !hasNotified) {
 			setHasNotified(true);
-
 			let frame = 0;
 			const wait = () => {
 				frame++;
@@ -137,7 +144,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 			};
 			requestAnimationFrame(wait);
 		}
-	}, [fishLoaded, groundLoaded, videoLoaded, allDecorationsLoaded, hasNotified]);
+	}, [fishLoaded, groundLoaded, videoLoaded, allDecorationsLoaded, hasNotified, onReady]);
 
 	useEffect(() => {
 		if (!hasNotified) return;
@@ -351,7 +358,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 						position={item.position}
 						rotation={item.rotation}
 						scale={item.scale ?? 1}
-						onLoaded={setLoaded(item.key)}
+						onLoaded={loadedCallbacks[item.key]}
 					/>
 				))}
 

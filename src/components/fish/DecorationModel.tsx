@@ -15,7 +15,7 @@ export const DecorationModelComponent = ({ modelPath, position = [0, 0, 0], rota
 
 	useEffect(() => {
 		onLoaded?.();
-	}, []);
+	}, [onLoaded]);
 
 	useEffect(() => {
 		scene.traverse((child) => {
