@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 import { useGLTF } from "@react-three/drei";
 import { Mesh, Material } from "three";
 
@@ -6,11 +6,11 @@ interface DecorationProps {
 	modelPath: string;
 	position?: [number, number, number];
 	rotation?: [number, number, number];
-	scale?: number | [number, number, number];
+	scale?: number;
 	onLoaded?: () => void;
 }
 
-export const DecorationModel = ({ modelPath, position = [0, 0, 0], rotation = [0, 0, 0], scale = 1, onLoaded }: DecorationProps) => {
+export const DecorationModelComponent = ({ modelPath, position = [0, 0, 0], rotation = [0, 0, 0], scale = 1, onLoaded }: DecorationProps) => {
 	const { scene } = useGLTF(modelPath);
 
 	useEffect(() => {
@@ -43,5 +43,7 @@ export const DecorationModel = ({ modelPath, position = [0, 0, 0], rotation = [0
 		};
 	}, [scene]);
 
-	return <primitive object={scene} position={position} rotation={rotation} scale={typeof scale === "number" ? [scale, scale, scale] : scale} />;
+	return <primitive object={scene} position={position} rotation={rotation} scale={[scale, scale, scale]} />;
 };
+
+export const DecorationModel = memo(DecorationModelComponent);

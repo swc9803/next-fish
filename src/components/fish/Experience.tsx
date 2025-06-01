@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
@@ -55,12 +55,45 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 		setVideoLoaded(true);
 	}, []);
 
-	const [shell1Loaded, setShell1Loaded] = useState(false);
-	const [shell2Loaded, setShell2Loaded] = useState(false);
-	const [coral1Loaded, setCoral1Loaded] = useState(false);
-	const [coral2Loaded, setCoral2Loaded] = useState(false);
+	type DecorationType = {
+		key: keyof typeof loadedFlags;
+		path: string;
+		scale?: number;
+		position: [number, number, number];
+		rotation?: [number, number, number];
+	};
 
-	const allDecorationsLoaded = shell1Loaded && shell2Loaded && coral1Loaded && coral2Loaded;
+	const decorationArray: DecorationType[] = useMemo(
+		() => [
+			{ key: "shell1", path: "/models/decoration/shell1.glb", scale: 0.2, position: [5, 0.5, 5] },
+			{ key: "shell2", path: "/models/decoration/shell2.glb", scale: 4, position: [10, 0, 2], rotation: [0, 0, Math.PI / 2] },
+			{ key: "seaweed1", path: "/models/decoration/seaweed1.glb", scale: 5, position: [-5, 0.5, 10] },
+			{ key: "seaweed2", path: "/models/decoration/seaweed2.glb", position: [4, 0.5, 7] },
+			{ key: "coral1", path: "/models/decoration/coral1.glb", position: [8, 0.5, -5] },
+			{ key: "coral2", path: "/models/decoration/coral2.glb", scale: 5, position: [-7, 0.5, -6] },
+			{ key: "seastar", path: "/models/decoration/seastar.glb", scale: 4, position: [3, 0.5, -3] },
+			{ key: "seaspike", path: "/models/decoration/seaspike.glb", scale: 0.8, position: [-3, 0.5, 4], rotation: [0, Math.PI / 4, 0] },
+			{ key: "sushi", path: "/models/decoration/sushi.glb", scale: 4, position: [0, 0.5, 0] },
+			{ key: "crab", path: "/models/decoration/crab.glb", position: [-6, 0.5, 2], rotation: [0, Math.PI, 0] },
+		],
+		[]
+	);
+
+	const [loadedFlags, setLoadedFlags] = useState(() => ({
+		shell1: false,
+		shell2: false,
+		seaweed1: false,
+		seaweed2: false,
+		coral1: false,
+		coral2: false,
+		seastar: false,
+		seaspike: false,
+		sushi: false,
+		crab: false,
+	}));
+	const setLoaded = useCallback((key: keyof typeof loadedFlags) => () => setLoadedFlags((prev) => ({ ...prev, [key]: true })), []);
+
+	const allDecorationsLoaded = useMemo(() => Object.values(loadedFlags).every(Boolean), [loadedFlags]);
 
 	const [hasNotified, setHasNotified] = useState(false);
 
@@ -313,16 +346,16 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 					speed={70}
 				/>
 
-				<DecorationModel modelPath="/models/decoration/shell1.glb" position={[5, 0, 5]} scale={1.5} onLoaded={() => setShell1Loaded(true)} />
-				<DecorationModel
-					modelPath="/models/decoration/shell2.glb"
-					position={[-5, 0, 10]}
-					rotation={[0, Math.PI / 4, 0]}
-					scale={1.2}
-					onLoaded={() => setShell2Loaded(true)}
-				/>
-				<DecorationModel modelPath="/models/decoration/coral1.glb" position={[8, 0, -5]} scale={[2, 2, 2]} onLoaded={() => setCoral1Loaded(true)} />
-				<DecorationModel modelPath="/models/decoration/coral2.glb" position={[-7, 0, -6]} scale={2} onLoaded={() => setCoral2Loaded(true)} />
+				{decorationArray.map((item) => (
+					<DecorationModel
+						key={item.key}
+						modelPath={item.path}
+						position={item.position}
+						rotation={item.rotation}
+						scale={item.scale ?? 1}
+						onLoaded={setLoaded(item.key)}
+					/>
+				))}
 
 				<BombZone
 					fishRef={fishRef}
