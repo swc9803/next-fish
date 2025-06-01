@@ -144,13 +144,13 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 		// bombzone 진입
 		const inBombZone = Math.abs(pos.x - BOMB_ZONE_POSITION_X) < 21 && Math.abs(pos.z) < 21;
 		if (inBombZone) {
-			const camTarget = new Vector3(BOMB_ZONE_POSITION_X, isMobile ? 40 : 30, 0);
+			const camTarget = new Vector3(BOMB_ZONE_POSITION_X, isMobile ? 70 : 30, 0);
 			if (camera.position.distanceToSquared(camTarget) > 0.01) {
 				camera.position.copy(camTarget);
 				camera.lookAt(BOMB_ZONE_POSITION_X, 0, 0);
 			}
 		} else {
-			const camPos = new Vector3(pos.x, 20, pos.z + 14);
+			const camPos = new Vector3(pos.x, isMobile ? 40 : 30, pos.z + 20);
 			if (camera.position.distanceToSquared(camPos) > 0.01) {
 				camera.position.copy(camPos);
 				camera.lookAt(pos);
