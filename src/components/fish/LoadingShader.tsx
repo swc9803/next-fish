@@ -98,8 +98,8 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 		};
 	}, [canvasTexture]);
 
-	useFrame(() => {
-		uniforms.time.value += 0.05;
+	useFrame((_, delta) => {
+		uniforms.time.value += delta;
 
 		const aspect = size.height / size.width;
 		const imageAspect = size.height / size.width;

@@ -110,8 +110,9 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 		return () => cancelAnimationFrame(raf);
 	}, [clicked, uniforms.progress, onFinish]);
 
-	useFrame(() => {
-		uniforms.time.value += 0.05;
+	useFrame((_, delta) => {
+		uniforms.time.value += delta;
+
 		const aspect = size.height / size.width;
 		const imageAspect = size.height / size.width;
 		const a1 = aspect > imageAspect ? (size.width / size.height) * imageAspect : 1;

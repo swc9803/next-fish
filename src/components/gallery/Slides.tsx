@@ -108,11 +108,14 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 		return () => clearInterval(interval);
 	}, [activeSlideIndex, slideTextures, isIntroPlaying]);
 
-	useFrame(() => {
+	useFrame((_, delta) => {
+		const speed = 1.5;
 		let updated = false;
+
 		const updatedStates = slideStatesRef.current.map((s) => {
 			if (!s.isFading || !s.next) return s;
-			const newOpacity = Math.min(s.opacity + 0.03, 1);
+
+			const newOpacity = Math.min(s.opacity + delta * speed, 1);
 			if (newOpacity >= 1) {
 				updated = true;
 				return {
