@@ -119,6 +119,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	const [preventClick, setPreventClick] = useState(false);
 	const [deathPosition, setDeathPosition] = useState<[number, number, number] | null>(null);
 	const bombZoneResetRef = useRef<() => void>(() => {});
+	const [showClearText, setShowClearText] = useState(false);
 
 	const fishRef = useRef<Object3D>(null);
 	const planeRef = useRef<Mesh>(null);
@@ -211,8 +212,8 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 				setBombActive(false);
 				setIsInBombZone(false);
 				setFeed({ position: [0, 1, 0], active: false });
-				setTimeout(() => setIsCleared(false), 2000);
 			}
+
 			return next;
 		});
 	};
@@ -264,6 +265,23 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 		resetGame();
 	};
 
+	useEffect(() => {
+		if (isCleared) {
+			setShowClearText(true);
+			const timer = setTimeout(() => setShowClearText(false), 2000);
+			setIsInBombZone(false);
+			setBombActive(false);
+
+			return () => clearTimeout(timer);
+		}
+	}, [isCleared]);
+
+	useEffect(() => {
+		if (showClearText && countdownRef.current) {
+			gsap.fromTo(countdownRef.current, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(4)" });
+		}
+	}, [showClearText]);
+
 	return (
 		<>
 			<Canvas
@@ -310,6 +328,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 					deathPosition={deathPosition}
 					onLoaded={() => setFishLoaded(true)}
 					startAnimation={startAnimation}
+					isCleared={isCleared}
 				/>
 				<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} hideSpeechBubble={isMovingToGallery} />
 				<Ground planeRef={planeRef} onLoaded={() => setGroundLoaded(true)} />
@@ -384,15 +403,24 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 
 				<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 			</Canvas>
-
-			{(countdown !== null || countdown === 0 || isCleared || isInBombZone || isGameOver) && (
+			{(countdown !== null || countdown === 0 || showClearText || isInBombZone || isGameOver) && (
 				<div className="game_overlay">
-					{(countdown !== null || isCleared) && (
-						<div key={countdown === 0 ? "start" : isCleared ? "clear" : countdown} ref={countdownRef} className="countdown">
-							{isCleared ? "CLEAR!" : countdown === 0 ? "START!" : countdown}
-						</div>
+					{countdown !== null && countdown > 0 && (
+						<p ref={countdownRef} className="countdown number">
+							{countdown}
+						</p>
 					)}
-					{(isInBombZone || isGameOver) && <div className="score">Score: {score}</div>}
+					{countdown === 0 && (
+						<p ref={countdownRef} className="countdown start">
+							START!
+						</p>
+					)}
+					{showClearText && (
+						<p ref={countdownRef} className="countdown clear">
+							CLEAR!
+						</p>
+					)}
+					{(isInBombZone || isGameOver) && <p className="score">Score: {score}</p>}
 				</div>
 			)}
 

@@ -14,9 +14,10 @@ interface FishModelProps {
 	deathPosition: [number, number, number] | null;
 	onLoaded: () => void;
 	startAnimation: boolean;
+	isCleared: boolean;
 }
 
-export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition, onLoaded, startAnimation }: FishModelProps) => {
+export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition, onLoaded, startAnimation, isCleared }: FishModelProps) => {
 	const { scene: fishScene, animations } = useGLTF("/models/fish.glb");
 	const { scene: deadScene } = useGLTF("/models/fish_bone.glb");
 	const { camera } = useThree();
@@ -106,6 +107,12 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 	}, [fishColor]);
 
 	useEffect(() => {
+		if (isCleared) {
+			hasMovedToCenter.current = true;
+		}
+	}, [isCleared]);
+
+	useEffect(() => {
 		const toggleDebug = (e: KeyboardEvent) => {
 			if (e.key.toLowerCase() === "d") setShowHitBox((prev) => !prev);
 		};
@@ -142,7 +149,7 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 		}
 
 		// bombzone 진입
-		const inBombZone = Math.abs(pos.x - BOMB_ZONE_POSITION_X) < 21 && Math.abs(pos.z) < 21;
+		const inBombZone = !isCleared && Math.abs(pos.x - BOMB_ZONE_POSITION_X) < 21 && Math.abs(pos.z) < 21;
 		if (inBombZone) {
 			const camTarget = new Vector3(BOMB_ZONE_POSITION_X, isMobile ? 70 : 30, 0);
 			if (camera.position.distanceToSquared(camTarget) > 0.01) {
@@ -175,7 +182,7 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 					duration: distance / speed,
 					ease: "power2.out",
 				});
-			} else if (!inBombZone) {
+			} else if (!inBombZone && !isCleared) {
 				hasMovedToCenter.current = false;
 			}
 		}

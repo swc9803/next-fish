@@ -33,7 +33,6 @@ interface BombZoneProps {
 const CELL_SIZE = 6;
 const GRID_HALF = 3;
 const MAX_SCORE = 1000;
-const MAX_BOMBS = 10;
 
 const CELLS: [number, number, number][] = Array.from({ length: (GRID_HALF * 2 + 1) ** 2 }, (_, i) => {
 	const x = (i % (GRID_HALF * 2 + 1)) - GRID_HALF;
@@ -107,7 +106,7 @@ export const BombZone = (props: BombZoneProps) => {
 
 	const animateBomb = useCallback(
 		(index: number) => {
-			if (isGameOver || activeBombsRef.current.size >= MAX_BOMBS || activeBombsRef.current.has(index)) return;
+			if (isGameOver || activeBombsRef.current.has(index)) return;
 
 			const mesh = meshRefs.current[index];
 			if (!mesh) return;
@@ -151,7 +150,9 @@ export const BombZone = (props: BombZoneProps) => {
 			if (score >= MAX_SCORE) {
 				setIsGameOver(true);
 				setIsInBombZone(false);
-				setFeed((prev) => ({ ...prev, active: false }));
+				setFeed((prev) => {
+					return { ...prev, active: false };
+				});
 				return;
 			}
 
@@ -162,18 +163,11 @@ export const BombZone = (props: BombZoneProps) => {
 			}
 
 			const bombCount = Math.floor(5 + (score / MAX_SCORE) * 5);
-			const indexes = new Set<number>();
-			let attempts = 0;
+			const availableIndexes = CELLS.map((_, i) => i).filter((i) => !activeBombsRef.current.has(i) && meshRefs.current[i]);
 
-			while (indexes.size < bombCount && attempts < 100) {
-				const i = Math.floor(Math.random() * CELLS.length);
-				if (!activeBombsRef.current.has(i) && meshRefs.current[i]) {
-					indexes.add(i);
-				}
-				attempts++;
-			}
+			const randomIndexes = availableIndexes.sort(() => 0.5 - Math.random()).slice(0, bombCount);
 
-			indexes.forEach((i) => animateBomb(i));
+			randomIndexes.forEach((i) => animateBomb(i));
 		}
 
 		// 폭탄 색상 변화 및 충돌 체크
@@ -266,7 +260,7 @@ export const BombZone = (props: BombZoneProps) => {
 					active={feed.active}
 					onCollected={() => {
 						const scale = useFishStore.getState().fishScale;
-						const bonus = Math.round(scale * 10);
+						const bonus = Math.round(scale * 20);
 						for (let i = 0; i < bonus; i++) incrementScore();
 						setFeed((prev) => ({ ...prev, active: false }));
 					}}

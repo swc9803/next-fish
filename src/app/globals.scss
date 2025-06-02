@@ -242,6 +242,26 @@ textarea {
 		font-weight: bold;
 		opacity: 0;
 	}
+	.start {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate3d(-50%, -50%, 0) scale(0.7);
+		color: white;
+		font-size: 6rem;
+		font-weight: bold;
+		opacity: 0;
+	}
+	.clear {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate3d(-50%, -50%, 0) scale(0.7);
+		color: white;
+		font-size: 6rem;
+		font-weight: bold;
+		opacity: 0;
+	}
 	.score {
 		position: absolute;
 		top: 20px;
