@@ -209,9 +209,10 @@ textarea {
 	will-change: transform;
 	@media screen and (max-width: 768px) {
 		padding: 1rem 1.5rem;
-		min-width: 34rem;
+		min-width: 44rem;
 		min-height: 10rem;
-		font-size: 3rem;
+		font-size: 5rem;
+		line-height: 140%;
 	}
 	&::after {
 		content: "";
