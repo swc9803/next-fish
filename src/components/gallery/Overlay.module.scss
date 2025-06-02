@@ -23,6 +23,10 @@
 		margin: 1.5rem auto;
 		width: 7rem;
 		height: 2.25rem;
+		@media screen and (max-width: 768px) {
+			margin: 1.5rem auto 1.5rem 1.5rem;
+			transform: scale(0.75);
+		}
 		.logo_background {
 			position: absolute;
 			top: 50%;
@@ -33,6 +37,9 @@
 			border-radius: 50%;
 			background: #fff;
 			filter: blur(10px);
+			@media screen and (max-width: 768px) {
+				width: 150%;
+			}
 		}
 		.logo {
 			height: auto;
@@ -48,6 +55,9 @@
 		gap: 0.5rem;
 		background: linear-gradient(0deg, rgba(255, 255, 255, 0.9) 66%, rgba(255, 255, 255, 0));
 		text-align: center;
+		@media screen and (max-width: 768px) {
+			padding: 4rem 2rem 2rem;
+		}
 		h1 {
 			color: #111;
 			font-size: clamp(1.25rem, calc(12.956px + 2.366vw), 2.25rem);
@@ -75,6 +85,9 @@
 			text-decoration: none;
 			transition: background 0.3s ease-out;
 			pointer-events: none;
+			@media screen and (max-width: 768px) {
+				padding: 0.5rem 0.5rem;
+			}
 			&:hover {
 				background: #333;
 			}
@@ -122,6 +135,10 @@
 	border-radius: 1.5rem;
 	z-index: 12;
 	pointer-events: auto;
+	@media screen and (max-width: 768px) {
+		right: 0.25rem;
+		transform: scale(0.75);
+	}
 	.switch {
 		position: relative;
 		min-height: 36px;
@@ -160,7 +177,7 @@
 .back_button {
 	position: absolute;
 	top: 1.5rem;
-	right: 11rem;
+	right: 12rem;
 	width: 2.25rem;
 	height: 2.25rem;
 	border-radius: 50%;
@@ -169,12 +186,23 @@
 	transition: 0.2s ease-out;
 	z-index: 11;
 	pointer-events: auto;
+	@media screen and (max-width: 768px) {
+		right: 6rem;
+		transform: translate3d(-40%, 0, 0) scale(0.75);
+	}
 	&.show {
 		opacity: 1;
 		transform: translate3d(0, 0, 0);
+		@media screen and (max-width: 768px) {
+			transform: translate3d(-140%, 0, 0);
+		}
 	}
 	svg {
 		width: 100%;
 		height: 100%;
+		@media screen and (max-width: 768px) {
+			width: 75%;
+			height: 75%;
+		}
 	}
 }

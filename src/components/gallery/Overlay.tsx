@@ -25,6 +25,9 @@ export const Overlay = () => {
 	const [renderedIndex, setRenderedIndex] = useState(activeSlideIndex);
 	const [isCooldown, setIsCooldown] = useState(false);
 
+	const prevButtonRef = useRef<SVGSVGElement>(null);
+	const nextButtonRef = useRef<SVGSVGElement>(null);
+
 	const contentRef = useRef<HTMLDivElement>(null);
 	const logoWrapperRef = useRef<HTMLDivElement>(null);
 	const timelineRef = useRef<gsap.core.Timeline | null>(null);
@@ -76,6 +79,17 @@ export const Overlay = () => {
 
 		prevFreemodeRef.current = freemode;
 	}, [activeSlideIndex, freemode]);
+
+	useEffect(() => {
+		if (!prevButtonRef.current || !nextButtonRef.current) return;
+		const newColor = slideArray[renderedIndex].borderColor;
+
+		gsap.to([prevButtonRef.current, nextButtonRef.current], {
+			stroke: newColor,
+			duration: 0.5,
+			ease: "power2.out",
+		});
+	}, [renderedIndex]);
 
 	const handleToggleView = () => {
 		if (disabledToggle) return;
@@ -132,12 +146,12 @@ export const Overlay = () => {
 
 			<div className={`${styles.slide_navigation} ${showSlideNavigation ? styles.show : ""}`}>
 				<button onClick={handlePrevSlide} aria-label="previous slide button">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+					<svg ref={prevButtonRef} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#fff">
 						<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
 					</svg>
 				</button>
 				<button onClick={handleNextSlide} aria-label="next slide button">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+					<svg ref={nextButtonRef} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#fff">
 						<path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
 					</svg>
 				</button>
@@ -159,7 +173,7 @@ export const Overlay = () => {
 						</a>
 						{slide.url2 && (
 							<a href={slide.url2} target="_blank" rel="noopener noreferrer" className={styles.link_button}>
-								스크린 보기 ↗
+								운영 사이트 확인 ↗
 							</a>
 						)}
 					</div>

@@ -17,6 +17,7 @@ const SlideArray: slideInfo[] = [
 		name: "RIOT GAMES 이벤트 페이지",
 		description: "RIOT GAMES의 발로란트와 전략적 팀 전투(TFT) 이벤트 페이지 퍼블리싱 담당, 게임과 이벤트 컨셉에 맞춘 UI 구성과 모션 구현",
 		url: "https://groot.co.kr/works",
+		url2: "https://events.kr.riotgames.com/val5years/main",
 		logo: "/images/gallery_logo1.png",
 		borderColor: "#ff4655",
 	},
