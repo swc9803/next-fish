@@ -1,4 +1,5 @@
 import "./globals.scss";
+import Script from "next/script";
 
 export const metadata = {
 	title: {
@@ -51,7 +52,25 @@ export default function RootLayout({ children }) {
 
 				<link rel="icon" type="image/png" sizes="192x192" href="/favicon/android-icon-192x192.png" />
 			</head>
-			<body>{children}</body>
+			<body>
+				{/* Google Analytics 스크립트 */}
+				<Script src="https://www.googletagmanager.com/gtag/js?id=G-MTEZMTLRK5" strategy="afterInteractive" />
+				<Script
+					id="gtag-init"
+					strategy="afterInteractive"
+					dangerouslySetInnerHTML={{
+						__html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-MTEZMTLRK5', {
+                page_path: window.location.pathname,
+              });
+            `,
+					}}
+				/>
+				{children}
+			</body>
 		</html>
 	);
 }

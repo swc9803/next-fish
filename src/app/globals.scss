@@ -207,6 +207,7 @@ textarea {
 	transform-origin: bottom center;
 	animation: scaleYUp 0.3s ease-out;
 	will-change: transform;
+	word-break: keep-all;
 	@media screen and (max-width: 768px) {
 		padding: 1rem 1.5rem;
 		min-width: 44rem;
