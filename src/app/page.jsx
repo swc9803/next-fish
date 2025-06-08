@@ -8,12 +8,18 @@ import { WebGLRenderTarget } from "three";
 import { LoadingShader } from "@/components/fish/LoadingShader";
 import styles from "./page.module.scss";
 
+const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
 const Experience = dynamic(() => import("@/components/fish/Experience").then((mod) => mod.default), { ssr: false });
 
 const Home = () => {
 	const [loadingComplete, setLoadingComplete] = useState(false);
 	const [fadeOut, setFadeOut] = useState(false);
-	const renderTarget = useMemo(() => new WebGLRenderTarget(1024, 512), []);
+
+	const renderTarget = useMemo(() => {
+		if (isIOS) return null;
+		return new WebGLRenderTarget(1024, 512);
+	}, []);
 
 	useEffect(() => {
 		const setAppHeight = () => {
@@ -27,10 +33,13 @@ const Home = () => {
 
 	const handleExperienceReady = useCallback(() => {
 		let frameCount = 0;
+		const fallback = setTimeout(() => setFadeOut(true), 500); // ✅ fallback 추가
+
 		const waitForStabilization = () => {
 			frameCount++;
 			if (frameCount > 3) {
 				setFadeOut(true);
+				clearTimeout(fallback);
 			} else {
 				requestAnimationFrame(waitForStabilization);
 			}
@@ -43,8 +52,8 @@ const Home = () => {
 			<main>
 				<Experience renderTarget={renderTarget} onReady={handleExperienceReady} startAnimation={fadeOut} />
 
-				{!loadingComplete && (
-					<div className={"loading_overlay"}>
+				{!loadingComplete && renderTarget && (
+					<div className="loading_overlay">
 						<Canvas
 							orthographic
 							camera={{ zoom: 1, position: [0, 0, 100] }}

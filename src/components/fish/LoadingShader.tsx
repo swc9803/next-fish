@@ -6,7 +6,7 @@ import vertex from "@/shaders/loadingVertex.glsl";
 import fragment from "@/shaders/loadingFragment.glsl";
 
 interface LoadingShaderProps {
-	renderTarget: WebGLRenderTarget;
+	renderTarget: WebGLRenderTarget | null;
 	loadingComplete: boolean;
 	onFinish: () => void;
 }
@@ -16,7 +16,7 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 	const { size } = useThree();
 
 	const canvasTexture = useMemo(() => {
-		const DPR = Math.min(window.devicePixelRatio || 1, 2);
+		const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
 		const width = size.width * DPR;
 		const height = size.height * DPR;
 
@@ -35,7 +35,6 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 
 		ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
 		ctx.shadowBlur = 6;
-
 		ctx.fillText("Loading...", size.width / 2, size.height / 2);
 
 		const texture = new CanvasTexture(canvas);
@@ -50,17 +49,17 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 			width: { value: 0.35 },
 			radius: { value: 1.4 },
 			texture1: { value: canvasTexture },
-			texture2: { value: renderTarget.texture },
+			texture2: { value: renderTarget?.texture ?? null },
 			resolution: { value: new Vector4() },
 		}),
-		[canvasTexture, renderTarget.texture]
+		[canvasTexture, renderTarget?.texture]
 	);
 
 	const progressRef = useRef(0);
 	const isAnimatingOut = useRef(false);
 
 	useEffect(() => {
-		if (!loadingComplete || isAnimatingOut.current) return;
+		if (!loadingComplete || isAnimatingOut.current || !renderTarget) return;
 
 		isAnimatingOut.current = true;
 		const DURATION = 1700;
@@ -80,7 +79,7 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 		};
 
 		requestAnimationFrame(animateOut);
-	}, [loadingComplete, uniforms.progress, onFinish]);
+	}, [loadingComplete, uniforms.progress, onFinish, renderTarget]);
 
 	useEffect(() => {
 		const mesh = meshRef.current;
@@ -99,6 +98,8 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 	}, [canvasTexture]);
 
 	useFrame((_, delta) => {
+		if (!renderTarget) return;
+
 		uniforms.time.value += delta;
 
 		const aspect = size.height / size.width;
@@ -109,6 +110,8 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 		uniforms.resolution.value.set(size.width, size.height, a1, a2);
 		meshRef.current?.scale.set(size.width, size.height, 1);
 	});
+
+	if (!renderTarget || !uniforms.texture2.value) return null;
 
 	return (
 		<mesh ref={meshRef} position={[0, 0, 0]}>
