@@ -8,13 +8,14 @@ import { AirRaidHud } from "./components/AirRaidHud";
 import { AirRaidOverlay } from "./components/AirRaidOverlay";
 import styles from "./AirRaidGame.module.scss";
 import { applyAugment } from "./core/augments";
-import { CONTROL_KEYS, WORLD_HEIGHT, WORLD_WIDTH } from "./core/constants";
+import { CONTROL_KEYS, TOUCH_DRAG_OFFSET, WORLD_HEIGHT, WORLD_WIDTH } from "./core/constants";
 import { beginMeleeCharge, releaseMeleeCharge, updateGame } from "./core/engine";
 import { getCanvasPoint } from "./core/input";
+import { createDefaultMetaProgress } from "./core/meta";
 import { drawGame } from "./core/renderer";
 import { createInitialState, makeHud } from "./core/state";
-import { readHighScore, writeHighScore } from "./core/storage";
-import type { AugmentId, GameMode, GameState, HudState, Layout } from "./core/types";
+import { buyMetaUpgrade, grantCoins, playCoinSlot, playStatSlot, readHighScore, readMetaProgress, writeHighScore } from "./core/storage";
+import type { AugmentId, GameMode, GameState, HudState, Layout, MetaProgress, MetaUpgradeId, SlotSpinResult } from "./core/types";
 
 const createLayout = (width: number, height: number): Layout => {
 	const scale = Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT);
@@ -36,6 +37,9 @@ export const AirRaidGame = () => {
 	const lastFrameRef = useRef<number>(0);
 	const hudSignatureRef = useRef("");
 	const [hud, setHud] = useState<HudState>(() => makeHud(createInitialState(0)));
+	const [metaProgress, setMetaProgress] = useState<MetaProgress>(() => createDefaultMetaProgress());
+	const [slotResult, setSlotResult] = useState<SlotSpinResult | null>(null);
+	const metaProgressRef = useRef<MetaProgress>(metaProgress);
 
 	const syncHud = useCallback((state: GameState, force = false) => {
 		const nextHud = makeHud(state);
@@ -43,12 +47,27 @@ export const AirRaidGame = () => {
 			nextHud.mode,
 			nextHud.score,
 			nextHud.highScore,
+			nextHud.experienceLevel,
+			nextHud.experience,
+			nextHud.nextExperience,
+			nextHud.combo,
 			nextHud.wave,
 			nextHud.lives,
 			nextHud.power,
 			nextHud.weapon,
 			nextHud.augmentCount,
 			nextHud.augmentChoices.join(","),
+			nextHud.petCount,
+			nextHud.petLevelTotal,
+			nextHud.damageBonusPercent,
+			nextHud.fireRateBonusPercent,
+			nextHud.speedBonusPercent,
+			nextHud.magnetBonusPercent,
+			nextHud.reloadBonusPercent,
+			nextHud.shieldCharges,
+			nextHud.shieldMaxCharges,
+			nextHud.defeatedEnemies,
+			nextHud.earnedCoins,
 			nextHud.laserFocus,
 			Math.round(nextHud.projectileChaos * 10),
 			nextHud.meleeUnlocked,
@@ -62,11 +81,44 @@ export const AirRaidGame = () => {
 	}, []);
 
 	const resetGame = useCallback((mode: GameMode = "playing") => {
-		const state = createInitialState(Math.max(readHighScore(), stateRef.current?.highScore || 0));
+		const state = createInitialState(Math.max(readHighScore(), stateRef.current?.highScore || 0), metaProgressRef.current);
 		state.mode = mode;
 		stateRef.current = state;
 		syncHud(state, true);
 	}, [syncHud]);
+
+	const handleBuyUpgrade = useCallback((upgradeId: MetaUpgradeId) => {
+		const nextProgress = buyMetaUpgrade(upgradeId);
+		metaProgressRef.current = nextProgress;
+		setMetaProgress(nextProgress);
+
+		if (stateRef.current?.mode === "ready") {
+			resetGame("ready");
+		}
+	}, [resetGame]);
+
+	const syncMetaProgress = useCallback((nextProgress: MetaProgress) => {
+		metaProgressRef.current = nextProgress;
+		setMetaProgress(nextProgress);
+		if (stateRef.current?.mode === "ready") {
+			const state = createInitialState(Math.max(readHighScore(), stateRef.current?.highScore || 0), nextProgress);
+			state.mode = "ready";
+			stateRef.current = state;
+			syncHud(state, true);
+		}
+	}, [syncHud]);
+
+	const handleCoinSlot = useCallback(() => {
+		const { progress, result } = playCoinSlot();
+		setSlotResult(result);
+		syncMetaProgress(progress);
+	}, [syncMetaProgress]);
+
+	const handleStatSlot = useCallback(() => {
+		const { progress, result } = playStatSlot();
+		setSlotResult(result);
+		syncMetaProgress(progress);
+	}, [syncMetaProgress]);
 
 	const togglePause = useCallback(() => {
 		const state = stateRef.current;
@@ -101,6 +153,9 @@ export const AirRaidGame = () => {
 	}, [syncHud]);
 
 	useEffect(() => {
+		const nextProgress = readMetaProgress();
+		metaProgressRef.current = nextProgress;
+		setMetaProgress(nextProgress);
 		resetGame("ready");
 	}, [resetGame]);
 
@@ -142,7 +197,7 @@ export const AirRaidGame = () => {
 			const point = getCanvasPoint(event, canvas, layoutRef.current);
 			state.pointerActive = true;
 			state.player.targetX = point.x;
-			state.player.targetY = point.y;
+			state.player.targetY = point.y - (event.pointerType === "touch" ? TOUCH_DRAG_OFFSET : 0);
 		};
 
 		const handlePointerMove = (event: PointerEvent) => {
@@ -152,7 +207,7 @@ export const AirRaidGame = () => {
 			event.preventDefault();
 			const point = getCanvasPoint(event, canvas, layoutRef.current);
 			state.player.targetX = point.x;
-			state.player.targetY = point.y;
+			state.player.targetY = point.y - (event.pointerType === "touch" ? TOUCH_DRAG_OFFSET : 0);
 		};
 
 		const handlePointerUp = (event: PointerEvent) => {
@@ -227,7 +282,16 @@ export const AirRaidGame = () => {
 				lastFrameRef.current = now;
 
 				updateGame(state, dt);
-				if (state.mode === "gameover") writeHighScore(state.highScore);
+				if (state.mode === "gameover") {
+					writeHighScore(state.highScore);
+					if (!state.coinRewardClaimed) {
+						state.coinRewardClaimed = true;
+						const nextProgress = grantCoins(state.earnedCoins);
+						metaProgressRef.current = nextProgress;
+						setMetaProgress(nextProgress);
+						syncHud(state, true);
+					}
+				}
 
 				state.hudTimer -= dt;
 				if (state.hudTimer <= 0) {
@@ -274,7 +338,17 @@ export const AirRaidGame = () => {
 
 			<div ref={wrapperRef} className={styles.stage}>
 				<canvas ref={canvasRef} className={styles.canvas} aria-label="Sky 1945 game canvas" />
-				<AirRaidOverlay mode={hud.mode} onResume={togglePause} onStart={() => resetGame("playing")} />
+				<AirRaidOverlay
+					hud={hud}
+					metaProgress={metaProgress}
+					mode={hud.mode}
+					onBuyUpgrade={handleBuyUpgrade}
+					onCoinSlot={handleCoinSlot}
+					onResume={togglePause}
+					onStart={() => resetGame("playing")}
+					onStatSlot={handleStatSlot}
+					slotResult={slotResult}
+				/>
 				<AirRaidAugmentOverlay choices={hud.augmentChoices} mode={hud.mode} onSelect={selectAugment} />
 			</div>
 
