@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas, useThree } from "@react-three/fiber";
-import { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
+import { Material, Mesh, MeshStandardMaterial, Object3D, PCFShadowMap } from "three";
 import gsap from "gsap";
 
 import { resetGameState } from "@/hooks/resetGameState";
@@ -285,7 +285,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	return (
 		<>
 			<Canvas
-				shadows
+				shadows={{ type: PCFShadowMap }}
 				camera={{ position: [0, 17, 14], fov: 75 }}
 				gl={{
 					alpha: false,

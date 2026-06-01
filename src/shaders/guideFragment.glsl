@@ -4,6 +4,9 @@ uniform float time;
 uniform float progress;
 uniform sampler2D texture1;
 uniform vec4 resolution;
+uniform vec2 holeCenter;
+uniform float maxRadius;
+uniform float isActive;
 varying vec2 vUv;
 
 float random(vec2 p) {
@@ -40,11 +43,24 @@ void main() {
   vec2 uv = (vUv - 0.5) * vec2(resolution.z, resolution.w) + 0.5;
   vec4 texColor = texture2D(texture1, uv);
 
-  float dissolve = fbm(uv * 5.0 + time * 0.05);
+  if (isActive < 0.5) {
+    gl_FragColor = texColor;
+    return;
+  }
 
-  if (dissolve < progress) {
+  vec2 aspect = vec2(resolution.x / resolution.y, 1.0);
+  vec2 centeredUv = vUv * aspect;
+  vec2 centeredHole = holeCenter * aspect;
+  float dist = distance(centeredUv, centeredHole);
+  float eased = smoothstep(0.0, 1.0, progress);
+  float edgeNoise = (fbm(vUv * 18.0 + time * 0.35) - 0.5) * 0.12;
+  float radius = mix(0.04, maxRadius, eased);
+  float feather = mix(0.035, 0.18, eased);
+  float alphaMask = smoothstep(radius - feather, radius + feather, dist + edgeNoise);
+
+  if (alphaMask < 0.01) {
     discard;
   }
 
-  gl_FragColor = texColor;
+  gl_FragColor = vec4(texColor.rgb, texColor.a * alphaMask);
 }

@@ -1,14 +1,17 @@
 import { useRef, useMemo, useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Mesh, Vector4, CanvasTexture, Vector2 } from "three";
+import { Mesh, ShaderMaterial, Vector4, CanvasTexture, Vector2 } from "three";
 
 import vertex from "@/shaders/guideVertex.glsl";
 import fragment from "@/shaders/guideFragment.glsl";
 
 export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 	const meshRef = useRef<Mesh>(null);
-	const { size } = useThree();
+	const materialRef = useRef<ShaderMaterial>(null);
+	const { gl, size } = useThree();
 	const [clicked, setClicked] = useState(false);
+	const hasFinishedRef = useRef(false);
+	const clickStartTimeRef = useRef<number | null>(null);
 
 	const texture = useMemo(() => {
 		const DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -72,7 +75,9 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 			progress: { value: 0 },
 			texture1: { value: texture },
 			resolution: { value: new Vector4() },
-			holeCenter: { value: new Vector2(Math.random(), Math.random()) },
+			holeCenter: { value: new Vector2(0.5, 0.5) },
+			maxRadius: { value: 1.5 },
+			isActive: { value: 0 },
 		}),
 		[texture]
 	);
@@ -92,39 +97,71 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 	}, [texture]);
 
 	useEffect(() => {
-		if (!clicked) return;
+		const canvas = gl.domElement;
 
-		let raf: number;
-		const DURATION = 1000;
-		const startTime = performance.now();
+		const handlePointerDown = (event: PointerEvent) => {
+			if (clickStartTimeRef.current !== null) return;
 
-		const animate = (now: number) => {
-			const elapsed = now - startTime;
-			const next = Math.min(elapsed / DURATION, 1);
-			uniforms.progress.value = next;
-			if (next < 1) raf = requestAnimationFrame(animate);
-			else onFinish();
+			event.preventDefault();
+			event.stopPropagation();
+
+			const rect = canvas.getBoundingClientRect();
+			const x = (event.clientX - rect.left) / rect.width;
+			const y = 1 - (event.clientY - rect.top) / rect.height;
+			const aspect = rect.width / rect.height;
+			const maxRadius = Math.max(
+				Math.hypot((0 - x) * aspect, 0 - y),
+				Math.hypot((1 - x) * aspect, 0 - y),
+				Math.hypot((0 - x) * aspect, 1 - y),
+				Math.hypot((1 - x) * aspect, 1 - y)
+			);
+
+			uniforms.holeCenter.value.set(x, y);
+			uniforms.maxRadius.value = maxRadius + 0.2;
+			uniforms.isActive.value = 1;
+			uniforms.progress.value = 0.001;
+			materialRef.current?.uniforms.holeCenter.value.set(x, y);
+			if (materialRef.current) {
+				materialRef.current.uniforms.maxRadius.value = maxRadius + 0.2;
+				materialRef.current.uniforms.isActive.value = 1;
+				materialRef.current.uniforms.progress.value = 0.001;
+			}
+			clickStartTimeRef.current = performance.now() / 1000;
+			setClicked(true);
 		};
 
-		raf = requestAnimationFrame(animate);
-		return () => cancelAnimationFrame(raf);
-	}, [clicked, uniforms.progress, onFinish]);
+		canvas.addEventListener("pointerdown", handlePointerDown, { capture: true });
+		return () => canvas.removeEventListener("pointerdown", handlePointerDown, { capture: true });
+	}, [gl, uniforms.holeCenter, uniforms.isActive, uniforms.maxRadius, uniforms.progress]);
 
 	useFrame((_, delta) => {
-		uniforms.time.value += delta;
+		const activeUniforms = materialRef.current?.uniforms ?? uniforms;
+		activeUniforms.time.value += delta;
 
 		const aspect = size.height / size.width;
 		const imageAspect = size.height / size.width;
 		const a1 = aspect > imageAspect ? (size.width / size.height) * imageAspect : 1;
 		const a2 = aspect > imageAspect ? 1 : aspect / imageAspect;
-		uniforms.resolution.value.set(size.width, size.height, a1, a2);
+		activeUniforms.resolution.value.set(size.width, size.height, a1, a2);
 		meshRef.current?.scale.set(size.width, size.height, 1);
+
+		if (clicked && clickStartTimeRef.current !== null) {
+			const DURATION = 1.6;
+			const elapsed = performance.now() / 1000 - clickStartTimeRef.current;
+			const next = Math.min(elapsed / DURATION, 1);
+			activeUniforms.progress.value = next * next * (3 - 2 * next);
+
+			if (next >= 1 && !hasFinishedRef.current) {
+				hasFinishedRef.current = true;
+				setTimeout(onFinish, 120);
+			}
+		}
 	});
 
 	return (
-		<mesh ref={meshRef} position={[0, 0, 0]} onClick={() => setClicked(true)}>
+		<mesh ref={meshRef} position={[0, 0, 0]}>
 			<planeGeometry args={[1, 1]} />
-			<shaderMaterial vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
+			<shaderMaterial ref={materialRef} vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
 		</mesh>
 	);
 };

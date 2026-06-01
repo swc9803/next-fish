@@ -2,6 +2,7 @@ uniform float time;
 uniform float progress;
 uniform float width;
 uniform float radius;
+uniform float maxRadius;
 uniform sampler2D texture1;
 uniform sampler2D texture2;
 uniform vec4 resolution;
@@ -26,13 +27,13 @@ float noise(vec2 p) {
 void main() {
   vec2 newUV = (vUv - 0.5) * resolution.zw + 0.5;
   vec2 start = vec2(0.5, 0.5);
-  vec2 aspect = resolution.wz;
+  vec2 aspect = vec2(resolution.x / resolution.y, 1.0);
 
   float prog = progress;
   float d = distance(start * aspect, newUV * aspect);
-  float n = noise(newUV * 8.0 + time * 0.2) * 0.2;
-  float shaped = radius * (d + n);
-  float mask = 1.0 - smoothstep(-width, 0.0, shaped - prog * 2.0);
+  float n = (noise(newUV * 8.0 + time * 0.2) - 0.5) * 0.14;
+  float targetRadius = mix(0.02, maxRadius, prog);
+  float mask = 1.0 - smoothstep(targetRadius - width, targetRadius + width, d + n);
   float intpl = pow(abs(mask), 1.0);
 
   vec2 dir1 = normalize(vec2(sin(time * 0.4), cos(time * 0.5)));

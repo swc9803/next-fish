@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 import gsap from "gsap";
 
@@ -160,7 +161,7 @@ export const Overlay = () => {
 				{slide.logo && (
 					<div className={styles.logo_wrapper} ref={logoWrapperRef}>
 						<div className={styles.logo_background} />
-						<img className={styles.logo} src={slide.logo} alt="로고" />
+						<Image className={styles.logo} src={slide.logo} alt="로고" width={112} height={36} />
 					</div>
 				)}
 				<div className={styles.content} ref={contentRef}>

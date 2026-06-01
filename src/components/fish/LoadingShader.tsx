@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Mesh, Vector4, WebGLRenderTarget, CanvasTexture } from "three";
+import { Mesh, ShaderMaterial, Vector4, WebGLRenderTarget, CanvasTexture } from "three";
 
 import vertex from "@/shaders/loadingVertex.glsl";
 import fragment from "@/shaders/loadingFragment.glsl";
@@ -13,6 +13,7 @@ interface LoadingShaderProps {
 
 export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: LoadingShaderProps) => {
 	const meshRef = useRef<Mesh>(null);
+	const materialRef = useRef<ShaderMaterial>(null);
 	const { size } = useThree();
 
 	const canvasTexture = useMemo(() => {
@@ -48,6 +49,7 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 			progress: { value: 0 },
 			width: { value: 0.35 },
 			radius: { value: 1.4 },
+			maxRadius: { value: 1.5 },
 			texture1: { value: canvasTexture },
 			texture2: { value: renderTarget?.texture ?? null },
 			resolution: { value: new Vector4() },
@@ -55,31 +57,9 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 		[canvasTexture, renderTarget?.texture]
 	);
 
-	const progressRef = useRef(0);
 	const isAnimatingOut = useRef(false);
-
-	useEffect(() => {
-		if (!loadingComplete || isAnimatingOut.current || !renderTarget) return;
-
-		isAnimatingOut.current = true;
-		const DURATION = 1700;
-		const startTime = performance.now();
-
-		const animateOut = (now: number) => {
-			const elapsed = now - startTime;
-			const next = Math.min(elapsed / DURATION, 1);
-			uniforms.progress.value = next;
-			progressRef.current = next;
-
-			if (next < 1) {
-				requestAnimationFrame(animateOut);
-			} else {
-				onFinish();
-			}
-		};
-
-		requestAnimationFrame(animateOut);
-	}, [loadingComplete, uniforms.progress, onFinish, renderTarget]);
+	const hasFinishedRef = useRef(false);
+	const animationStartTimeRef = useRef<number | null>(null);
 
 	useEffect(() => {
 		const mesh = meshRef.current;
@@ -100,15 +80,43 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 	useFrame((_, delta) => {
 		if (!renderTarget) return;
 
-		uniforms.time.value += delta;
+		const activeUniforms = materialRef.current?.uniforms ?? uniforms;
+		activeUniforms.time.value += delta;
 
 		const aspect = size.height / size.width;
 		const imageAspect = size.height / size.width;
 		const a1 = aspect > imageAspect ? (size.width / size.height) * imageAspect : 1;
 		const a2 = aspect > imageAspect ? 1 : aspect / imageAspect;
+		const viewportAspect = size.width / size.height;
+		const maxRadius = Math.max(
+			Math.hypot((0 - 0.5) * viewportAspect, 0 - 0.5),
+			Math.hypot((1 - 0.5) * viewportAspect, 0 - 0.5),
+			Math.hypot((0 - 0.5) * viewportAspect, 1 - 0.5),
+			Math.hypot((1 - 0.5) * viewportAspect, 1 - 0.5)
+		);
 
-		uniforms.resolution.value.set(size.width, size.height, a1, a2);
+		activeUniforms.resolution.value.set(size.width, size.height, a1, a2);
+		activeUniforms.maxRadius.value = maxRadius + 0.24;
 		meshRef.current?.scale.set(size.width, size.height, 1);
+
+		if (loadingComplete) {
+			if (!isAnimatingOut.current) {
+				isAnimatingOut.current = true;
+				animationStartTimeRef.current = performance.now() / 1000;
+			}
+
+			if (animationStartTimeRef.current !== null) {
+				const DURATION = 1.7;
+				const elapsed = performance.now() / 1000 - animationStartTimeRef.current;
+				const next = Math.min(elapsed / DURATION, 1);
+				activeUniforms.progress.value = next * next * (3 - 2 * next);
+
+				if (next >= 1 && !hasFinishedRef.current) {
+					hasFinishedRef.current = true;
+					setTimeout(onFinish, 120);
+				}
+			}
+		}
 	});
 
 	if (!renderTarget || !uniforms.texture2.value) return null;
@@ -116,7 +124,7 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 	return (
 		<mesh ref={meshRef} position={[0, 0, 0]}>
 			<planeGeometry args={[1, 1]} />
-			<shaderMaterial vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
+			<shaderMaterial ref={materialRef} vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
 		</mesh>
 	);
 };

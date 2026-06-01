@@ -1,5 +1,5 @@
 import { useTexture } from "@react-three/drei";
-import { isWebpSupported } from "./isWebpSupported";
+import { isWebpSupported } from "./isWebPSupported";
 
 export interface slideInfo {
 	imagePaths: string[];
