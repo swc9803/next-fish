@@ -4,7 +4,6 @@ uniform float width;
 uniform float radius;
 uniform float maxRadius;
 uniform sampler2D texture1;
-uniform sampler2D texture2;
 uniform vec4 resolution;
 
 varying vec2 vUv;
@@ -66,6 +65,5 @@ void main() {
   vec4 txt = texture2D(texture1, waveUV);
   vec4 t1 = mix(bg, txt, txt.a);
 
-  vec4 t2 = texture2D(texture2, (newUV - 0.5) * intpl + 0.5);
-  gl_FragColor = mix(t1, t2, intpl);
+  gl_FragColor = vec4(t1.rgb, t1.a * (1.0 - intpl));
 }

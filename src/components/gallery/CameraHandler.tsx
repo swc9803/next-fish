@@ -12,7 +12,12 @@ interface CameraHandlerProps {
 	startIntro?: boolean;
 }
 
-const INTRO_DURATION = 5000;
+const INTRO_ORBIT_DURATION = 7000;
+const INTRO_APPROACH_DURATION = 900;
+const INTRO_APPROACH_START = INTRO_ORBIT_DURATION;
+const INTRO_TOTAL_DURATION = INTRO_ORBIT_DURATION + INTRO_APPROACH_DURATION;
+const easeOutSine = (t: number) => Math.sin((t * Math.PI) / 2);
+const easeInQuart = (t: number) => t * t * t * t;
 
 export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraHandlerProps) => {
 	const { cameraControlsRef, moveToSlide, moveToFreeModePosition } = useCameraTransition(cameraRadius, totalRadius);
@@ -36,9 +41,17 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 	const prevFreemodeRef = useRef(false);
 	const prevFocusRef = useRef<number | null>(null);
 	const lastSlideIndexRef = useRef<number>(-1);
+	const readyFrameRef = useRef<number | null>(null);
+	const introFrameRef = useRef<number | null>(null);
+	const zoomFrameRef = useRef<number | null>(null);
 
 	useEffect(() => {
-		requestAnimationFrame(() => setIsReadyToStart(true));
+		readyFrameRef.current = requestAnimationFrame(() => setIsReadyToStart(true));
+		return () => {
+			if (readyFrameRef.current !== null) cancelAnimationFrame(readyFrameRef.current);
+			if (introFrameRef.current !== null) cancelAnimationFrame(introFrameRef.current);
+			if (zoomFrameRef.current !== null) cancelAnimationFrame(zoomFrameRef.current);
+		};
 	}, []);
 
 	const playIntroAnimation = useCallback(() => {
@@ -49,29 +62,48 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 		const controls = cameraControlsRef.current!;
 		const { x, z } = getSlidePosition(0, totalRadius);
 		const introRadius = Math.hypot(x, z);
-		const angleStart = Math.atan2(z, x) + Math.PI * 5;
-		const angleEnd = Math.atan2(z, x);
+		const angleStart = Math.atan2(z, x);
+		const angleEnd = angleStart + Math.PI * 5;
+		const finalCamera = new Vector3(x, 0, z - cameraRadius);
+		const finalTarget = new Vector3(x, 0, z);
 		const startTime = performance.now();
 
+		const completeIntro = () => {
+			lastSlideIndexRef.current = 0;
+			setLastFocusTarget({ x, z });
+			setSlide(0);
+			setIsIntroPlaying(false);
+			setCameraIntroDone(true);
+		};
+
+		const applyLookAt = (desiredCamera: Vector3, desiredTarget: Vector3) => {
+			controls.setLookAt(desiredCamera.x, desiredCamera.y, desiredCamera.z, desiredTarget.x, desiredTarget.y, desiredTarget.z, false);
+			controls.update(0);
+		};
+
 		const animate = () => {
-			const elapsed = performance.now() - startTime;
-			const t = Math.min(elapsed / INTRO_DURATION, 1);
-			const easedT = 1 - Math.pow(1 - t, 3);
-			const angle = angleStart + (1 - easedT) * (angleEnd - angleStart);
-			const camX = introRadius * Math.cos(angle);
-			const camZ = introRadius * Math.sin(angle);
-			const camY = 5 + (0 - 5) * easedT;
+			const elapsed = Math.min(performance.now() - startTime, INTRO_TOTAL_DURATION);
+			const orbitElapsed = Math.min(elapsed, INTRO_ORBIT_DURATION);
+			const orbitT = Math.min(orbitElapsed / INTRO_ORBIT_DURATION, 1);
+			const orbitEasedT = easeOutSine(orbitT);
+			const approachT = Math.min(Math.max((elapsed - INTRO_APPROACH_START) / INTRO_APPROACH_DURATION, 0), 1);
+			const approachEasedT = easeInQuart(approachT);
+			const angle = angleStart + orbitEasedT * (angleEnd - angleStart);
+			const orbitX = introRadius * Math.cos(angle);
+			const orbitZ = introRadius * Math.sin(angle);
+			const orbitY = 5 + (0 - 5) * orbitEasedT;
+			const orbitCamera = new Vector3(orbitX, orbitY, orbitZ);
+			const orbitTarget = new Vector3(0, orbitY, 0);
+			const cameraPosition = orbitCamera.clone().lerp(finalCamera, approachEasedT);
+			const target = orbitTarget.clone().lerp(finalTarget, approachEasedT);
 
-			controls.setLookAt(camX, camY, camZ, 0, camY, 0, false);
+			applyLookAt(cameraPosition, target);
 
-			if (t < 1) {
-				requestAnimationFrame(animate);
+			if (elapsed < INTRO_TOTAL_DURATION) {
+				introFrameRef.current = requestAnimationFrame(animate);
 			} else {
-				controls.setLookAt(x, 0, z - cameraRadius, x, 0, z, true);
-				setLastFocusTarget({ x, z });
-				setSlide(0);
-				setIsIntroPlaying(false);
-				setCameraIntroDone(true);
+				applyLookAt(finalCamera, finalTarget);
+				completeIntro();
 			}
 		};
 
@@ -154,7 +186,8 @@ export const CameraHandler = ({ cameraRadius, totalRadius, startIntro }: CameraH
 		prevFreemodeRef.current = currentMode;
 
 		if (prevMode && !currentMode && cameraControlsRef.current?.camera) {
-			requestAnimationFrame(() => zoomToNearestSlide());
+			if (zoomFrameRef.current !== null) cancelAnimationFrame(zoomFrameRef.current);
+			zoomFrameRef.current = requestAnimationFrame(() => zoomToNearestSlide());
 		}
 
 		if (!prevMode && currentMode) {

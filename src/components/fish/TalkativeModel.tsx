@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { AnimationAction, AnimationMixer, LoopRepeat, Mesh, Object3D, Vector3 } from "three";
 
 import { useTyping } from "@/hooks/useTyping";
+import { useIsMobile } from "@/hooks/useViewportWidth";
 
 interface TalkativeModelProps {
 	fishRef: RefObject<Object3D | null>;
@@ -31,7 +32,7 @@ export const TalkativeModel = ({
 	const mixerRef = useRef<AnimationMixer | null>(null);
 	const actionRef = useRef<AnimationAction | null>(null);
 
-	const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+	const isMobile = useIsMobile();
 
 	// 말풍선 위치 계산
 	const adjustedBubblePosition: [number, number, number] = useMemo(() => {

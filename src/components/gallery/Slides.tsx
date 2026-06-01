@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useCallback, useRef, useState, memo } from "react";
 import { useTexture } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
-import { Texture, Mesh } from "three";
+import { useFrame } from "@react-three/fiber";
+import { IUniform, Texture } from "three";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { useActiveSlideIndex } from "@/hooks/useActiveSlideIndex";
@@ -24,9 +24,30 @@ interface SlideState {
 	isFading: boolean;
 }
 
+interface SlideUniforms extends Record<string, IUniform> {
+	texture1: { value: Texture };
+	texture2: { value: Texture };
+	dispMap: { value: Texture };
+	progress: { value: number };
+	slideIndex: { value: number };
+}
+
+interface SlideMeshProps {
+	index: number;
+	state: SlideState;
+	position: [number, number, number];
+	rotation: [number, number, number];
+	slideWidth: number;
+	slideHeight: number;
+	borderColor: string;
+	getUniforms: (index: number, state: SlideState) => SlideUniforms;
+	handleClick: (index: number) => void;
+	handleHover: (index: number) => void;
+}
+
 const SLIDE_CHANGE_INTERVAL = 3000;
 
-const SlideMesh = memo(({ index, state, position, rotation, slideWidth, slideHeight, borderColor, getUniforms, handleClick, handleHover }: any) => (
+const SlideMesh = memo(({ index, state, position, rotation, slideWidth, slideHeight, borderColor, getUniforms, handleClick, handleHover }: SlideMeshProps) => (
 	<group position={position} rotation={rotation} onClick={() => handleClick(index)} onPointerOver={() => handleHover(index)}>
 		<group>
 			<mesh position={[0, 0, -0.03]}>
@@ -48,7 +69,6 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 	const isSliding = useGallerySlide((s) => s.isSliding);
 	const isIntroPlaying = useGallerySlide((s) => s.isIntroPlaying);
 	const activeSlideIndex = useActiveSlideIndex();
-	const { scene } = useThree();
 
 	const allImagePaths = useMemo(() => slideArray.flatMap((s) => s.imagePaths), []);
 	const texturesArray = useTexture(allImagePaths) as Texture[];
@@ -69,7 +89,8 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 
 	const [slideStates, setSlideStates] = useState<SlideState[]>(initialStates);
 	const slideStatesRef = useRef(slideStates);
-	const uniformsRef = useRef<{ [index: number]: any }>({});
+	const uniformsRef = useRef<Record<number, SlideUniforms>>({});
+	const focusFrameRef = useRef<number | null>(null);
 
 	useEffect(() => {
 		slideStatesRef.current = slideStates;
@@ -77,19 +98,10 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 
 	useEffect(() => {
 		return () => {
+			if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
 			slideTextures.flat().forEach((texture) => texture.dispose());
-			scene.traverse((child) => {
-				if (child instanceof Mesh) {
-					child.geometry?.dispose();
-					if (Array.isArray(child.material)) {
-						child.material.forEach((m) => m.dispose());
-					} else {
-						child.material?.dispose();
-					}
-				}
-			});
 		};
-	}, [slideTextures, scene]);
+	}, [slideTextures]);
 
 	useEffect(() => {
 		if (isIntroPlaying) return;
@@ -112,7 +124,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 		const speed = 1.5;
 		let updated = false;
 
-		const updatedStates = slideStatesRef.current.map((s) => {
+		const updatedStates = slideStatesRef.current.map((s, index) => {
 			if (!s.isFading || !s.next) return s;
 
 			const newOpacity = Math.min(s.opacity + delta * speed, 1);
@@ -122,7 +134,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 					current: s.next,
 					next: null,
 					opacity: 0,
-					index: (s.index + 1) % slideArray[0].imagePaths.length,
+					index: (s.index + 1) % slideTextures[index].length,
 					isFading: false,
 				};
 			}
@@ -163,7 +175,7 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 		});
 	});
 
-	const getUniforms = (index: number, state: SlideState) => {
+	const getUniforms = (index: number, state: SlideState): SlideUniforms => {
 		if (!uniformsRef.current[index]) {
 			uniformsRef.current[index] = {
 				texture1: { value: state.current },
@@ -183,7 +195,8 @@ export const Slides = ({ totalRadius, slideWidth, slideHeight }: SlidesProps) =>
 					useGallerySlide.getState().setFocusIndex(index);
 				} else {
 					useGallerySlide.getState().setFocusIndex(null);
-					requestAnimationFrame(() => useGallerySlide.getState().setFocusIndex(index));
+					if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
+					focusFrameRef.current = requestAnimationFrame(() => useGallerySlide.getState().setFocusIndex(index));
 				}
 			}
 		},

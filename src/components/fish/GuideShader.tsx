@@ -4,6 +4,7 @@ import { Mesh, ShaderMaterial, Vector4, CanvasTexture, Vector2 } from "three";
 
 import vertex from "@/shaders/guideVertex.glsl";
 import fragment from "@/shaders/guideFragment.glsl";
+import { disposeMaterial } from "@/utils/disposeThree";
 
 export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 	const meshRef = useRef<Mesh>(null);
@@ -88,11 +89,7 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 		return () => {
 			texture.dispose();
 			mesh?.geometry?.dispose();
-			if (Array.isArray(mesh?.material)) {
-				mesh.material.forEach((m) => m.dispose());
-			} else {
-				mesh?.material?.dispose();
-			}
+			disposeMaterial(mesh?.material);
 		};
 	}, [texture]);
 
@@ -117,12 +114,12 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 			);
 
 			uniforms.holeCenter.value.set(x, y);
-			uniforms.maxRadius.value = maxRadius + 0.2;
+			uniforms.maxRadius.value = maxRadius + 0.18;
 			uniforms.isActive.value = 1;
 			uniforms.progress.value = 0.001;
 			materialRef.current?.uniforms.holeCenter.value.set(x, y);
 			if (materialRef.current) {
-				materialRef.current.uniforms.maxRadius.value = maxRadius + 0.2;
+				materialRef.current.uniforms.maxRadius.value = maxRadius + 0.18;
 				materialRef.current.uniforms.isActive.value = 1;
 				materialRef.current.uniforms.progress.value = 0.001;
 			}
@@ -153,7 +150,7 @@ export const GuideShader = ({ onFinish }: { onFinish: () => void }) => {
 
 			if (next >= 1 && !hasFinishedRef.current) {
 				hasFinishedRef.current = true;
-				setTimeout(onFinish, 120);
+				onFinish();
 			}
 		}
 	});

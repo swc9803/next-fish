@@ -1,6 +1,8 @@
 import { useMemo, useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Group, Mesh, Material } from "three";
+import { Group, Mesh } from "three";
+
+import { disposeObject3D } from "@/utils/disposeThree";
 
 const randomPosition = (radius: number): [number, number, number] => {
 	const angle = Math.random() * 2 * Math.PI;
@@ -74,19 +76,8 @@ export const Background = () => {
 	// 메모리 해제
 	useEffect(() => {
 		const group = groupRef.current;
-
 		return () => {
-			if (!group) return;
-			group.children.forEach((child) => {
-				if (child instanceof Mesh) {
-					child.geometry?.dispose();
-					if (Array.isArray(child.material)) {
-						child.material.forEach((m: Material) => m.dispose());
-					} else {
-						(child.material as Material)?.dispose();
-					}
-				}
-			});
+			if (group) disposeObject3D(group);
 		};
 	}, []);
 

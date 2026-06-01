@@ -5,13 +5,14 @@ import { useGallerySlide } from "@/store/useGallerySlide";
 import { getSlidePosition } from "@/utils/slideUtils";
 import { useLightTransition } from "@/hooks/useLightTransition";
 import { useActiveSlideIndex } from "@/hooks/useActiveSlideIndex";
+import { useViewportWidth } from "@/hooks/useViewportWidth";
 
 interface HoverLightProps {
 	totalRadius: number;
 }
 
 const useResponsiveLightProps = () => {
-	const width = window.innerWidth;
+	const width = useViewportWidth();
 	const clampedWidth = Math.min(Math.max(width, 320), 1920);
 	const ratio = (clampedWidth - 320) / (1920 - 320);
 

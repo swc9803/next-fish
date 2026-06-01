@@ -1,17 +1,17 @@
 import { useRef, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Mesh, ShaderMaterial, Vector4, WebGLRenderTarget, CanvasTexture } from "three";
+import { Mesh, ShaderMaterial, Vector4, CanvasTexture } from "three";
 
 import vertex from "@/shaders/loadingVertex.glsl";
 import fragment from "@/shaders/loadingFragment.glsl";
+import { disposeMaterial } from "@/utils/disposeThree";
 
 interface LoadingShaderProps {
-	renderTarget: WebGLRenderTarget | null;
 	loadingComplete: boolean;
 	onFinish: () => void;
 }
 
-export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: LoadingShaderProps) => {
+export const LoadingShader = ({ loadingComplete, onFinish }: LoadingShaderProps) => {
 	const meshRef = useRef<Mesh>(null);
 	const materialRef = useRef<ShaderMaterial>(null);
 	const { size } = useThree();
@@ -51,35 +51,30 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 			radius: { value: 1.4 },
 			maxRadius: { value: 1.5 },
 			texture1: { value: canvasTexture },
-			texture2: { value: renderTarget?.texture ?? null },
 			resolution: { value: new Vector4() },
 		}),
-		[canvasTexture, renderTarget?.texture]
+		[canvasTexture]
 	);
 
 	const isAnimatingOut = useRef(false);
 	const hasFinishedRef = useRef(false);
 	const animationStartTimeRef = useRef<number | null>(null);
+	const finishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
 		const mesh = meshRef.current;
 
 		return () => {
+			if (finishTimeoutRef.current) clearTimeout(finishTimeoutRef.current);
 			canvasTexture.dispose();
 			if (mesh) {
 				mesh.geometry?.dispose();
-				if (Array.isArray(mesh.material)) {
-					mesh.material.forEach((m) => m.dispose());
-				} else {
-					mesh.material?.dispose();
-				}
+				disposeMaterial(mesh.material);
 			}
 		};
 	}, [canvasTexture]);
 
 	useFrame((_, delta) => {
-		if (!renderTarget) return;
-
 		const activeUniforms = materialRef.current?.uniforms ?? uniforms;
 		activeUniforms.time.value += delta;
 
@@ -113,18 +108,16 @@ export const LoadingShader = ({ renderTarget, loadingComplete, onFinish }: Loadi
 
 				if (next >= 1 && !hasFinishedRef.current) {
 					hasFinishedRef.current = true;
-					setTimeout(onFinish, 120);
+					finishTimeoutRef.current = setTimeout(onFinish, 120);
 				}
 			}
 		}
 	});
 
-	if (!renderTarget || !uniforms.texture2.value) return null;
-
 	return (
 		<mesh ref={meshRef} position={[0, 0, 0]}>
 			<planeGeometry args={[1, 1]} />
-			<shaderMaterial ref={materialRef} vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent />
+			<shaderMaterial ref={materialRef} vertexShader={vertex} fragmentShader={fragment} uniforms={uniforms} transparent depthWrite={false} />
 		</mesh>
 	);
 };

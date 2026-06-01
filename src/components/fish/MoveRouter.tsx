@@ -1,43 +1,13 @@
 import { useRef, useEffect, useMemo, RefObject, useState } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial, Material } from "three";
+import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
 
 import { useTyping } from "@/hooks/useTyping";
-
-const logoData: {
-	id: string;
-	url: string;
-	modelPath: string;
-	position: [number, number, number];
-	isInternal?: boolean;
-}[] = [
-	{
-		id: "github",
-		url: "https://github.com/swc9803",
-		modelPath: "/models/github.glb",
-		position: [-10, 0.5, 25],
-	},
-	{
-		id: "codepen",
-		url: "https://codepen.io/swc9803/pens/public",
-		modelPath: "/models/codepen.glb",
-		position: [0, 0.5, 25],
-	},
-	{
-		id: "email",
-		url: "mailto:swc9803@gmail.com",
-		modelPath: "/models/email.glb",
-		position: [10, 0.5, 25],
-	},
-	{
-		id: "gallery",
-		url: "/gallery",
-		modelPath: "/models/car.glb",
-		position: [35, 0.5, 7],
-		isInternal: true,
-	},
-];
+import { ROUTER_LOGOS } from "@/data/fishScene";
+import { toVector3Tuple } from "@/utils/tuples";
+import { disposeObject3D } from "@/utils/disposeThree";
+import { useIsMobile } from "@/hooks/useViewportWidth";
 
 interface LogoProps {
 	fishRef: RefObject<Object3D | null>;
@@ -59,13 +29,14 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	const triggeredRef = useRef(false);
 	const prevArcRef = useRef<number | null>(null);
 	const bubbleElemRef = useRef<HTMLDivElement>(null);
+	const visibleRef = useRef(false);
 
 	const [visible, setVisible] = useState(false);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "#000c44" }), []);
 	const backgroundMaterial = useMemo(() => new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 }), []);
 
 	const DETECT_DISTANCE = 5;
-	const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+	const isMobile = useIsMobile();
 	const bubblePosition: [number, number, number] = isMobile ? [-0.25, -0.5, -2.0] : [-0.25, 0.5, -1.5];
 
 	const typedText = useTyping(text || "", visible, 150);
@@ -104,12 +75,10 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		const dist = model.position.distanceTo(fish.position);
 		const isNear = dist < DETECT_DISTANCE;
 
-		setVisible((prev) => {
-			if (prev !== isNear) {
-				return isNear;
-			}
-			return prev;
-		});
+		if (visibleRef.current !== isNear) {
+			visibleRef.current = isNear;
+			setVisible(isNear);
+		}
 
 		if (bubbleElemRef.current) {
 			bubbleElemRef.current.style.display = isNear && !hideSpeechBubble ? "block" : "none";
@@ -144,20 +113,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 
 	// 메모리 해제
 	useEffect(() => {
-		return () => {
-			scene.traverse((child) => {
-				if ((child as Mesh).isMesh) {
-					const mesh = child as Mesh;
-					mesh.geometry?.dispose();
-					const material = mesh.material;
-					if (Array.isArray(material)) {
-						material.forEach((m: Material) => m.dispose());
-					} else {
-						material?.dispose();
-					}
-				}
-			});
-		};
+		return () => disposeObject3D(scene);
 	}, [scene]);
 
 	return (
@@ -185,14 +141,14 @@ interface MoveRouterProps {
 export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: MoveRouterProps) => {
 	return (
 		<group>
-			{logoData.map((logo) => (
+			{ROUTER_LOGOS.map((logo) => (
 				<LogoModel
 					key={logo.id}
 					url={logo.url}
 					modelPath={logo.modelPath}
-					position={logo.position}
+					position={toVector3Tuple(logo.position)}
 					fishRef={fishRef}
-					isInternal={logo.isInternal}
+					isInternal={"isInternal" in logo ? logo.isInternal : false}
 					showGalleryOverlay={showGalleryOverlay}
 					hideSpeechBubble={hideSpeechBubble}
 				/>

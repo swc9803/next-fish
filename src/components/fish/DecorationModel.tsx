@@ -1,7 +1,9 @@
 import { memo, useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
-import { Mesh, Material, Object3D } from "three";
+import { Mesh, Object3D } from "three";
 import gsap from "gsap";
+
+import { disposeObject3D } from "@/utils/disposeThree";
 
 interface DecorationProps {
 	modelPath: string;
@@ -52,20 +54,7 @@ export const DecorationModelComponent = ({
 	}, [modelKey]);
 
 	useEffect(() => {
-		return () => {
-			scene.traverse((child) => {
-				if ((child as Mesh).isMesh) {
-					const mesh = child as Mesh;
-					mesh.geometry?.dispose();
-					const material = mesh.material;
-					if (Array.isArray(material)) {
-						material.forEach((m: Material) => m.dispose());
-					} else {
-						material?.dispose();
-					}
-				}
-			});
-		};
+		return () => disposeObject3D(scene);
 	}, [scene]);
 
 	return <primitive ref={ref} object={scene} position={position} rotation={rotation} scale={[scale, scale, scale]} />;

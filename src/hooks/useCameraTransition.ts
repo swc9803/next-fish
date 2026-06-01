@@ -1,8 +1,9 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { CameraControls } from "@react-three/drei";
 
 import { useGallerySlide } from "@/store/useGallerySlide";
 import { getSlidePosition } from "@/utils/slideUtils";
+import { useIsMobile } from "@/hooks/useViewportWidth";
 
 const computeCameraPosition = (x: number, z: number, angle: number, radius: number) => ({
 	x: x + radius * Math.sin(angle + Math.PI),
@@ -14,7 +15,7 @@ const performCameraZoom = async (
 	from: { x: number; z: number },
 	to: { x: number; z: number },
 	target: { x: number; z: number },
-	setState: (state: any) => void
+	setState: (state: { isZoom: boolean }) => void
 ) => {
 	setState({ isZoom: true });
 	await controls.setLookAt(from.x, 0, from.z, target.x, 0, target.z, true);
@@ -24,7 +25,21 @@ const performCameraZoom = async (
 
 export const useCameraTransition = (cameraRadius: number, totalRadius: number) => {
 	const cameraControlsRef = useRef<CameraControls>(null);
+	const slidingTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 	const setState = useGallerySlide.setState;
+	const isMobile = useIsMobile();
+
+	const scheduleSlidingReset = useCallback(() => {
+		const timeout = setTimeout(() => setState({ isSliding: false }), 300);
+		slidingTimeoutsRef.current.push(timeout);
+	}, [setState]);
+
+	useEffect(() => {
+		return () => {
+			slidingTimeoutsRef.current.forEach(clearTimeout);
+			slidingTimeoutsRef.current = [];
+		};
+	}, []);
 
 	const moveToSlide = useCallback(
 		async (index: number, skipZoom = false) => {
@@ -45,9 +60,9 @@ export const useCameraTransition = (cameraRadius: number, totalRadius: number) =
 				await performCameraZoom(controls, far, near, { x, z }, setState);
 			}
 
-			setTimeout(() => setState({ isSliding: false }), 300);
+			scheduleSlidingReset();
 		},
-		[cameraRadius, totalRadius, setState]
+		[cameraRadius, totalRadius, setState, scheduleSlidingReset]
 	);
 
 	const moveToFreeModePosition = useCallback(
@@ -58,16 +73,15 @@ export const useCameraTransition = (cameraRadius: number, totalRadius: number) =
 			const { x, z } = focus ?? { x: 0, z: 0 };
 			const angle = Math.atan2(x, z);
 
-			const isMobile = window.innerWidth <= 768;
 			const dist = isMobile ? cameraRadius * 1.6 : cameraRadius * 2.5;
 
 			const camPos = computeCameraPosition(x, z, angle, dist);
 
 			setState({ isSliding: true });
 			await controls.setLookAt(camPos.x, 0, camPos.z, 0, 0, 0, true);
-			setTimeout(() => setState({ isSliding: false }), 300);
+			scheduleSlidingReset();
 		},
-		[cameraRadius, setState]
+		[cameraRadius, isMobile, setState, scheduleSlidingReset]
 	);
 
 	return {

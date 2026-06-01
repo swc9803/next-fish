@@ -32,6 +32,7 @@ export const Overlay = () => {
 	const logoWrapperRef = useRef<HTMLDivElement>(null);
 	const timelineRef = useRef<gsap.core.Timeline | null>(null);
 	const prevFreemodeRef = useRef(freemode);
+	const cooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const showOverlay = isCameraIntroDone && ((!freemode && focusIndex === null) || (freemode && focusIndex !== null));
 	const disabledToggle = isCooldown || isSliding || isIntroPlaying;
@@ -78,7 +79,18 @@ export const Overlay = () => {
 		}
 
 		prevFreemodeRef.current = freemode;
+
+		return () => {
+			tl.kill();
+		};
 	}, [activeSlideIndex, freemode]);
+
+	useEffect(() => {
+		return () => {
+			timelineRef.current?.kill();
+			if (cooldownTimeoutRef.current) clearTimeout(cooldownTimeoutRef.current);
+		};
+	}, []);
 
 	useEffect(() => {
 		if (!prevButtonRef.current || !nextButtonRef.current) return;
@@ -107,7 +119,8 @@ export const Overlay = () => {
 		}
 
 		setIsCooldown(true);
-		setTimeout(() => setIsCooldown(false), COOLDOWN_DURATION);
+		if (cooldownTimeoutRef.current) clearTimeout(cooldownTimeoutRef.current);
+		cooldownTimeoutRef.current = setTimeout(() => setIsCooldown(false), COOLDOWN_DURATION);
 	};
 
 	const handleBack = () => {
@@ -161,7 +174,7 @@ export const Overlay = () => {
 				{slide.logo && (
 					<div className={styles.logo_wrapper} ref={logoWrapperRef}>
 						<div className={styles.logo_background} />
-						<Image className={styles.logo} src={slide.logo} alt="로고" width={112} height={36} />
+						<Image className={styles.logo} src={slide.logo} alt="로고" fill sizes="112px" />
 					</div>
 				)}
 				<div className={styles.content} ref={contentRef}>

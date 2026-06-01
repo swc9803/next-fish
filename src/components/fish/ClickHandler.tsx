@@ -4,6 +4,7 @@ import { Vector2, Vector3, Raycaster, Mesh, Object3D } from "three";
 import gsap from "gsap";
 
 import { useFishStore } from "@/store/useFishStore";
+import { BOMB_ZONE_POSITION_X } from "@/data/fishScene";
 
 interface ClickHandlerProps {
 	fishRef: RefObject<Object3D | null>;
@@ -12,7 +13,6 @@ interface ClickHandlerProps {
 	isGameOver: boolean;
 }
 
-const BOMB_ZONE_POSITION_X = -75;
 const GRID_CENTER = new Vector3(BOMB_ZONE_POSITION_X, 0, 0);
 const GRID_SIZE_X = 42;
 const GRID_SIZE_Z = 42;

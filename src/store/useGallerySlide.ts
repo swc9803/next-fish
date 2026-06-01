@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { devtools } from "zustand/middleware"; // temp
+import { devtools } from "zustand/middleware";
 
 interface GallerySlideState {
 	slide: number;

@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
+import type { ElementRef } from "react";
 import { MeshReflectorMaterial } from "@react-three/drei";
 
 export const Ground = ({ positionY }: { positionY: number }) => {
-	const materialRef = useRef<any>(null);
+	const materialRef = useRef<ElementRef<typeof MeshReflectorMaterial> | null>(null);
 
 	// 메모리 해제
 	useEffect(() => {

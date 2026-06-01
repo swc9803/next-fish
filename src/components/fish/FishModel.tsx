@@ -5,6 +5,8 @@ import { MeshStandardMaterial, Mesh, Object3D, Vector3, AnimationMixer, Animatio
 import gsap from "gsap";
 
 import { useFishStore } from "@/store/useFishStore";
+import { BOMB_ZONE_POSITION_X } from "@/data/fishScene";
+import { useIsMobile } from "@/hooks/useViewportWidth";
 
 interface FishModelProps {
 	fishRef: RefObject<Object3D | null>;
@@ -25,7 +27,7 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 	const fishColor = useFishStore((s) => s.fishColor);
 	const fishScale = useFishStore((s) => s.fishScale);
 
-	const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+	const isMobile = useIsMobile();
 	const [showHitBox, setShowHitBox] = useState(false);
 
 	const hitBoxRef = useRef<Mesh>(null);
@@ -41,8 +43,6 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 	const tempTarget = useRef(new Vector3());
 	const currentPosition = useRef(new Vector3());
 	const didNotify = useRef(false);
-
-	const BOMB_ZONE_POSITION_X = -75;
 
 	const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -66,12 +66,6 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 			});
 		}
 	}, [startAnimation, fishRef]);
-
-	useEffect(() => {
-		const handleResize = () => setIsMobile(window.innerWidth <= 768);
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, []);
 
 	// 그림자
 	useEffect(() => {

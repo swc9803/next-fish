@@ -1,12 +1,14 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Canvas, useThree } from "@react-three/fiber";
-import { Material, Mesh, MeshStandardMaterial, Object3D, PCFShadowMap } from "three";
+import { Canvas } from "@react-three/fiber";
+import { Mesh, MeshStandardMaterial, Object3D, PCFShadowMap } from "three";
 import gsap from "gsap";
 
 import { resetGameState } from "@/hooks/resetGameState";
+import { DECORATION_MODELS, TALKATIVE_MODELS, createDecorationLoadedFlags } from "@/data/fishScene";
+import { SceneCleanup } from "@/components/three/SceneCleanup";
+import { toVector3Tuple } from "@/utils/tuples";
 
-import { GuideShader } from "./GuideShader";
 import { FishModel } from "./FishModel";
 import { FishColorPicker } from "./FishColorPicker";
 import { MoveRouter } from "./MoveRouter";
@@ -17,35 +19,10 @@ import { VideoCaustics } from "./VideoCaustics";
 import { OceanBackground } from "./OceanBackground";
 import { TalkativeModel } from "./TalkativeModel";
 import { DecorationModel } from "./DecorationModel";
-
-const GalleryTransitionOverlay = () => {
-	const [visible, setVisible] = useState(false);
-	useEffect(() => {
-		const raf = requestAnimationFrame(() => setVisible(true));
-		return () => cancelAnimationFrame(raf);
-	}, []);
-	return <div className={`move_gallery_overlay ${visible ? "show" : ""}`} />;
-};
-
-function SceneCleanup() {
-	const { scene } = useThree();
-	useEffect(() => {
-		return () => {
-			scene.traverse((child: Object3D) => {
-				if ((child as Mesh).isMesh) {
-					const mesh = child as Mesh;
-					mesh.geometry?.dispose();
-					if (Array.isArray(mesh.material)) {
-						mesh.material.forEach((m: Material) => m.dispose());
-					} else {
-						(mesh.material as Material)?.dispose();
-					}
-				}
-			});
-		};
-	}, [scene]);
-	return null;
-}
+import { GalleryTransitionOverlay } from "./GalleryTransitionOverlay";
+import { GameStatusOverlay } from "./GameStatusOverlay";
+import { GuideOverlay } from "./GuideOverlay";
+import { GameOverOverlay } from "./GameOverOverlay";
 
 export const Experience = ({ onReady, startAnimation }: { onReady: () => void; startAnimation: boolean }) => {
 	const [fishLoaded, setFishLoaded] = useState(false);
@@ -55,49 +32,16 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 		setVideoLoaded(true);
 	}, []);
 
-	type DecorationType = {
-		key: keyof typeof loadedFlags;
-		path: string;
-		scale?: number;
-		position: [number, number, number];
-		rotation?: [number, number, number];
-	};
-
-	const decorationArray: DecorationType[] = useMemo(
-		() => [
-			{ key: "shell2", path: "/models/decoration/shell2.glb", scale: 2, position: [10, 0, 12], rotation: [0, 0, Math.PI / 2] },
-			{ key: "seaweed1", path: "/models/decoration/seaweed1.glb", scale: 2.5, position: [35, 0.5, 27] },
-			{ key: "seaweed2", path: "/models/decoration/seaweed2.glb", scale: 0.3, position: [-49, 0.5, 30] },
-			{ key: "coral1", path: "/models/decoration/coral1.glb", scale: 0.5, position: [5, 0.5, 32] },
-			{ key: "coral2", path: "/models/decoration/coral2.glb", scale: 4, position: [37, 0.5, -16] },
-			{ key: "seastar", path: "/models/decoration/seastar.glb", scale: 3, position: [20, 0.5, -17] },
-			{ key: "seaspike", path: "/models/decoration/seaspike.glb", scale: 0.6, position: [-2, 0.5, -25], rotation: [0, Math.PI / 4, 0] },
-			{ key: "sushi", path: "/models/decoration/sushi.glb", scale: 4, position: [-135, 0.5, -20], rotation: [0, Math.PI / 1.5, 0] },
-			{ key: "crab", path: "/models/decoration/crab.glb", scale: 7, position: [-35, 0.5, -27], rotation: [0, Math.PI / 8, 0] },
-		],
-		[]
-	);
-
-	const [loadedFlags, setLoadedFlags] = useState(() => ({
-		shell2: false,
-		seaweed1: false,
-		seaweed2: false,
-		coral1: false,
-		coral2: false,
-		seastar: false,
-		seaspike: false,
-		sushi: false,
-		crab: false,
-	}));
+	const [loadedFlags, setLoadedFlags] = useState(createDecorationLoadedFlags);
 	const loadedCallbacks = useMemo(() => {
-		const result: Record<string, () => void> = {};
-		for (const item of decorationArray) {
+		const result: Partial<Record<keyof typeof loadedFlags, () => void>> = {};
+		for (const item of DECORATION_MODELS) {
 			result[item.key] = () => {
 				setLoadedFlags((prev) => ({ ...prev, [item.key]: true }));
 			};
 		}
 		return result;
-	}, [decorationArray]);
+	}, []);
 
 	const allDecorationsLoaded = useMemo(() => Object.values(loadedFlags).every(Boolean), [loadedFlags]);
 
@@ -108,7 +52,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	const [showGalleryTransitionOverlay, setShowGalleryTransitionOverlay] = useState(false);
 	const [isMovingToGallery, setIsNavigatingToGallery] = useState(false);
 
-	const countdownRef = useRef<HTMLDivElement | null>(null);
+	const countdownRef = useRef<HTMLParagraphElement | null>(null);
 	const [isInBombZone, setIsInBombZone] = useState(false);
 	const [score, setScore] = useState(0);
 	const [isCleared, setIsCleared] = useState(false);
@@ -127,25 +71,35 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	const blinkTweens = useRef<gsap.core.Tween[]>([]);
 	const cellTweens = useRef<{ [index: number]: gsap.core.Tween | undefined }>({});
 	const meshRefs = useRef<Mesh[]>([]);
+	const readyFrameRef = useRef<number | null>(null);
+	const hasStartedReadyNotificationRef = useRef(false);
+	const guideFrameRef = useRef<number | null>(null);
+	const galleryNavTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const router = useRouter();
 
 	// 로딩 대기
 	useEffect(() => {
-		if (fishLoaded && groundLoaded && videoLoaded && allDecorationsLoaded && !hasNotified) {
-			setHasNotified(true);
-			let frame = 0;
-			const wait = () => {
-				frame++;
-				if (frame >= 2) {
-					onReady();
-				} else {
-					requestAnimationFrame(wait);
-				}
-			};
-			requestAnimationFrame(wait);
-		}
-	}, [fishLoaded, groundLoaded, videoLoaded, allDecorationsLoaded, hasNotified, onReady]);
+		if (!fishLoaded || !groundLoaded || !videoLoaded || !allDecorationsLoaded || hasStartedReadyNotificationRef.current) return;
+
+		hasStartedReadyNotificationRef.current = true;
+		let frame = 0;
+		const wait = () => {
+			frame++;
+			if (frame >= 2) {
+				readyFrameRef.current = null;
+				setHasNotified(true);
+				onReady();
+				return;
+			}
+			readyFrameRef.current = requestAnimationFrame(wait);
+		};
+		readyFrameRef.current = requestAnimationFrame(wait);
+
+		return () => {
+			if (readyFrameRef.current !== null) cancelAnimationFrame(readyFrameRef.current);
+		};
+	}, [fishLoaded, groundLoaded, videoLoaded, allDecorationsLoaded, onReady]);
 
 	useEffect(() => {
 		if (!hasNotified) return;
@@ -153,21 +107,31 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 		const timeout = setTimeout(() => {
 			setShowGuideShader(true);
 
-			requestAnimationFrame(() => {
-				requestAnimationFrame(() => {
+			guideFrameRef.current = requestAnimationFrame(() => {
+				guideFrameRef.current = requestAnimationFrame(() => {
 					setIsShowGuide(true);
 				});
 			});
 		}, 2000);
 
-		return () => clearTimeout(timeout);
+		return () => {
+			clearTimeout(timeout);
+			if (guideFrameRef.current !== null) cancelAnimationFrame(guideFrameRef.current);
+		};
 	}, [hasNotified]);
 
 	const galleryTransitionOverlayHandler = useCallback(() => {
 		setIsNavigatingToGallery(true);
 		setShowGalleryTransitionOverlay(true);
-		setTimeout(() => router.push("/gallery"), 800);
+		if (galleryNavTimeoutRef.current) clearTimeout(galleryNavTimeoutRef.current);
+		galleryNavTimeoutRef.current = setTimeout(() => router.push("/gallery"), 800);
 	}, [router]);
+
+	useEffect(() => {
+		return () => {
+			if (galleryNavTimeoutRef.current) clearTimeout(galleryNavTimeoutRef.current);
+		};
+	}, []);
 
 	useEffect(() => {
 		if (isInBombZone && countdown === null && !bombActive && !isCleared) {
@@ -333,52 +297,28 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 				<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} hideSpeechBubble={isMovingToGallery} />
 				<Ground planeRef={planeRef} onLoaded={() => setGroundLoaded(true)} />
 
-				<TalkativeModel
-					modelPath="/models/fish_logo.glb"
-					modelPosition={[-40, 0.5, -10]}
-					bubblePosition={[-41, 1, -15]}
-					text="왼쪽 지형은 여러 게임들을 즐길 수 있는 곳 입니다."
-					fishRef={fishRef}
-					scale={1}
-					speed={70}
-				/>
-				<TalkativeModel
-					modelPath="/models/fish_car.glb"
-					modelPosition={[35, 0.5, 0]}
-					bubblePosition={[36, 1, -5]}
-					text="오른쪽으로 이동하면 프로젝트들을 보실 수 있습니다."
-					fishRef={fishRef}
-					scale={1}
-					speed={70}
-				/>
-				<TalkativeModel
-					modelPath="/models/fish_game.glb"
-					modelPosition={[-18, 0.5, 16]}
-					bubblePosition={[-19, 1, 11]}
-					text="각 로고에 다가가면 사이트가 열립니다."
-					fishRef={fishRef}
-					scale={1}
-					speed={70}
-				/>
-				<TalkativeModel
-					modelPath="/models/update.glb"
-					modelPosition={[-125, 0.5, 10]}
-					bubblePosition={[-126, 1, 5]}
-					text="곧 게임이 추가될 예정입니다!"
-					fishRef={fishRef}
-					scale={1}
-					speed={70}
-				/>
+				{TALKATIVE_MODELS.map((item) => (
+					<TalkativeModel
+						key={item.modelPath}
+						modelPath={item.modelPath}
+						modelPosition={toVector3Tuple(item.modelPosition)}
+						bubblePosition={toVector3Tuple(item.bubblePosition)}
+						text={item.text}
+						fishRef={fishRef}
+						scale={1}
+						speed={70}
+					/>
+				))}
 
-				{decorationArray.map((item) => (
+				{DECORATION_MODELS.map((item) => (
 					<DecorationModel
 						key={item.key}
 						modelKey={item.key}
 						modelPath={item.path}
-						position={item.position}
-						rotation={item.rotation}
+						position={toVector3Tuple(item.position)}
+						rotation={"rotation" in item ? toVector3Tuple(item.rotation) : undefined}
 						scale={item.scale ?? 1}
-						onLoaded={loadedCallbacks[item.key]}
+						onLoaded={loadedCallbacks[item.key] ?? (() => {})}
 					/>
 				))}
 
@@ -404,60 +344,22 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 
 				<ClickHandler fishRef={fishRef} planeRef={planeRef} isInBombZone={isInBombZone} isGameOver={isGameOver} />
 			</Canvas>
-			{(countdown !== null || countdown === 0 || showClearText || isInBombZone || isGameOver) && (
-				<div className="game_overlay">
-					{countdown !== null && countdown > 0 && (
-						<p ref={countdownRef} className="countdown number">
-							{countdown}
-						</p>
-					)}
-					{countdown === 0 && (
-						<p ref={countdownRef} className="countdown start">
-							START!
-						</p>
-					)}
-					{showClearText && (
-						<p ref={countdownRef} className="countdown clear">
-							CLEAR!
-						</p>
-					)}
-					{(isInBombZone || isGameOver) && <p className="score">Score: {score}</p>}
-				</div>
-			)}
+			<GameStatusOverlay
+				countdown={countdown}
+				countdownRef={countdownRef}
+				isGameOver={isGameOver}
+				isInBombZone={isInBombZone}
+				score={score}
+				showClearText={showClearText}
+			/>
 
 			{showGalleryTransitionOverlay && <GalleryTransitionOverlay />}
 
-			{showGuideShader && (
-				<div className={`guide_overlay ${isShowGuide ? "show" : ""}`}>
-					<Canvas
-						orthographic
-						camera={{ zoom: 1, position: [0, 0, 100] }}
-						gl={{
-							alpha: true,
-							depth: false,
-							stencil: false,
-							antialias: false,
-							preserveDrawingBuffer: false,
-							powerPreference: "low-power",
-							failIfMajorPerformanceCaveat: false,
-						}}
-						onCreated={({ gl }) => {
-							gl.getContext().canvas.addEventListener("webglcontextlost", (e) => e.preventDefault());
-						}}
-					>
-						<GuideShader onFinish={() => setShowGuideShader(false)} />
-					</Canvas>
-				</div>
-			)}
+			{showGuideShader && <GuideOverlay isVisible={isShowGuide} onFinish={() => setShowGuideShader(false)} />}
 
 			<FishColorPicker />
 
-			{isGameOver && (
-				<div onClick={handleReset} className="gameover_overlay">
-					<h1>YOU&apos;RE COOKED</h1>
-					<p className={preventClick ? "show" : ""}>Click the screen to restart</p>
-				</div>
-			)}
+			{isGameOver && <GameOverOverlay canRestart={preventClick} onReset={handleReset} />}
 		</>
 	);
 };

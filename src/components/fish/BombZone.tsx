@@ -5,6 +5,7 @@ import gsap from "gsap";
 
 import { useFishStore } from "@/store/useFishStore";
 import { useDeathPositionGrow } from "@/hooks/useDeathPositionGrow";
+import { BOMB_ZONE_POSITION_X } from "@/data/fishScene";
 import { GrowingFeed } from "./GrowingFeed";
 
 interface BombZoneProps {
@@ -45,8 +46,6 @@ const cameraShakeRef = {
 	intensity: 0,
 	basePosition: new Vector3(),
 };
-
-const BOMB_ZONE_POSITION_X = -75;
 
 export const BombZone = (props: BombZoneProps) => {
 	const {
