@@ -1,4 +1,4 @@
-import { AUGMENTS } from "../core/augments";
+import { AUGMENTS, RARITY_LABELS } from "../core/augments";
 import type { AugmentId, GameMode } from "../core/types";
 import styles from "../AirRaidGame.module.scss";
 
@@ -15,15 +15,22 @@ export const AirRaidAugmentOverlay = ({ choices, mode, onSelect }: AirRaidAugmen
 		<section className={styles.augmentOverlay}>
 			<div className={styles.augmentHeader}>
 				<p className={styles.kicker}>Augment</p>
-				<h1>증강 선택</h1>
+				<h1>강화 선택</h1>
 			</div>
 
 			<div className={styles.augmentGrid}>
 				{choices.map((augmentId) => {
 					const augment = AUGMENTS[augmentId];
 					return (
-						<button key={augment.id} type="button" className={styles.augmentCard} onClick={() => onSelect(augment.id)}>
-							<span>{augment.title}</span>
+						<button
+							key={augment.id}
+							type="button"
+							className={styles.augmentCard}
+							data-rarity={augment.rarity}
+							onClick={() => onSelect(augment.id)}
+						>
+							<span>{RARITY_LABELS[augment.rarity]}</span>
+							<b>{augment.title}</b>
 							<strong>{augment.description}</strong>
 							<small>{augment.flavor}</small>
 						</button>

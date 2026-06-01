@@ -6,7 +6,7 @@ import styles from "./page.module.scss";
 const games = [
 	{
 		title: "1945",
-		description: "적 편대를 격추하고 보스를 상대하는 세로 스크롤 비행 슈팅 게임입니다.",
+		description: "탄막을 피하며 적 편대를 격추하고 보스를 상대하는 세로 스크롤 비행 슈팅 게임입니다.",
 		href: "/game/1945",
 		image: "/images/gallery6-1.webp",
 		status: "Play",

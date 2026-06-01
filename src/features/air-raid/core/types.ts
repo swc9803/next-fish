@@ -1,6 +1,7 @@
 export type GameMode = "ready" | "playing" | "paused" | "augment" | "gameover";
-export type EnemyKind = "scout" | "fighter" | "bomber" | "boss";
+export type EnemyKind = "scout" | "fighter" | "ace" | "bomber" | "boss";
 export type WeaponKind = "standard" | "fork" | "scatter" | "lance" | "laser";
+export type AugmentRarity = "common" | "rare" | "unique" | "legendary";
 export type AugmentId =
 	| "forked-cannon"
 	| "scatter-pods"
@@ -8,18 +9,49 @@ export type AugmentId =
 	| "needle-laser"
 	| "focusing-lens"
 	| "split-prism"
-	| "heavy-core"
-	| "rapid-cycle"
 	| "piercing-rounds"
-	| "unstable-core"
 	| "blade-array"
-	| "charged-blade";
+	| "charged-blade"
+	| "wingman-drone"
+	| "drone-swarm"
+	| "drone-core"
+	| "pet-overdrive"
+	| "legendary-carrier";
+
+export type MetaUpgradeId = "health" | "shieldCycle" | "speed" | "fireRate" | "damage" | "magnet" | "reload" | "pet";
+export type MetaSlotBonusId = "health" | "shieldCycle" | "speed" | "fireRate" | "damage" | "magnet" | "reload" | "pet";
+
+export type MetaUpgradeDefinition = {
+	id: MetaUpgradeId;
+	title: string;
+	description: string;
+	maxLevel: number;
+	baseCost: number;
+	costGrowth: number;
+};
+
+export type MetaProgress = {
+	coins: number;
+	upgrades: Record<MetaUpgradeId, number>;
+	slotBonuses: Record<MetaSlotBonusId, number>;
+};
+
+export type SlotSpinResult = {
+	kind: "coin" | "stat";
+	title: string;
+	description: string;
+	deltaCoins?: number;
+	bonusId?: MetaSlotBonusId;
+	bonusPoints?: number;
+};
 
 export type AugmentDefinition = {
 	id: AugmentId;
+	rarity: AugmentRarity;
 	title: string;
 	description: string;
 	flavor: string;
+	maxStacks?: number;
 };
 
 export type Plane = {
@@ -82,6 +114,16 @@ export type PowerUp = {
 	kind: "power" | "repair";
 };
 
+export type ExperienceOrb = {
+	id: number;
+	x: number;
+	y: number;
+	vx: number;
+	vy: number;
+	value: number;
+	radius: number;
+};
+
 export type Star = {
 	x: number;
 	y: number;
@@ -97,6 +139,7 @@ export type Player = {
 	targetY: number;
 	radius: number;
 	lives: number;
+	maxLives: number;
 	power: number;
 	fireCooldown: number;
 	invincible: number;
@@ -105,10 +148,24 @@ export type Player = {
 	isCharging: boolean;
 };
 
+export type Pet = {
+	id: number;
+	x: number;
+	y: number;
+	level: number;
+	fireCooldown: number;
+	phase: number;
+};
+
 export type GameState = {
 	mode: GameMode;
 	score: number;
 	highScore: number;
+	experienceLevel: number;
+	experience: number;
+	nextExperience: number;
+	combo: number;
+	comboTimer: number;
 	wave: number;
 	time: number;
 	spawnTimer: number;
@@ -119,6 +176,9 @@ export type GameState = {
 	weapon: WeaponKind;
 	damageMultiplier: number;
 	fireCooldownMultiplier: number;
+	playerSpeedMultiplier: number;
+	magnetMultiplier: number;
+	reloadSpeedMultiplier: number;
 	bulletPierce: number;
 	laserFocus: number;
 	prismSplitter: boolean;
@@ -126,15 +186,27 @@ export type GameState = {
 	meleeUnlocked: boolean;
 	chargeUnlocked: boolean;
 	meleeDamageMultiplier: number;
-	nextAugmentScore: number;
+	petDamageMultiplier: number;
+	petFireCooldownMultiplier: number;
+	shieldUnlocked: boolean;
+	shieldTimer: number;
+	shieldInterval: number;
+	shieldCharges: number;
+	shieldMaxCharges: number;
+	defeatedEnemies: number;
+	defeatedBosses: number;
+	earnedCoins: number;
+	coinRewardClaimed: boolean;
 	augmentChoices: AugmentId[];
 	augments: AugmentId[];
 	player: Player;
+	pets: Pet[];
 	bullets: Bullet[];
 	enemies: Plane[];
 	slashes: Slash[];
 	particles: Particle[];
 	powerUps: PowerUp[];
+	experienceOrbs: ExperienceOrb[];
 	stars: Star[];
 	keys: Set<string>;
 	pointerActive: boolean;
@@ -145,6 +217,10 @@ export type HudState = {
 	mode: GameMode;
 	score: number;
 	highScore: number;
+	experienceLevel: number;
+	experience: number;
+	nextExperience: number;
+	combo: number;
 	wave: number;
 	lives: number;
 	power: number;
@@ -156,6 +232,17 @@ export type HudState = {
 	meleeUnlocked: boolean;
 	chargeUnlocked: boolean;
 	chargeRatio: number;
+	petCount: number;
+	petLevelTotal: number;
+	damageBonusPercent: number;
+	fireRateBonusPercent: number;
+	speedBonusPercent: number;
+	magnetBonusPercent: number;
+	reloadBonusPercent: number;
+	shieldCharges: number;
+	shieldMaxCharges: number;
+	defeatedEnemies: number;
+	earnedCoins: number;
 };
 
 export type Layout = {

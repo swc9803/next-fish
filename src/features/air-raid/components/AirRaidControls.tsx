@@ -22,12 +22,12 @@ export const AirRaidControls = ({
 	onRestart,
 	onTogglePause,
 }: AirRaidControlsProps) => {
-	const bladeLabel = chargeUnlocked ? `Charge ${Math.round(chargeRatio * 100)}%` : "Blade";
+	const bladeLabel = chargeUnlocked ? `차지 ${Math.round(chargeRatio * 100)}%` : "블레이드";
 
 	return (
 		<div className={styles.controls}>
 			<button type="button" onClick={onTogglePause}>
-				{mode === "paused" ? "Resume" : "Pause"}
+				{mode === "paused" ? "계속" : "정지"}
 			</button>
 			<button
 				type="button"
@@ -37,10 +37,10 @@ export const AirRaidControls = ({
 				onPointerLeave={onMeleeUp}
 				onPointerUp={onMeleeUp}
 			>
-				{meleeUnlocked ? bladeLabel : "Blade Locked"}
+				{meleeUnlocked ? bladeLabel : "블레이드 잠김"}
 			</button>
 			<button type="button" onClick={onRestart}>
-				Restart
+				재시작
 			</button>
 		</div>
 	);

@@ -88,14 +88,18 @@
 	inset: 0;
 	z-index: 2;
 	display: grid;
-	place-items: center;
+	grid-template-columns: minmax(18rem, 27rem) minmax(18rem, 34rem);
+	align-content: center;
+	justify-content: center;
+	gap: clamp(1rem, 3vw, 1.5rem);
 	padding: 1.25rem;
 	background: rgba(6, 10, 22, 0.38);
 	backdrop-filter: blur(3px);
+	overflow-y: auto;
 }
 
 .panel {
-	width: min(27rem, 100%);
+	width: 100%;
 	padding: clamp(1.25rem, 4vw, 2rem);
 	border: 1px solid rgba(255, 255, 255, 0.18);
 	border-radius: 8px;
@@ -191,8 +195,11 @@
 	align-content: center;
 	gap: clamp(1rem, 3vw, 1.5rem);
 	padding: clamp(1rem, 4vw, 2.5rem);
-	background: rgba(6, 10, 22, 0.62);
-	backdrop-filter: blur(5px);
+	background:
+		linear-gradient(115deg, rgba(255, 255, 255, 0.08), transparent 28%, rgba(139, 244, 255, 0.08) 56%, transparent 76%),
+		rgba(6, 10, 22, 0.7);
+	backdrop-filter: blur(8px);
+	animation: augmentBackdrop 0.42s ease-out both;
 }
 
 .augmentHeader {
@@ -205,6 +212,246 @@
 		font-size: clamp(2.2rem, 7vw, 4.6rem);
 		line-height: 0.95;
 		letter-spacing: 0;
+		text-shadow: 0 0 2rem rgba(139, 244, 255, 0.34);
+	}
+}
+
+.rewardLine {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-top: 1rem;
+
+	span {
+		min-height: 2rem;
+		padding: 0.45rem 0.6rem;
+		border: 1px solid rgba(182, 255, 122, 0.22);
+		border-radius: 8px;
+		color: #dfffc2;
+		background: rgba(182, 255, 122, 0.08);
+		font-size: 0.78rem;
+		font-weight: 800;
+	}
+}
+
+.metaPanel {
+	width: 100%;
+	max-height: min(42rem, 86vh);
+	overflow-y: auto;
+	padding: clamp(1rem, 2.5vw, 1.25rem);
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	border-radius: 8px;
+	background: rgba(7, 13, 28, 0.82);
+	box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.34);
+}
+
+.metaHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 0.85rem;
+
+	strong {
+		color: #ffe989;
+		font-size: 0.94rem;
+		line-height: 1.2;
+	}
+}
+
+.slotPanel {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.6rem;
+	margin-bottom: 0.7rem;
+}
+
+.slotMachine {
+	position: relative;
+	display: grid;
+	min-height: 8.2rem;
+	align-content: start;
+	gap: 0.35rem;
+	overflow: hidden;
+	padding: 0.85rem;
+	border: 1px solid rgba(255, 233, 137, 0.28);
+	border-radius: 8px;
+	color: #f7fbff;
+	background:
+		linear-gradient(135deg, rgba(255, 233, 137, 0.16), rgba(139, 244, 255, 0.08)),
+		rgba(255, 255, 255, 0.075);
+	text-align: left;
+	box-shadow: 0 0 2rem rgba(255, 233, 137, 0.12);
+	transition:
+		transform 0.2s ease,
+		border-color 0.2s ease,
+		filter 0.2s ease,
+		opacity 0.2s ease;
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset: -40% -60%;
+		background: repeating-linear-gradient(
+			90deg,
+			transparent 0 1.2rem,
+			rgba(255, 255, 255, 0.12) 1.2rem 1.45rem,
+			transparent 1.45rem 2.8rem
+		);
+		opacity: 0.32;
+		transform: rotate(18deg);
+		animation: slotReel 3.2s linear infinite;
+		pointer-events: none;
+	}
+
+	span,
+	strong,
+	small,
+	b {
+		position: relative;
+		z-index: 1;
+	}
+
+	span {
+		color: #ffe989;
+		font-size: 0.72rem;
+		font-weight: 900;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+
+	strong {
+		color: #ffffff;
+		font-size: 1rem;
+		line-height: 1.25;
+	}
+
+	small {
+		color: rgba(247, 251, 255, 0.7);
+		font-size: 0.76rem;
+		line-height: 1.35;
+	}
+
+	b {
+		margin-top: auto;
+		color: #ffe989;
+		font-size: 0.8rem;
+	}
+
+	&:hover:not(:disabled) {
+		transform: translateY(-0.14rem);
+		border-color: rgba(255, 233, 137, 0.68);
+		filter: brightness(1.08);
+	}
+
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.48;
+	}
+}
+
+.slotResult {
+	display: grid;
+	gap: 0.25rem;
+	margin-bottom: 0.65rem;
+	padding: 0.75rem;
+	border: 1px solid rgba(139, 244, 255, 0.18);
+	border-radius: 8px;
+	background: rgba(139, 244, 255, 0.08);
+	animation: cardRise 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+	&[data-kind="coin"] {
+		border-color: rgba(255, 233, 137, 0.26);
+		background: rgba(255, 233, 137, 0.08);
+	}
+
+	span {
+		color: #8bf4ff;
+		font-size: 0.72rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	strong {
+		color: #ffffff;
+		font-size: 0.92rem;
+		line-height: 1.35;
+	}
+
+	small {
+		color: rgba(247, 251, 255, 0.68);
+		font-size: 0.78rem;
+		line-height: 1.3;
+	}
+}
+
+.slotSummary {
+	margin-bottom: 0.75rem;
+	color: rgba(247, 251, 255, 0.72);
+	font-size: 0.78rem;
+	line-height: 1.45;
+}
+
+.metaGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.6rem;
+}
+
+.metaUpgrade {
+	display: grid;
+	min-height: 7.8rem;
+	align-content: start;
+	gap: 0.35rem;
+	padding: 0.8rem;
+	border: 1px solid rgba(139, 244, 255, 0.18);
+	border-radius: 8px;
+	color: #f7fbff;
+	background: rgba(255, 255, 255, 0.07);
+	text-align: left;
+	transition:
+		transform 0.2s ease,
+		border-color 0.2s ease,
+		background 0.2s ease,
+		opacity 0.2s ease;
+
+	span {
+		color: #8bf4ff;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	strong {
+		color: #ffffff;
+		font-size: 0.94rem;
+		line-height: 1.25;
+	}
+
+	small {
+		color: rgba(247, 251, 255, 0.68);
+		font-size: 0.76rem;
+		line-height: 1.35;
+	}
+
+	b {
+		margin-top: auto;
+		color: #ffe989;
+		font-size: 0.78rem;
+		line-height: 1.2;
+	}
+
+	&:hover:not(:disabled) {
+		transform: translateY(-0.12rem);
+		border-color: rgba(139, 244, 255, 0.54);
+		background: rgba(139, 244, 255, 0.12);
+	}
+
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.55;
 	}
 }
 
@@ -217,6 +464,10 @@
 }
 
 .augmentCard {
+	--rarity-color: #8bf4ff;
+	--rarity-glow: rgba(139, 244, 255, 0.26);
+
+	position: relative;
 	display: flex;
 	min-height: 15rem;
 	flex-direction: column;
@@ -224,33 +475,110 @@
 	justify-content: space-between;
 	gap: 0.8rem;
 	padding: clamp(1rem, 2.5vw, 1.35rem);
-	border: 1px solid rgba(139, 244, 255, 0.22);
+	overflow: hidden;
+	border: 1px solid color-mix(in srgb, var(--rarity-color), transparent 62%);
 	border-radius: 8px;
 	color: #f7fbff;
 	background:
-		linear-gradient(180deg, rgba(139, 244, 255, 0.13), rgba(255, 255, 255, 0.055)),
+		linear-gradient(180deg, color-mix(in srgb, var(--rarity-color), transparent 84%), rgba(255, 255, 255, 0.055)),
 		rgba(8, 16, 33, 0.88);
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+		0 1.2rem 3rem rgba(0, 0, 0, 0.28),
+		0 0 2.2rem var(--rarity-glow);
 	text-align: left;
+	animation: cardRise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 	transition:
 		transform 0.2s ease,
 		border-color 0.2s ease,
 		background 0.2s ease;
 
+	&:nth-child(2) {
+		animation-delay: 0.08s;
+	}
+
+	&:nth-child(3) {
+		animation-delay: 0.16s;
+	}
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset: -1px;
+		background: linear-gradient(110deg, transparent 0%, color-mix(in srgb, var(--rarity-color), transparent 58%) 42%, transparent 78%);
+		opacity: 0;
+		transform: translateX(-80%);
+		animation: raritySweep 1.35s ease-out 0.22s both;
+		pointer-events: none;
+	}
+
+	&::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		border: 1px solid color-mix(in srgb, var(--rarity-color), transparent 34%);
+		opacity: 0.48;
+		pointer-events: none;
+	}
+
+	&[data-rarity="common"] {
+		--rarity-color: #8bf4ff;
+		--rarity-glow: rgba(139, 244, 255, 0.16);
+	}
+
+	&[data-rarity="rare"] {
+		--rarity-color: #9eff8f;
+		--rarity-glow: rgba(158, 255, 143, 0.22);
+	}
+
+	&[data-rarity="unique"] {
+		--rarity-color: #c79cff;
+		--rarity-glow: rgba(199, 156, 255, 0.32);
+	}
+
+	&[data-rarity="legendary"] {
+		--rarity-color: #ffe989;
+		--rarity-glow: rgba(255, 233, 137, 0.45);
+		animation:
+			cardRise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both,
+			legendaryPulse 1.7s ease-in-out 0.56s infinite;
+	}
+
 	span {
-		color: #8bf4ff;
+		position: relative;
+		z-index: 1;
+		min-height: 1.75rem;
+		padding: 0.35rem 0.5rem;
+		border: 1px solid color-mix(in srgb, var(--rarity-color), transparent 52%);
+		border-radius: 8px;
+		color: var(--rarity-color);
+		background: rgba(255, 255, 255, 0.07);
 		font-size: 0.82rem;
 		font-weight: 800;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 	}
 
+	b {
+		position: relative;
+		z-index: 1;
+		color: var(--rarity-color);
+		font-size: clamp(1rem, 1.6vw, 1.16rem);
+		line-height: 1.25;
+	}
+
 	strong {
+		position: relative;
+		z-index: 1;
 		color: #ffffff;
 		font-size: clamp(1.05rem, 2vw, 1.3rem);
 		line-height: 1.35;
 	}
 
 	small {
+		position: relative;
+		z-index: 1;
 		color: rgba(247, 251, 255, 0.68);
 		font-size: 0.86rem;
 		line-height: 1.45;
@@ -258,10 +586,77 @@
 
 	&:hover {
 		transform: translateY(-0.25rem);
-		border-color: rgba(139, 244, 255, 0.68);
+		border-color: color-mix(in srgb, var(--rarity-color), white 12%);
 		background:
-			linear-gradient(180deg, rgba(139, 244, 255, 0.2), rgba(255, 255, 255, 0.075)),
+			linear-gradient(180deg, color-mix(in srgb, var(--rarity-color), transparent 76%), rgba(255, 255, 255, 0.075)),
 			rgba(8, 16, 33, 0.94);
+	}
+}
+
+@keyframes augmentBackdrop {
+	from {
+		opacity: 0;
+		transform: scale(1.015);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes cardRise {
+	from {
+		opacity: 0;
+		transform: translateY(1.2rem) scale(0.96);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes raritySweep {
+	0% {
+		opacity: 0;
+		transform: translateX(-86%);
+	}
+
+	24% {
+		opacity: 0.58;
+	}
+
+	100% {
+		opacity: 0;
+		transform: translateX(86%);
+	}
+}
+
+@keyframes legendaryPulse {
+	0%,
+	100% {
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+			0 1.2rem 3rem rgba(0, 0, 0, 0.28),
+			0 0 2rem var(--rarity-glow);
+	}
+
+	50% {
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+			0 1.2rem 3rem rgba(0, 0, 0, 0.28),
+			0 0 3.6rem var(--rarity-glow);
+	}
+}
+
+@keyframes slotReel {
+	from {
+		transform: translateX(-2rem) rotate(18deg);
+	}
+
+	to {
+		transform: translateX(2rem) rotate(18deg);
 	}
 }
 
@@ -289,6 +684,24 @@
 		min-height: 2rem;
 		padding: 0 0.7rem;
 		font-size: 0.78rem;
+	}
+
+	.overlay {
+		grid-template-columns: 1fr;
+		align-content: start;
+		padding: 0.75rem;
+	}
+
+	.metaGrid {
+		grid-template-columns: 1fr;
+	}
+
+	.slotPanel {
+		grid-template-columns: 1fr;
+	}
+
+	.metaUpgrade {
+		min-height: 6.9rem;
 	}
 
 	.controls button {
