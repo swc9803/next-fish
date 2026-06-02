@@ -4,7 +4,7 @@ export type WeaponKind = "standard" | "fork" | "scatter" | "lance" | "laser";
 export type AugmentRarity = "common" | "rare" | "unique" | "legendary";
 export type StageKind = "coral" | "abyss" | "volcanic" | "glacier" | "kelp" | "ruins";
 export type BossSkillId = "coral-surge" | "abyss-lance" | "ember-current" | "frost-shell" | "kelp-snare" | "ruin-prism";
-export type StageDirection = "10시" | "12시" | "2시";
+export type StageDirection = "10" | "12" | "2";
 export type AugmentId =
 	| "forked-cannon"
 	| "scatter-pods"
@@ -103,6 +103,7 @@ export type Bullet = {
 	vy: number;
 	radius: number;
 	visualRadius?: number;
+	blastRadius?: number;
 	damage: number;
 	pierce: number;
 	from: "player" | "enemy";
@@ -150,6 +151,9 @@ export type ExperienceOrb = {
 	vy: number;
 	value: number;
 	radius: number;
+	kind?: "experience" | "coin";
+	autoCollect?: boolean;
+	homeDelay?: number;
 };
 
 export type CollectionEffect = {
@@ -211,6 +215,7 @@ export type GameState = {
 	stage: StageKind;
 	clearedStages: StageKind[];
 	bossSkills: BossSkillId[];
+	bossSkillCooldowns: Record<BossSkillId, number>;
 	stageChoices: StageChoice[];
 	pendingBossSkill: BossSkillId | null;
 	time: number;
@@ -274,6 +279,7 @@ export type HudState = {
 	stageTitle: string;
 	stageBoss: string;
 	bossSkills: BossSkillId[];
+	bossSkillCooldowns: Record<BossSkillId, number>;
 	stageChoices: StageChoice[];
 	pendingBossSkill: BossSkillId | null;
 	lives: number;

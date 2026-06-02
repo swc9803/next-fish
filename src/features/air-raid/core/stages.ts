@@ -37,59 +37,59 @@ type BossSkillDefinition = {
 };
 
 export const STAGE_ORDER: StageKind[] = ["coral", "abyss", "volcanic", "glacier", "kelp", "ruins"];
-const STAGE_DIRECTIONS: StageDirection[] = ["10시", "12시", "2시"];
+const STAGE_DIRECTIONS: StageDirection[] = ["10", "12", "2"];
 
 export const BOSS_SKILLS: Record<BossSkillId, BossSkillDefinition> = {
 	"coral-surge": {
 		id: "coral-surge",
-		title: "산호 충격파",
+		title: "Coral Surge",
 		shortTitle: "CORAL",
-		description: "심연 계열 적의 외피를 깨뜨려 큰 피해를 줍니다.",
+		description: "Recovered boss core. Coral-aligned enemies take increased damage.",
 		color: "#ff8fae",
 		bonusMultiplier: 2.15,
 		targetStages: ["abyss"],
 	},
 	"abyss-lance": {
 		id: "abyss-lance",
-		title: "흑조 관통창",
+		title: "Abyss Lance",
 		shortTitle: "ABYSS",
-		description: "열수 계열 적의 장갑을 관통합니다.",
+		description: "Recovered boss core. Abyss-aligned enemies take increased damage.",
 		color: "#9cc7ff",
 		bonusMultiplier: 2.15,
 		targetStages: ["volcanic"],
 	},
 	"ember-current": {
 		id: "ember-current",
-		title: "열수 해류",
+		title: "Ember Current",
 		shortTitle: "EMBER",
-		description: "빙결 계열 적을 녹여 높은 피해를 줍니다.",
+		description: "Recovered boss core. Heat-aligned enemies take increased damage.",
 		color: "#ffb45f",
 		bonusMultiplier: 2.15,
 		targetStages: ["glacier"],
 	},
 	"frost-shell": {
 		id: "frost-shell",
-		title: "빙결 소라",
+		title: "Frost Shell",
 		shortTitle: "FROST",
-		description: "해초 계열 적의 움직임을 굳혀 큰 피해를 줍니다.",
+		description: "Recovered boss core. Ice-aligned enemies take increased damage.",
 		color: "#8bf4ff",
 		bonusMultiplier: 2.15,
 		targetStages: ["kelp"],
 	},
 	"kelp-snare": {
 		id: "kelp-snare",
-		title: "해초 결박",
+		title: "Kelp Snare",
 		shortTitle: "KELP",
-		description: "유적 계열 적의 균열을 묶어 약점을 드러냅니다.",
+		description: "Recovered boss core. Kelp-aligned enemies take increased damage.",
 		color: "#9eff8f",
 		bonusMultiplier: 2.15,
 		targetStages: ["ruins"],
 	},
 	"ruin-prism": {
 		id: "ruin-prism",
-		title: "유적 프리즘",
+		title: "Ruin Prism",
 		shortTitle: "PRISM",
-		description: "산호 계열 적에게 반사 피해를 증폭합니다.",
+		description: "Recovered boss core. Ruin-aligned enemies take increased damage.",
 		color: "#c79cff",
 		bonusMultiplier: 2.15,
 		targetStages: ["coral"],
@@ -99,11 +99,11 @@ export const BOSS_SKILLS: Record<BossSkillId, BossSkillDefinition> = {
 export const STAGES: Record<StageKind, StageDefinition> = {
 	coral: {
 		id: "coral",
-		title: "붉은 산호 협곡",
+		title: "Blooming Coral Reef",
 		shortTitle: "CORAL REEF",
-		description: "좌우로 퍼지는 정찰 개체가 많은 초입 해역입니다.",
-		boss: "산호 함장 루미나",
-		threat: "넓은 편대",
+		description: "A bright entry route with balanced enemy formations.",
+		boss: "Lumina, Coral Captain",
+		threat: "Balanced patrols",
 		rewardSkill: "coral-surge",
 		weaknessSkill: "ruin-prism",
 		enemyWeights: { scout: 42, fighter: 35, ace: 14, bomber: 9 },
@@ -122,11 +122,11 @@ export const STAGES: Record<StageKind, StageDefinition> = {
 	},
 	abyss: {
 		id: "abyss",
-		title: "검은 해구",
+		title: "Black Abyss Trench",
 		shortTitle: "ABYSS TRENCH",
-		description: "느리지만 단단한 적이 깊은 어둠에서 밀고 옵니다.",
-		boss: "해구 거인 모르도",
-		threat: "고내구 장갑",
+		description: "Slow heavy enemies push through dark pressure lanes.",
+		boss: "Mordo, Abyss Giant",
+		threat: "Heavy artillery",
 		rewardSkill: "abyss-lance",
 		weaknessSkill: "coral-surge",
 		enemyWeights: { scout: 24, fighter: 28, ace: 16, bomber: 32 },
@@ -145,11 +145,11 @@ export const STAGES: Record<StageKind, StageDefinition> = {
 	},
 	volcanic: {
 		id: "volcanic",
-		title: "열수 분출구",
+		title: "Hydrothermal Vent Field",
 		shortTitle: "VENT FIELD",
-		description: "탄속이 빠른 적이 뜨거운 수류를 타고 접근합니다.",
-		boss: "열수 포식자 이그나",
-		threat: "고속 탄막",
+		description: "Fast attackers ride hot currents through narrow lanes.",
+		boss: "Igna, Vent Predator",
+		threat: "High speed rush",
 		rewardSkill: "ember-current",
 		weaknessSkill: "abyss-lance",
 		enemyWeights: { scout: 26, fighter: 34, ace: 26, bomber: 14 },
@@ -168,11 +168,11 @@ export const STAGES: Record<StageKind, StageDefinition> = {
 	},
 	glacier: {
 		id: "glacier",
-		title: "빙하 소용돌이",
+		title: "Glacier Drift",
 		shortTitle: "ICE DRIFT",
-		description: "빠른 정예와 단단한 장갑이 섞인 차가운 수역입니다.",
-		boss: "빙하 여왕 네리아",
-		threat: "정예 돌파",
+		description: "Precise enemies fire tight patterns through cold water.",
+		boss: "Neria, Glacier Queen",
+		threat: "Precision volleys",
 		rewardSkill: "frost-shell",
 		weaknessSkill: "ember-current",
 		enemyWeights: { scout: 20, fighter: 30, ace: 32, bomber: 18 },
@@ -191,11 +191,11 @@ export const STAGES: Record<StageKind, StageDefinition> = {
 	},
 	kelp: {
 		id: "kelp",
-		title: "해초 미로",
+		title: "Kelp Maze",
 		shortTitle: "KELP MAZE",
-		description: "흔들리는 이동 궤적 때문에 중앙 조준이 까다로운 해역입니다.",
-		boss: "해초 사냥꾼 비리드",
-		threat: "불규칙 기동",
+		description: "Unstable movement patterns weave through dense growth.",
+		boss: "Virid, Kelp Hunter",
+		threat: "Erratic movement",
 		rewardSkill: "kelp-snare",
 		weaknessSkill: "frost-shell",
 		enemyWeights: { scout: 36, fighter: 36, ace: 20, bomber: 8 },
@@ -214,11 +214,11 @@ export const STAGES: Record<StageKind, StageDefinition> = {
 	},
 	ruins: {
 		id: "ruins",
-		title: "가라앉은 유적",
+		title: "Sunken Ruins",
 		shortTitle: "SUNKEN RUINS",
-		description: "균열 에너지에 물든 적이 강하지만 보상이 큽니다.",
-		boss: "유적 수문장 프리즘",
-		threat: "복합 패턴",
+		description: "Ancient energy makes enemies tougher, but rewards are stronger.",
+		boss: "Prism, Ruin Gatekeeper",
+		threat: "Mixed patterns",
 		rewardSkill: "ruin-prism",
 		weaknessSkill: "kelp-snare",
 		enemyWeights: { scout: 22, fighter: 30, ace: 24, bomber: 24 },
@@ -317,6 +317,8 @@ export const openStageSelection = (state: GameState) => {
 	state.bullets = [];
 	state.slashes = [];
 	state.powerUps = [];
+	state.player.targetX = state.player.x;
+	state.player.targetY = state.player.y;
 	state.player.invincible = Math.max(state.player.invincible, 1.4);
 };
 

@@ -7,18 +7,16 @@ import { AirRaidControls } from "./components/AirRaidControls";
 import { AirRaidHud } from "./components/AirRaidHud";
 import { AirRaidModelLayer } from "./components/AirRaidModelLayer";
 import { AirRaidOverlay } from "./components/AirRaidOverlay";
-import { AirRaidStageSelectOverlay } from "./components/AirRaidStageSelectOverlay";
 import styles from "./AirRaidGame.module.scss";
 import { applyAugment } from "./core/augments";
 import { CONTROL_KEYS, TOUCH_DRAG_OFFSET, WORLD_HEIGHT, WORLD_WIDTH } from "./core/constants";
-import { beginMeleeCharge, releaseMeleeCharge, updateGame } from "./core/engine";
+import { activateBossSkill, beginMeleeCharge, releaseMeleeCharge, updateGame } from "./core/engine";
 import { getCanvasPoint } from "./core/input";
 import { createDefaultMetaProgress } from "./core/meta";
 import { drawGame } from "./core/renderer";
 import { createInitialState, makeHud } from "./core/state";
-import { selectStageRoute } from "./core/stages";
 import { buyMetaUpgrade, grantCoins, playCoinSlot, playStatSlot, readHighScore, readMetaProgress, writeHighScore } from "./core/storage";
-import type { AugmentId, GameMode, GameState, HudState, Layout, MetaProgress, MetaUpgradeId, SlotSpinResult, StageKind } from "./core/types";
+import type { AugmentId, BossSkillId, GameMode, GameState, HudState, Layout, MetaProgress, MetaUpgradeId, SlotSpinResult } from "./core/types";
 
 const createLayout = (width: number, height: number): Layout => {
 	const scale = Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT);
@@ -57,6 +55,7 @@ export const AirRaidGame = () => {
 			nextHud.wave,
 			nextHud.stage,
 			nextHud.bossSkills.join(","),
+			nextHud.bossSkills.map((skillId) => Math.ceil(nextHud.bossSkillCooldowns[skillId] * 10) / 10).join(","),
 			nextHud.stageChoices.map((choice) => choice.id).join(","),
 			nextHud.pendingBossSkill ?? "",
 			nextHud.lives,
@@ -92,15 +91,6 @@ export const AirRaidGame = () => {
 		state.mode = mode;
 		stateRef.current = state;
 		syncHud(state, true);
-	}, [syncHud]);
-
-	const selectStage = useCallback((stage: StageKind) => {
-		const state = stateRef.current;
-		if (!state) return;
-
-		if (selectStageRoute(state, stage)) {
-			syncHud(state, true);
-		}
 	}, [syncHud]);
 
 	const handleBuyUpgrade = useCallback((upgradeId: MetaUpgradeId) => {
@@ -166,6 +156,15 @@ export const AirRaidGame = () => {
 
 		releaseMeleeCharge(state);
 		syncHud(state, true);
+	}, [syncHud]);
+
+	const handleBossSkill = useCallback((skillId: BossSkillId) => {
+		const state = stateRef.current;
+		if (!state) return;
+
+		if (activateBossSkill(state, skillId)) {
+			syncHud(state, true);
+		}
 	}, [syncHud]);
 
 	useEffect(() => {
@@ -367,20 +366,16 @@ export const AirRaidGame = () => {
 					slotResult={slotResult}
 				/>
 				<AirRaidAugmentOverlay choices={hud.augmentChoices} mode={hud.mode} onSelect={selectAugment} />
-				<AirRaidStageSelectOverlay
-					bossSkills={hud.bossSkills}
-					choices={hud.stageChoices}
-					mode={hud.mode}
-					pendingBossSkill={hud.pendingBossSkill}
-					onSelect={selectStage}
-				/>
 			</div>
 
 			<AirRaidControls
 				chargeRatio={hud.chargeRatio}
 				chargeUnlocked={hud.chargeUnlocked}
+				bossSkillCooldowns={hud.bossSkillCooldowns}
+				bossSkills={hud.bossSkills}
 				meleeUnlocked={hud.meleeUnlocked}
 				mode={hud.mode}
+				onBossSkill={handleBossSkill}
 				onMeleeDown={handleMeleeDown}
 				onMeleeUp={handleMeleeUp}
 				onRestart={() => resetGame("playing")}
