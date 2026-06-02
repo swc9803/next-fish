@@ -6,64 +6,64 @@ export const STAT_SLOT_COST = 28;
 export const META_UPGRADE_DEFINITIONS: Record<MetaUpgradeId, MetaUpgradeDefinition> = {
 	health: {
 		id: "health",
-		title: "체력 강화",
-		description: "시작 목숨 +1",
+		title: "강화 외피",
+		description: "잠수 시작 내구도 +1",
 		maxLevel: 5,
 		baseCost: 45,
 		costGrowth: 1.45,
 	},
 	shieldCycle: {
 		id: "shieldCycle",
-		title: "보호막 주기",
-		description: "주기 보호막 해금 및 충전 시간 단축",
+		title: "거품 방벽",
+		description: "자동 방벽 해금, 재충전 시간 단축",
 		maxLevel: 6,
 		baseCost: 80,
 		costGrowth: 1.5,
 	},
 	speed: {
 		id: "speed",
-		title: "기동성",
-		description: "이동 속도 +6%",
+		title: "유선형 지느러미",
+		description: "회피 기동 속도 +6%",
 		maxLevel: 8,
 		baseCost: 40,
 		costGrowth: 1.38,
 	},
 	fireRate: {
 		id: "fireRate",
-		title: "연사 속도",
-		description: "모든 주 무기 연사 +5%",
+		title: "진주 압축기",
+		description: "주 무기 발사 주기 +5%",
 		maxLevel: 8,
 		baseCost: 50,
 		costGrowth: 1.42,
 	},
 	damage: {
 		id: "damage",
-		title: "데미지",
-		description: "모든 공격 피해 +6%",
+		title: "심해 독성",
+		description: "모든 공격 위력 +6%",
 		maxLevel: 8,
 		baseCost: 55,
 		costGrowth: 1.42,
 	},
 	magnet: {
 		id: "magnet",
-		title: "자석",
-		description: "경험치/보급품 흡입 범위 +12%",
+		title: "조류 포획장",
+		description: "진주/보급품 회수 범위 +12%",
 		maxLevel: 8,
 		baseCost: 38,
 		costGrowth: 1.36,
 	},
 	reload: {
 		id: "reload",
-		title: "중화기 재장전",
-		description: "쌍열/산탄/관통창 재장전 +7%",
+		title: "소라 재장전",
+		description: "양갈래/산호/소라창 장전 속도 +7%",
 		maxLevel: 6,
 		baseCost: 65,
 		costGrowth: 1.46,
 	},
 	pet: {
 		id: "pet",
-		title: "동료기 출격",
-		description: "같이 싸워주는 시작 펫 +1",
+		title: "출격 조개",
+		description: "잠수 시작 시 회전 조개 +1",
 		maxLevel: 3,
 		baseCost: 130,
 		costGrowth: 1.8,
@@ -74,14 +74,14 @@ export const META_UPGRADE_ORDER: MetaUpgradeId[] = ["health", "shieldCycle", "sp
 export const META_SLOT_BONUS_ORDER: MetaSlotBonusId[] = ["health", "shieldCycle", "speed", "fireRate", "damage", "magnet", "reload", "pet"];
 
 export const META_SLOT_BONUS_LABELS: Record<MetaSlotBonusId, string> = {
-	health: "체력",
-	shieldCycle: "보호막",
-	speed: "이동속도",
-	fireRate: "연사속도",
-	damage: "데미지",
-	magnet: "자석",
-	reload: "재장전",
-	pet: "펫",
+	health: "외피",
+	shieldCycle: "방벽",
+	speed: "기동",
+	fireRate: "압축",
+	damage: "독성",
+	magnet: "회수",
+	reload: "장전",
+	pet: "조개",
 };
 
 export const createDefaultMetaProgress = (): MetaProgress => ({
@@ -153,8 +153,8 @@ export const spinCoinSlot = (progress: MetaProgress): { progress: MetaProgress; 
 			progress: next,
 			result: {
 				kind: "coin",
-				title: "주화 부족",
-				description: `${COIN_SLOT_COST} 주화가 필요합니다.`,
+				title: "인양 주화 부족",
+				description: `${COIN_SLOT_COST} SALVAGE가 필요합니다.`,
 				deltaCoins: 0,
 			},
 		};
@@ -171,14 +171,14 @@ export const spinCoinSlot = (progress: MetaProgress): { progress: MetaProgress; 
 	const deltaCoins = payout - COIN_SLOT_COST;
 	next.coins += deltaCoins;
 
-	const title = payout === 0 ? "손실" : payout < COIN_SLOT_COST ? "부분 회수" : payout === COIN_SLOT_COST ? "본전" : payout >= 180 ? "대박" : "성공";
+	const title = payout === 0 ? "침몰 잔해" : payout < COIN_SLOT_COST ? "부분 인양" : payout === COIN_SLOT_COST ? "균형 회수" : payout >= 180 ? "황금 난파선" : "인양 성공";
 
 	return {
 		progress: next,
 		result: {
 			kind: "coin",
 			title,
-			description: `${COIN_SLOT_COST} 주화를 넣고 ${payout} 주화를 돌려받았습니다.`,
+			description: `${COIN_SLOT_COST} SALVAGE를 투입해 ${payout} SALVAGE를 회수했습니다.`,
 			deltaCoins,
 		},
 	};
@@ -191,8 +191,8 @@ export const spinStatSlot = (progress: MetaProgress): { progress: MetaProgress; 
 			progress: next,
 			result: {
 				kind: "stat",
-				title: "주화 부족",
-				description: `${STAT_SLOT_COST} 주화가 필요합니다.`,
+				title: "변이 코어 부족",
+				description: `${STAT_SLOT_COST} SALVAGE가 필요합니다.`,
 				deltaCoins: 0,
 			},
 		};
@@ -209,10 +209,10 @@ export const spinStatSlot = (progress: MetaProgress): { progress: MetaProgress; 
 		{ value: "pet", weight: 4 },
 	]);
 	const tier = pickWeighted([
-		{ value: { title: "저효율", points: 1 }, weight: 62 },
-		{ value: { title: "표준", points: 2 }, weight: 28 },
-		{ value: { title: "고효율", points: 4 }, weight: 9 },
-		{ value: { title: "초고효율", points: 8 }, weight: 1 },
+		{ value: { title: "미세 변이", points: 1 }, weight: 62 },
+		{ value: { title: "안정 변이", points: 2 }, weight: 28 },
+		{ value: { title: "과충전 변이", points: 4 }, weight: 9 },
+		{ value: { title: "심연 각성", points: 8 }, weight: 1 },
 	]);
 
 	next.coins -= STAT_SLOT_COST;
@@ -223,7 +223,7 @@ export const spinStatSlot = (progress: MetaProgress): { progress: MetaProgress; 
 		result: {
 			kind: "stat",
 			title: tier.title,
-			description: `${META_SLOT_BONUS_LABELS[bonusId]} 보너스 +${tier.points}점을 얻었습니다.`,
+			description: `${META_SLOT_BONUS_LABELS[bonusId]} 코어가 +${tier.points}만큼 공명합니다.`,
 			deltaCoins: -STAT_SLOT_COST,
 			bonusId,
 			bonusPoints: tier.points,
