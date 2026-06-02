@@ -1,6 +1,6 @@
 export const WORLD_WIDTH = 420;
 export const WORLD_HEIGHT = 720;
-export const PLAYER_SPEED = 350;
+export const PLAYER_SPEED = 175;
 export const PLAYER_BOUNDS_PADDING_X = 12;
 export const PLAYER_BOUNDS_PADDING_TOP = 12;
 export const PLAYER_BOUNDS_PADDING_BOTTOM = 16;

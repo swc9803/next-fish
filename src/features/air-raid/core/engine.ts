@@ -240,6 +240,73 @@ const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: nu
 const getPlayerMinY = (radius: number) => radius + PLAYER_BOUNDS_PADDING_TOP;
 const getPlayerMaxY = (radius: number) => WORLD_HEIGHT - radius - PLAYER_BOUNDS_PADDING_BOTTOM;
 
+const getPlayerIntentVelocity = (state: GameState) => {
+	const { player, keys } = state;
+	let dx = 0;
+	let dy = 0;
+
+	if (state.pointerActive) {
+		dx = player.targetX - player.x;
+		dy = player.targetY - player.y;
+	} else {
+		if (keys.has("ArrowLeft") || keys.has("KeyA")) dx -= 1;
+		if (keys.has("ArrowRight") || keys.has("KeyD")) dx += 1;
+		if (keys.has("ArrowUp") || keys.has("KeyW")) dy -= 1;
+		if (keys.has("ArrowDown") || keys.has("KeyS")) dy += 1;
+	}
+
+	const length = Math.hypot(dx, dy);
+	if (length < 0.001) return { x: 0, y: 0 };
+
+	const speed = PLAYER_SPEED * state.playerSpeedMultiplier;
+	return {
+		x: (dx / length) * speed,
+		y: (dy / length) * speed,
+	};
+};
+
+const getEnemyAimAngle = (state: GameState, enemy: Plane, leadTime: number, laneOffset = 0) => {
+	const intent = getPlayerIntentVelocity(state);
+	const targetX = clamp(state.player.x + intent.x * leadTime + laneOffset, state.player.radius, WORLD_WIDTH - state.player.radius);
+	const targetY = clamp(state.player.y + intent.y * leadTime, getPlayerMinY(state.player.radius), getPlayerMaxY(state.player.radius));
+
+	return Math.atan2(targetY - enemy.y, targetX - enemy.x);
+};
+
+const getEnemyLaneSign = (enemy: Plane) => (Math.sin(enemy.id * 4.17 + Math.floor(enemy.age * 1.7) * 1.31) >= 0 ? 1 : -1);
+
+const fireEnemyPattern = (state: GameState, enemy: Plane) => {
+	const laneSign = getEnemyLaneSign(enemy);
+	const ramp = getDifficultyRamp(state.wave);
+
+	if (enemy.kind === "boss") {
+		const baseAngle = getEnemyAimAngle(state, enemy, 0.42 + ramp * 0.12);
+		const sweep = Math.sin(enemy.age * 2.2) * 0.1;
+		for (let i = -2; i <= 2; i++) addEnemyBullet(state, enemy, baseAngle + sweep + i * 0.16, 238);
+		addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.68, laneSign * 62), 205);
+		return;
+	}
+
+	if (enemy.kind === "ace") {
+		addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.52, laneSign * 34), 258);
+		addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.28, -laneSign * 28), 244);
+		return;
+	}
+
+	if (enemy.kind === "bomber") {
+		addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.46, laneSign * 52), 194);
+		addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.16, -laneSign * 24), 176);
+		return;
+	}
+
+	if (enemy.kind === "fighter") {
+		addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.34, laneSign * 38), 236);
+		return;
+	}
+
+	addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.24, laneSign * 24), 226);
+};
+
 const getDifficultyRamp = (wave: number) => clamp((wave - 1) / 8, 0, 1);
 
 const getEnemySpeedMultiplier = (wave: number) => 0.68 + getDifficultyRamp(wave) * 0.28;
@@ -425,19 +492,8 @@ const updateEnemies = (state: GameState, dt: number) => {
 
 		enemy.fireCooldown -= dt;
 		if (enemy.fireCooldown <= 0 && canEnemyFire(enemy)) {
-			const angleToPlayer = Math.atan2(state.player.y - enemy.y, state.player.x - enemy.x);
-			if (enemy.kind === "boss") {
-				const sweep = Math.sin(enemy.age * 2.2) * 0.12;
-				for (let i = -2; i <= 2; i++) addEnemyBullet(state, enemy, angleToPlayer + sweep + i * 0.18, 245);
-				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind) * getStageFireDelay(enemy);
-			} else if (enemy.kind === "ace") {
-				addEnemyBullet(state, enemy, angleToPlayer - 0.13, 270);
-				addEnemyBullet(state, enemy, angleToPlayer + 0.13, 270);
-				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind) * getStageFireDelay(enemy);
-			} else {
-				addEnemyBullet(state, enemy, angleToPlayer, enemy.kind === "bomber" ? 210 : 250);
-				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind) * getStageFireDelay(enemy);
-			}
+			fireEnemyPattern(state, enemy);
+			enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind) * getStageFireDelay(enemy);
 		}
 	}
 };
