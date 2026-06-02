@@ -38,7 +38,7 @@ export const AirRaidOverlay = ({
 	onStatSlot,
 	slotResult,
 }: AirRaidOverlayProps) => {
-	if (mode === "playing" || mode === "augment") return null;
+	if (mode === "playing" || mode === "augment" || mode === "stage-select") return null;
 
 	const startLabel = mode === "gameover" ? "재출격" : "작전 개시";
 	const title = mode === "gameover" ? "선체 파손" : mode === "paused" ? "작전 정지" : "심해 출격 대기";

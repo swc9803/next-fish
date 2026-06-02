@@ -1,5 +1,6 @@
 import { MELEE_MAX_CHARGE, WORLD_HEIGHT, WORLD_WIDTH } from "./constants";
 import { randomRange } from "./math";
+import { STAGES } from "./stages";
 import type { GameState, HudState, MetaProgress } from "./types";
 
 const createStars = () =>
@@ -15,16 +16,21 @@ export const createInitialState = (highScore: number, metaProgress?: MetaProgres
 	const upgrades = metaProgress?.upgrades;
 	const slotBonuses = metaProgress?.slotBonuses;
 	const state: GameState = {
-	mode: "ready",
-	score: 0,
-	highScore,
-	experienceLevel: 1,
-	experience: 0,
-	nextExperience: 70,
-	combo: 0,
-	comboTimer: 0,
-	wave: 1,
-	time: 0,
+		mode: "ready",
+		score: 0,
+		highScore,
+		experienceLevel: 1,
+		experience: 0,
+		nextExperience: 70,
+		combo: 0,
+		comboTimer: 0,
+		wave: 1,
+		stage: "coral",
+		clearedStages: [],
+		bossSkills: [],
+		stageChoices: [],
+		pendingBossSkill: null,
+		time: 0,
 	spawnTimer: 1.15,
 	bossTimer: 36,
 	treasureTimer: randomRange(82, 126),
@@ -137,6 +143,12 @@ export const makeHud = (state: GameState): HudState => ({
 	nextExperience: state.nextExperience,
 	combo: state.combo,
 	wave: state.wave,
+	stage: state.stage,
+	stageTitle: STAGES[state.stage].shortTitle,
+	stageBoss: STAGES[state.stage].boss,
+	bossSkills: state.bossSkills,
+	stageChoices: state.stageChoices,
+	pendingBossSkill: state.pendingBossSkill,
 	lives: state.player.lives,
 	power: state.player.power,
 	weapon: state.weapon,

@@ -25,7 +25,12 @@ export const AirRaidHud = ({ hud }: AirRaidHudProps) => {
 				<span className={styles.statCell} data-tone="danger">
 					<b>WAVE</b>
 					<strong>{hud.wave}</strong>
-					<small>{hud.combo > 1 ? `COMBO x${hud.combo}` : "HUNT"}</small>
+					<small>{hud.stageTitle}</small>
+				</span>
+				<span className={styles.statCell} data-tone="stage">
+					<b>STAGE</b>
+					<strong>{hud.stageBoss}</strong>
+					<small>{hud.combo > 1 ? `COMBO x${hud.combo}` : "BOSS ROUTE"}</small>
 				</span>
 				<span className={styles.statCell} data-tone="vital">
 					<b>HULL</b>
@@ -44,17 +49,22 @@ export const AirRaidHud = ({ hud }: AirRaidHudProps) => {
 					<strong>{WEAPON_LABELS[hud.weapon]}</strong>
 					<small>{hud.augmentCount} RELICS</small>
 				</span>
-					{hud.damageBonusPercent > 0 && <span className={styles.bonusChip}>DMG +{hud.damageBonusPercent}%</span>}
-					{hud.fireRateBonusPercent > 0 && <span className={styles.bonusChip}>FIRE +{hud.fireRateBonusPercent}%</span>}
-					{hud.speedBonusPercent > 0 && <span className={styles.bonusChip}>SPD +{hud.speedBonusPercent}%</span>}
-					{hud.magnetBonusPercent > 0 && <span className={styles.bonusChip}>PULL +{hud.magnetBonusPercent}%</span>}
-					{hud.reloadBonusPercent > 0 && <span className={styles.bonusChip}>LOAD +{hud.reloadBonusPercent}%</span>}
-					{hud.shieldMaxCharges > 0 && <span className={styles.bonusChip}>SHELL {hud.shieldCharges}/{hud.shieldMaxCharges}</span>}
-					{hud.petCount > 0 && <span className={styles.bonusChip}>ORBIT {hud.petCount} / Lv {hud.petLevelTotal}</span>}
-					{hud.earnedCoins > 0 && <span className={styles.bonusChip}>SALVAGE +{hud.earnedCoins}</span>}
-					{hud.laserFocus > 0 && <span className={styles.bonusChip}>FOCUS {hud.laserFocus}</span>}
-					{hud.projectileChaos > 0 && <span className={styles.bonusChip}>DRIFT {Math.round(hud.projectileChaos * 10)}</span>}
-				</div>
+				{hud.damageBonusPercent > 0 && <span className={styles.bonusChip}>DMG +{hud.damageBonusPercent}%</span>}
+				{hud.fireRateBonusPercent > 0 && <span className={styles.bonusChip}>FIRE +{hud.fireRateBonusPercent}%</span>}
+				{hud.speedBonusPercent > 0 && <span className={styles.bonusChip}>SPD +{hud.speedBonusPercent}%</span>}
+				{hud.magnetBonusPercent > 0 && <span className={styles.bonusChip}>PULL +{hud.magnetBonusPercent}%</span>}
+				{hud.reloadBonusPercent > 0 && <span className={styles.bonusChip}>LOAD +{hud.reloadBonusPercent}%</span>}
+				{hud.shieldMaxCharges > 0 && <span className={styles.bonusChip}>SHELL {hud.shieldCharges}/{hud.shieldMaxCharges}</span>}
+				{hud.petCount > 0 && (
+					<span className={styles.bonusChip}>
+						ORBIT {hud.petCount} / Lv {hud.petLevelTotal}
+					</span>
+				)}
+				{hud.earnedCoins > 0 && <span className={styles.bonusChip}>SALVAGE +{hud.earnedCoins}</span>}
+				{hud.laserFocus > 0 && <span className={styles.bonusChip}>FOCUS {hud.laserFocus}</span>}
+				{hud.projectileChaos > 0 && <span className={styles.bonusChip}>DRIFT {Math.round(hud.projectileChaos * 10)}</span>}
+				{hud.bossSkills.length > 0 && <span className={styles.bonusChip}>BOSS SKILL {hud.bossSkills.length}</span>}
+			</div>
 		</div>
 	);
 };

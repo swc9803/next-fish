@@ -7,6 +7,7 @@ import {
 	WORLD_WIDTH,
 } from "./constants";
 import { clamp, randomRange } from "./math";
+import { getStagePalette } from "./stages";
 import type { Bullet, CollectionEffect, ExperienceOrb, GameState, Layout, Particle, Pet, Plane, PowerUp, Slash } from "./types";
 
 const drawFishSilhouette = (ctx: CanvasRenderingContext2D, x: number, y: number, scale: number, fill: string, accent: string, isPlayer: boolean) => {
@@ -55,10 +56,11 @@ const drawFishSilhouette = (ctx: CanvasRenderingContext2D, x: number, y: number,
 };
 
 const drawBackground = (ctx: CanvasRenderingContext2D, state: GameState) => {
+	const palette = getStagePalette(state.stage);
 	const gradient = ctx.createLinearGradient(0, 0, 0, WORLD_HEIGHT);
-	gradient.addColorStop(0, "#0d4f73");
-	gradient.addColorStop(0.42, "#083651");
-	gradient.addColorStop(1, "#041827");
+	gradient.addColorStop(0, palette.top);
+	gradient.addColorStop(0.42, palette.mid);
+	gradient.addColorStop(1, palette.bottom);
 	ctx.fillStyle = gradient;
 	ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
@@ -81,7 +83,7 @@ const drawBackground = (ctx: CanvasRenderingContext2D, state: GameState) => {
 		ctx.fill();
 	}
 
-	ctx.strokeStyle = "rgba(196, 255, 238, 0.12)";
+	ctx.strokeStyle = `${palette.accent}22`;
 	ctx.lineWidth = 1.2;
 	for (let x = -80; x < WORLD_WIDTH + 140; x += 42) {
 		ctx.beginPath();
@@ -133,9 +135,10 @@ const drawBullets = (ctx: CanvasRenderingContext2D, bullets: Bullet[]) => {
 
 const drawEnemies = (ctx: CanvasRenderingContext2D, enemies: Plane[]) => {
 	for (const enemy of enemies) {
+		const palette = getStagePalette(enemy.stage);
 		const scale = enemy.kind === "boss" ? 1.38 : enemy.kind === "bomber" ? 0.83 : enemy.kind === "goldfish" ? 0.74 : enemy.kind === "ace" ? 0.69 : 0.62;
-		const fill = enemy.kind === "boss" ? "#693b79" : enemy.kind === "bomber" ? "#75543d" : enemy.kind === "goldfish" ? "#d99622" : enemy.kind === "ace" ? "#8a405f" : "#566b7b";
-		const accent = enemy.kind === "boss" ? "#ff8ad7" : enemy.kind === "goldfish" ? "#fff27a" : enemy.kind === "ace" ? "#ffe989" : "#ffcb74";
+		const fill = enemy.kind === "boss" ? palette.bossFill : enemy.kind === "bomber" ? "#75543d" : enemy.kind === "goldfish" ? "#d99622" : enemy.kind === "ace" ? palette.enemyFill : "#566b7b";
+		const accent = enemy.kind === "boss" ? palette.accent : enemy.kind === "goldfish" ? "#fff27a" : enemy.kind === "ace" ? "#ffe989" : palette.accent;
 
 		if (enemy.kind === "goldfish") {
 			ctx.save();
@@ -152,10 +155,10 @@ const drawEnemies = (ctx: CanvasRenderingContext2D, enemies: Plane[]) => {
 
 		drawFishSilhouette(ctx, enemy.x, enemy.y, scale, fill, accent, false);
 
-		if (enemy.kind === "boss") {
-			ctx.save();
-			ctx.globalAlpha = 0.35;
-			ctx.strokeStyle = "#ff8ad7";
+			if (enemy.kind === "boss") {
+				ctx.save();
+				ctx.globalAlpha = 0.35;
+				ctx.strokeStyle = palette.accent;
 			ctx.lineWidth = 2;
 			for (let i = -2; i <= 2; i++) {
 				ctx.beginPath();
@@ -167,10 +170,10 @@ const drawEnemies = (ctx: CanvasRenderingContext2D, enemies: Plane[]) => {
 		}
 
 		if (enemy.kind === "boss") {
-			const width = 110;
-			ctx.fillStyle = "rgba(255,255,255,0.16)";
-			ctx.fillRect(enemy.x - width / 2, enemy.y - 80, width, 5);
-			ctx.fillStyle = "#ff8ad7";
+				const width = 110;
+				ctx.fillStyle = "rgba(255,255,255,0.16)";
+				ctx.fillRect(enemy.x - width / 2, enemy.y - 80, width, 5);
+				ctx.fillStyle = palette.accent;
 			ctx.fillRect(enemy.x - width / 2, enemy.y - 80, width * (enemy.hp / enemy.maxHp), 5);
 		} else if (enemy.kind === "goldfish") {
 			const width = enemy.radius * 2.4;

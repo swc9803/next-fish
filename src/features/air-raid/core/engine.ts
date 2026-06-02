@@ -14,6 +14,7 @@ import {
 } from "./constants";
 import { openAugmentSelection } from "./augments";
 import { clamp, distanceSquared, randomRange } from "./math";
+import { getBossSkillDamageMultiplier, getStageEnemyTuning, getStagePalette, openStageSelection, pickStageEnemyKind } from "./stages";
 import { getNextId } from "./state";
 import type { Bullet, CollectionEffect, EnemyKind, GameState, Plane, PowerUp } from "./types";
 
@@ -140,7 +141,7 @@ const addPlayerBullet = (
 		pierce: state.bulletPierce + pierceBonus,
 		from: "player",
 		color,
-	};
+};
 
 	if (visualRadius !== undefined) bullet.visualRadius = visualRadius;
 	state.bullets.push(bullet);
@@ -221,6 +222,7 @@ const firePet = (state: GameState, petX: number, petY: number, level: number) =>
 
 const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: number) => {
 	const adjustedSpeed = speed * getEnemyBulletSpeedMultiplier(state.wave);
+	const palette = getStagePalette(enemy.stage);
 	state.bullets.push({
 		id: getNextId(state),
 		x: enemy.x,
@@ -231,7 +233,7 @@ const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: nu
 		damage: 1,
 		pierce: 0,
 		from: "enemy",
-		color: enemy.kind === "boss" ? "#ff8ad7" : "#ffcb74",
+		color: enemy.kind === "boss" ? palette.accent : "#ffcb74",
 	});
 };
 
@@ -257,6 +259,8 @@ const getEnemyRefireCooldown = (wave: number, kind: EnemyKind) => {
 	return 1.95 - ramp * 0.35;
 };
 
+const getStageFireDelay = (enemy: Plane) => getStageEnemyTuning(enemy.stage).fireDelayMultiplier;
+
 const canEnemyFire = (enemy: Plane) => {
 	const minX = enemy.radius + ENEMY_FIRE_SAFE_MARGIN_X;
 	const maxX = WORLD_WIDTH - enemy.radius - ENEMY_FIRE_SAFE_MARGIN_X;
@@ -267,14 +271,11 @@ const canEnemyFire = (enemy: Plane) => {
 };
 
 const spawnEnemy = (state: GameState) => {
-	const roll = Math.random();
-	const ramp = getDifficultyRamp(state.wave);
-	const bomberThreshold = 0.92 - ramp * 0.06;
-	const aceChance = Math.min(0.06 + state.wave * 0.01, 0.18);
-	const kind: EnemyKind = roll > bomberThreshold ? "bomber" : roll > bomberThreshold - aceChance ? "ace" : roll > 0.42 ? "fighter" : "scout";
+	const kind: EnemyKind = pickStageEnemyKind(state.stage);
 	const radius = kind === "bomber" ? 22 : kind === "ace" ? 16 : kind === "fighter" ? 17 : 14;
-	const speedMultiplier = getEnemySpeedMultiplier(state.wave);
-	const hp =
+	const tuning = getStageEnemyTuning(state.stage);
+	const speedMultiplier = getEnemySpeedMultiplier(state.wave) * tuning.speedMultiplier;
+	const baseHp =
 		kind === "bomber"
 			? 5 + state.wave
 			: kind === "ace"
@@ -282,6 +283,7 @@ const spawnEnemy = (state: GameState) => {
 				: kind === "fighter"
 					? 3 + Math.floor(state.wave / 2)
 					: 2 + Math.floor(state.wave / 3);
+	const hp = Math.max(1, Math.round(baseHp * tuning.hpMultiplier));
 	const x = randomRange(radius + 12, WORLD_WIDTH - radius - 12);
 	const side = Math.random() > 0.5 ? 1 : -1;
 
@@ -295,13 +297,15 @@ const spawnEnemy = (state: GameState) => {
 		hp,
 		maxHp: hp,
 		kind,
-		fireCooldown: getInitialEnemyFireCooldown(state.wave),
+		fireCooldown: getInitialEnemyFireCooldown(state.wave) * tuning.fireDelayMultiplier,
 		age: 0,
+		stage: state.stage,
 	});
 };
 
 const spawnBoss = (state: GameState) => {
-	const hp = 72 + state.wave * 12;
+	const tuning = getStageEnemyTuning(state.stage);
+	const hp = Math.round((72 + state.wave * 12) * tuning.bossHpMultiplier);
 	state.bossActive = true;
 	state.enemies.push({
 		id: getNextId(state),
@@ -315,6 +319,7 @@ const spawnBoss = (state: GameState) => {
 		kind: "boss",
 		fireCooldown: 1.35,
 		age: 0,
+		stage: state.stage,
 	});
 };
 
@@ -424,14 +429,14 @@ const updateEnemies = (state: GameState, dt: number) => {
 			if (enemy.kind === "boss") {
 				const sweep = Math.sin(enemy.age * 2.2) * 0.12;
 				for (let i = -2; i <= 2; i++) addEnemyBullet(state, enemy, angleToPlayer + sweep + i * 0.18, 245);
-				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind);
+				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind) * getStageFireDelay(enemy);
 			} else if (enemy.kind === "ace") {
 				addEnemyBullet(state, enemy, angleToPlayer - 0.13, 270);
 				addEnemyBullet(state, enemy, angleToPlayer + 0.13, 270);
-				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind);
+				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind) * getStageFireDelay(enemy);
 			} else {
 				addEnemyBullet(state, enemy, angleToPlayer, enemy.kind === "bomber" ? 210 : 250);
-				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind);
+				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind) * getStageFireDelay(enemy);
 			}
 		}
 	}
@@ -665,8 +670,7 @@ const defeatEnemy = (state: GameState, enemy: Plane, removedEnemies: Set<number>
 
 	if (enemy.kind === "boss") {
 		state.bossActive = false;
-		state.bossTimer = 24;
-		state.wave += 1;
+		openStageSelection(state);
 	} else if (enemy.kind !== "goldfish" && canDropPowerUp && Math.random() < 0.13) {
 		state.powerUps.push({
 			id: getNextId(state),
@@ -690,7 +694,7 @@ const resolveCollisions = (state: GameState) => {
 			if (removedEnemies.has(enemy.id)) continue;
 			const hitDistance = bullet.radius + enemy.radius;
 			if (distanceSquared(bullet.x, bullet.y, enemy.x, enemy.y) <= hitDistance * hitDistance) {
-				enemy.hp -= bullet.damage;
+				enemy.hp -= bullet.damage * getBossSkillDamageMultiplier(state, enemy);
 				if (bullet.pierce > 0) {
 					bullet.pierce -= 1;
 				} else {
@@ -712,7 +716,7 @@ const resolveCollisions = (state: GameState) => {
 
 			const hitDistance = slash.radius + enemy.radius * 0.25;
 			if (enemy.y < state.player.y + 24 && distanceSquared(slash.x, slash.y, enemy.x, enemy.y) <= hitDistance * hitDistance) {
-				enemy.hp -= slash.damage;
+				enemy.hp -= slash.damage * getBossSkillDamageMultiplier(state, enemy);
 				slash.hitEnemyIds.push(enemy.id);
 				addParticleBurst(state, enemy.x, enemy.y, slash.charge > 0.75 ? "#fff27a" : "#8bf4ff", 8);
 
@@ -759,6 +763,12 @@ const resolveCollisions = (state: GameState) => {
 		(enemy) => !removedEnemies.has(enemy.id) && (enemy.kind !== "goldfish" || !enemy.escapeTime || enemy.age < enemy.escapeTime) && enemy.y < WORLD_HEIGHT + enemy.radius + 40,
 	);
 	state.powerUps = state.powerUps.filter((powerUp) => !removedBullets.has(powerUp.id));
+	if (state.mode === "stage-select") {
+		state.enemies = [];
+		state.bullets = [];
+		state.slashes = [];
+		state.powerUps = [];
+	}
 };
 
 const updateSpawn = (state: GameState, dt: number) => {
@@ -798,7 +808,7 @@ const updateStars = (state: GameState, dt: number) => {
 export const updateGame = (state: GameState, dt: number) => {
 	updateStars(state, dt);
 	if (state.mode !== "playing") {
-		if (state.mode === "augment" || state.mode === "gameover") {
+		if (state.mode === "augment" || state.mode === "stage-select" || state.mode === "gameover") {
 			updateCollectionEffects(state, dt);
 			updateParticles(state, dt);
 		}
