@@ -1,7 +1,10 @@
-export type GameMode = "ready" | "playing" | "paused" | "augment" | "gameover";
+export type GameMode = "ready" | "playing" | "paused" | "augment" | "stage-select" | "gameover";
 export type EnemyKind = "scout" | "fighter" | "ace" | "bomber" | "goldfish" | "boss";
 export type WeaponKind = "standard" | "fork" | "scatter" | "lance" | "laser";
 export type AugmentRarity = "common" | "rare" | "unique" | "legendary";
+export type StageKind = "coral" | "abyss" | "volcanic" | "glacier" | "kelp" | "ruins";
+export type BossSkillId = "coral-surge" | "abyss-lance" | "ember-current" | "frost-shell" | "kelp-snare" | "ruin-prism";
+export type StageDirection = "10시" | "12시" | "2시";
 export type AugmentId =
 	| "forked-cannon"
 	| "scatter-pods"
@@ -64,6 +67,16 @@ export type AugmentDefinition = {
 	maxStacks?: number;
 };
 
+export type StageChoice = {
+	id: StageKind;
+	direction: StageDirection;
+	title: string;
+	description: string;
+	boss: string;
+	rewardSkill: BossSkillId;
+	weaknessSkill?: BossSkillId;
+};
+
 export type Plane = {
 	id: number;
 	x: number;
@@ -76,6 +89,7 @@ export type Plane = {
 	kind: EnemyKind;
 	fireCooldown: number;
 	age: number;
+	stage?: StageKind;
 	escapeTime?: number;
 	coinReward?: number;
 	experienceReward?: number;
@@ -194,6 +208,11 @@ export type GameState = {
 	combo: number;
 	comboTimer: number;
 	wave: number;
+	stage: StageKind;
+	clearedStages: StageKind[];
+	bossSkills: BossSkillId[];
+	stageChoices: StageChoice[];
+	pendingBossSkill: BossSkillId | null;
 	time: number;
 	spawnTimer: number;
 	bossTimer: number;
@@ -251,6 +270,12 @@ export type HudState = {
 	nextExperience: number;
 	combo: number;
 	wave: number;
+	stage: StageKind;
+	stageTitle: string;
+	stageBoss: string;
+	bossSkills: BossSkillId[];
+	stageChoices: StageChoice[];
+	pendingBossSkill: BossSkillId | null;
 	lives: number;
 	power: number;
 	weapon: WeaponKind;
