@@ -1,6 +1,11 @@
 export const WORLD_WIDTH = 420;
 export const WORLD_HEIGHT = 720;
 export const PLAYER_SPEED = 430;
+export const PLAYER_BOUNDS_PADDING_X = 12;
+export const PLAYER_BOUNDS_PADDING_TOP = 12;
+export const PLAYER_BOUNDS_PADDING_BOTTOM = 16;
+export const ENEMY_FIRE_SAFE_MARGIN_X = 28;
+export const ENEMY_FIRE_SAFE_MARGIN_Y = 28;
 export const MELEE_MAX_CHARGE = 1.35;
 export const TOUCH_DRAG_OFFSET = 58;
 export const STORAGE_KEY = "next-fish-air-raid-high-score";
