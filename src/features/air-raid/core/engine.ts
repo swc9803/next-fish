@@ -2,9 +2,6 @@ import {
 	ENEMY_FIRE_SAFE_MARGIN_X,
 	ENEMY_FIRE_SAFE_MARGIN_Y,
 	MELEE_MAX_CHARGE,
-	PET_BULLET_BASE_RADIUS,
-	PET_BULLET_LEVEL_RADIUS,
-	PET_BULLET_MAX_RADIUS,
 	PLAYER_BOUNDS_PADDING_BOTTOM,
 	PLAYER_BOUNDS_PADDING_TOP,
 	PLAYER_BOUNDS_PADDING_X,
@@ -14,12 +11,30 @@ import {
 } from "./constants";
 import { openAugmentSelection } from "./augments";
 import { clamp, distanceSquared, randomRange } from "./math";
-import { getBossSkillDamageMultiplier, getStageEnemyTuning, getStagePalette, openStageSelection, pickStageEnemyKind } from "./stages";
+import { getBossSkillDamageMultiplier, getStageEnemyTuning, getStagePalette, openStageSelection, pickStageEnemyKind, selectStageRoute } from "./stages";
 import { getNextId } from "./state";
-import type { Bullet, CollectionEffect, EnemyKind, GameState, Plane, PowerUp } from "./types";
+import type { BossSkillId, Bullet, CollectionEffect, EnemyKind, GameState, Plane, PowerUp } from "./types";
 
 const COLLECTION_EFFECT_LIFE = 0.28;
 const GOLDFISH_ESCAPE_TIME = 7.6;
+const BOSS_COIN_DROP_COUNT = 46;
+const ROUTE_PORTAL_Y = 46;
+const ROUTE_SIDE_PORTAL_Y = 126;
+const ROUTE_PORTAL_RADIUS = 42;
+const BOSS_SKILL_COOLDOWNS: Record<BossSkillId, number> = {
+	"coral-surge": 18,
+	"abyss-lance": 16,
+	"ember-current": 22,
+	"frost-shell": 20,
+	"kelp-snare": 17,
+	"ruin-prism": 24,
+};
+
+export const getStageRoutePosition = (index: number) => ({
+	x: [88, WORLD_WIDTH / 2, WORLD_WIDTH - 88][index] ?? WORLD_WIDTH / 2,
+	y: index === 1 ? ROUTE_PORTAL_Y : ROUTE_SIDE_PORTAL_Y,
+	radius: ROUTE_PORTAL_RADIUS,
+});
 
 const addParticleBurst = (state: GameState, x: number, y: number, color: string, count: number) => {
 	for (let i = 0; i < count; i++) {
@@ -90,7 +105,7 @@ const addExperience = (state: GameState, amount: number) => {
 
 const dropExperience = (state: GameState, enemy: Plane) => {
 	const totalExperience = getEnemyExperience(state, enemy);
-	const orbCount = enemy.kind === "boss" ? 12 : enemy.kind === "goldfish" ? 14 : enemy.kind === "bomber" ? 4 : enemy.kind === "ace" ? 3 : 2;
+	const orbCount = enemy.kind === "boss" ? 28 : enemy.kind === "goldfish" ? 14 : enemy.kind === "bomber" ? 4 : enemy.kind === "ace" ? 3 : 2;
 	let remaining = totalExperience;
 
 	for (let i = 0; i < orbCount; i++) {
@@ -100,10 +115,38 @@ const dropExperience = (state: GameState, enemy: Plane) => {
 			id: getNextId(state),
 			x: enemy.x + randomRange(-enemy.radius * 0.35, enemy.radius * 0.35),
 			y: enemy.y + randomRange(-enemy.radius * 0.25, enemy.radius * 0.25),
-			vx: randomRange(-44, 44),
-			vy: randomRange(48, 98),
+			vx: enemy.kind === "boss" ? randomRange(-150, 150) : randomRange(-44, 44),
+			vy: enemy.kind === "boss" ? randomRange(-140, 85) : randomRange(48, 98),
 			value,
 			radius: enemy.kind === "boss" || enemy.kind === "goldfish" ? 5.6 : 4.6,
+			kind: "experience",
+			autoCollect: enemy.kind === "boss",
+			homeDelay: enemy.kind === "boss" ? randomRange(0.2, 0.62) : 0,
+		});
+	}
+};
+
+const dropCoins = (state: GameState, enemy: Plane, totalCoins: number, count: number, autoCollect = false) => {
+	let remaining = Math.max(0, Math.floor(totalCoins));
+
+	for (let i = 0; i < count; i++) {
+		const slotsLeft = count - i;
+		const value = i === count - 1 ? remaining : Math.max(1, Math.floor(remaining / slotsLeft) + Math.floor(randomRange(-1, 3)));
+		remaining -= value;
+		const angle = autoCollect ? randomRange(-Math.PI, 0) : randomRange(-Math.PI * 0.94, -Math.PI * 0.06);
+		const speed = randomRange(autoCollect ? 120 : 72, enemy.kind === "boss" ? 230 : 150);
+
+		state.experienceOrbs.push({
+			id: getNextId(state),
+			x: enemy.x + randomRange(-enemy.radius * 0.5, enemy.radius * 0.5),
+			y: enemy.y + randomRange(-enemy.radius * 0.35, enemy.radius * 0.35),
+			vx: Math.cos(angle) * speed,
+			vy: Math.sin(angle) * speed + randomRange(42, 96),
+			value,
+			radius: enemy.kind === "boss" ? randomRange(5.4, 7.2) : randomRange(4.8, 6.2),
+			kind: "coin",
+			autoCollect,
+			homeDelay: autoCollect ? randomRange(0.18, 0.7) : 0,
 		});
 	}
 };
@@ -201,24 +244,7 @@ const firePlayer = (state: GameState) => {
 	addPlayerBullet(state, player.x, headY, 0, -650, 1.2);
 };
 
-const firePet = (state: GameState, petX: number, petY: number, level: number) => {
-	const target = state.enemies
-		.filter((enemy) => enemy.y < petY + 36)
-		.sort((a, b) => distanceSquared(petX, petY, a.x, a.y) - distanceSquared(petX, petY, b.x, b.y))[0];
-	const angle = target ? Math.atan2(target.y - petY, target.x - petX) : -Math.PI / 2;
-	const speed = 620 + level * 34;
-	const damage = (0.38 + level * 0.16) * state.petDamageMultiplier;
-	const radius = clamp(PET_BULLET_BASE_RADIUS + level * PET_BULLET_LEVEL_RADIUS, PET_BULLET_BASE_RADIUS, PET_BULLET_MAX_RADIUS);
-	const visualRadius = clamp(radius * 0.52, 1.05, 1.45);
-	const vx = Math.cos(angle) * speed;
-	const vy = Math.sin(angle) * speed;
-
-	addPlayerBullet(state, petX, petY - 6, vx, vy, damage, radius, level >= 4 ? "#ffffff" : "#7cf8a8", level >= 5 ? 1 : 0, visualRadius);
-	if (level >= 3) {
-		addPlayerBullet(state, petX - 4, petY - 2, vx - 42, vy, damage * 0.56, radius * 0.78, "#a8ffd2", 0, visualRadius * 0.82);
-		addPlayerBullet(state, petX + 4, petY - 2, vx + 42, vy, damage * 0.56, radius * 0.78, "#a8ffd2", 0, visualRadius * 0.82);
-	}
-};
+const getPetShieldRadius = (level: number) => 18 + level * 3.2;
 
 const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: number) => {
 	const adjustedSpeed = speed * getEnemyBulletSpeedMultiplier(state.wave);
@@ -235,6 +261,90 @@ const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: nu
 		from: "enemy",
 		color: enemy.kind === "boss" ? palette.accent : "#ffcb74",
 	});
+};
+
+const damageEnemies = (state: GameState, amount: number, x: number, y: number, radius: number, color: string) => {
+	for (const enemy of state.enemies) {
+		if (distanceSquared(enemy.x, enemy.y, x, y) <= radius * radius) {
+			enemy.hp -= amount * state.damageMultiplier * getBossSkillDamageMultiplier(state, enemy);
+			addParticleBurst(state, enemy.x, enemy.y, color, enemy.kind === "boss" ? 18 : 9);
+		}
+	}
+};
+
+const addBossSkillProjectile = (state: GameState, skillId: BossSkillId, xOffset: number, vx: number) => {
+	const color = skillId === "ruin-prism" ? "#c79cff" : skillId === "abyss-lance" ? "#9cc7ff" : "#ffb45f";
+	state.bullets.push({
+		id: getNextId(state),
+		x: state.player.x + xOffset,
+		y: state.player.y - 42,
+		vx,
+		vy: skillId === "ember-current" ? -255 : -315,
+		radius: skillId === "ruin-prism" ? 16 : 14,
+		visualRadius: skillId === "ruin-prism" ? 11 : 9,
+		blastRadius: skillId === "ruin-prism" ? 98 : 76,
+		damage: skillId === "ruin-prism" ? 44 : 36,
+		pierce: skillId === "ruin-prism" ? 4 : 3,
+		from: "player",
+		color,
+	});
+};
+
+const resolveDefeatedEnemies = (state: GameState, canDropPowerUp: boolean) => {
+	const removedEnemies = new Set<number>();
+	for (const enemy of state.enemies) {
+		if (enemy.hp <= 0) defeatEnemy(state, enemy, removedEnemies, canDropPowerUp);
+	}
+	state.enemies = state.enemies.filter((enemy) => !removedEnemies.has(enemy.id));
+};
+
+export const activateBossSkill = (state: GameState, skillId: BossSkillId) => {
+	if (state.mode !== "playing" || !state.bossSkills.includes(skillId) || state.bossSkillCooldowns[skillId] > 0) return false;
+
+	state.bossSkillCooldowns[skillId] = BOSS_SKILL_COOLDOWNS[skillId];
+	state.shake = Math.max(state.shake, skillId === "ruin-prism" ? 0.5 : 0.34);
+
+	switch (skillId) {
+		case "coral-surge":
+			state.bullets = state.bullets.filter((bullet) => bullet.from === "player");
+			damageEnemies(state, 22, WORLD_WIDTH / 2, WORLD_HEIGHT / 2, WORLD_HEIGHT, "#ff8fae");
+			addParticleBurst(state, state.player.x, state.player.y - 24, "#ff8fae", 56);
+			break;
+		case "abyss-lance":
+			addBossSkillProjectile(state, skillId, 0, 0);
+			addParticleBurst(state, state.player.x, state.player.y - 42, "#9cc7ff", 26);
+			break;
+		case "ember-current":
+			addBossSkillProjectile(state, skillId, 0, 0);
+			damageEnemies(state, 18, state.player.x, state.player.y - 160, 150, "#ffb45f");
+			addParticleBurst(state, state.player.x, state.player.y - 90, "#ffb45f", 42);
+			break;
+		case "frost-shell":
+			state.bullets = state.bullets.filter((bullet) => bullet.from === "player");
+			state.player.invincible = Math.max(state.player.invincible, 3.2);
+			if (state.shieldUnlocked) state.shieldCharges = Math.min(state.shieldMaxCharges, state.shieldCharges + 1);
+			damageEnemies(state, 16, state.player.x, state.player.y, 190, "#8bf4ff");
+			addParticleBurst(state, state.player.x, state.player.y, "#8bf4ff", 52);
+			break;
+		case "kelp-snare":
+			for (const enemy of state.enemies) {
+				enemy.vx *= 0.24;
+				enemy.vy *= 0.42;
+				enemy.fireCooldown += 1.8;
+			}
+			damageEnemies(state, 24, WORLD_WIDTH / 2, WORLD_HEIGHT / 2, WORLD_HEIGHT, "#9eff8f");
+			addParticleBurst(state, state.player.x, state.player.y - 36, "#9eff8f", 48);
+			break;
+		case "ruin-prism":
+			addBossSkillProjectile(state, skillId, -28, -34);
+			addBossSkillProjectile(state, skillId, 0, 0);
+			addBossSkillProjectile(state, skillId, 28, 34);
+			addParticleBurst(state, state.player.x, state.player.y - 42, "#c79cff", 44);
+			break;
+	}
+
+	resolveDefeatedEnemies(state, false);
+	return true;
 };
 
 const getPlayerMinY = (radius: number) => radius + PLAYER_BOUNDS_PADDING_TOP;
@@ -414,7 +524,7 @@ const spawnGoldfish = (state: GameState) => {
 	});
 };
 
-const updatePlayer = (state: GameState, dt: number) => {
+const updatePlayer = (state: GameState, dt: number, canFire = true) => {
 	const { player, keys } = state;
 	let dx = 0;
 	let dy = 0;
@@ -451,6 +561,11 @@ const updatePlayer = (state: GameState, dt: number) => {
 	player.meleeCooldown = Math.max(0, player.meleeCooldown - dt);
 	if (player.isCharging) {
 		player.meleeCharge = Math.min(MELEE_MAX_CHARGE, player.meleeCharge + dt);
+	}
+
+	if (!canFire) {
+		player.fireCooldown = Math.max(0, player.fireCooldown - dt);
+		return;
 	}
 
 	player.fireCooldown -= dt;
@@ -512,13 +627,7 @@ const updatePets = (state: GameState, dt: number) => {
 
 		pet.x += (targetX - pet.x) * follow;
 		pet.y += (targetY - pet.y) * follow;
-		pet.fireCooldown -= dt;
-
-		if (pet.fireCooldown <= 0) {
-			firePet(state, pet.x, pet.y, pet.level);
-			const cooldown = clamp((0.54 - pet.level * 0.052) * state.petFireCooldownMultiplier, 0.16, 0.58);
-			pet.fireCooldown = cooldown + i * 0.035;
-		}
+		pet.fireCooldown = Math.max(0, pet.fireCooldown - dt);
 	}
 };
 
@@ -529,6 +638,12 @@ const updateBullets = (state: GameState, dt: number) => {
 	}
 
 	state.bullets = state.bullets.filter((bullet) => bullet.y > -40 && bullet.y < WORLD_HEIGHT + 48 && bullet.x > -40 && bullet.x < WORLD_WIDTH + 40);
+};
+
+const updateBossSkillCooldowns = (state: GameState, dt: number) => {
+	for (const skillId of state.bossSkills) {
+		state.bossSkillCooldowns[skillId] = Math.max(0, state.bossSkillCooldowns[skillId] - dt);
+	}
 };
 
 const updateParticles = (state: GameState, dt: number) => {
@@ -566,23 +681,47 @@ const updateExperienceOrbs = (state: GameState, dt: number) => {
 	const collectedOrbs = new Set<number>();
 
 	for (const orb of state.experienceOrbs) {
-		const pickupRadius = getPickupRadius(state, orb.radius, 24);
+		const kind = orb.kind ?? "experience";
+		const pickupRadius = orb.autoCollect ? state.player.radius + orb.radius + 18 : getPickupRadius(state, orb.radius, kind === "coin" ? 30 : 24);
 
 		if (distanceSquared(orb.x, orb.y, state.player.x, state.player.y) <= pickupRadius * pickupRadius) {
 			collectedOrbs.add(orb.id);
-			addExperience(state, orb.value);
-			addCollectionEffect(state, "experience", orb.x, orb.y, orb.radius);
+			if (kind === "coin") {
+				state.earnedCoins += orb.value;
+				addCollectionEffect(state, "coin", orb.x, orb.y, orb.radius);
+			} else {
+				addExperience(state, orb.value);
+				addCollectionEffect(state, "experience", orb.x, orb.y, orb.radius);
+			}
 			continue;
+		}
+
+		if (orb.autoCollect) {
+			orb.homeDelay = Math.max(0, (orb.homeDelay ?? 0) - dt);
+			if ((orb.homeDelay ?? 0) <= 0) {
+				const dx = state.player.x - orb.x;
+				const dy = state.player.y - orb.y;
+				const distance = Math.max(1, Math.hypot(dx, dy));
+				const pull = clamp(920 / distance, 2.6, 9.5);
+				orb.vx += (dx / distance) * pull * 180 * dt;
+				orb.vy += (dy / distance) * pull * 180 * dt;
+				orb.vx *= 0.94;
+				orb.vy *= 0.94;
+			} else {
+				orb.vx *= 0.955;
+				orb.vy *= 0.955;
+			}
+		} else {
+			orb.vx *= 0.985;
+			orb.vy = Math.min(180, orb.vy + 28 * dt);
 		}
 
 		orb.x += orb.vx * dt;
 		orb.y += orb.vy * dt;
-		orb.vx *= 0.985;
-		orb.vy = Math.min(180, orb.vy + 28 * dt);
 	}
 
 	state.experienceOrbs = state.experienceOrbs.filter(
-		(orb) => !collectedOrbs.has(orb.id) && orb.y < WORLD_HEIGHT + 32 && orb.x > -32 && orb.x < WORLD_WIDTH + 32,
+		(orb) => !collectedOrbs.has(orb.id) && (orb.autoCollect || (orb.y < WORLD_HEIGHT + 32 && orb.x > -32 && orb.x < WORLD_WIDTH + 32)),
 	);
 };
 
@@ -705,11 +844,7 @@ const getEnemyBurstColor = (enemy: Plane) => {
 
 const awardGoldfishBonus = (state: GameState, enemy: Plane) => {
 	const coinReward = enemy.coinReward ?? Math.round(65 + state.wave * 24);
-	state.earnedCoins += coinReward;
-
-	for (let i = 0; i < 10; i++) {
-		addCollectionEffect(state, "coin", enemy.x + randomRange(-enemy.radius, enemy.radius), enemy.y + randomRange(-enemy.radius * 0.75, enemy.radius * 0.75), randomRange(4.2, 6.2));
-	}
+	dropCoins(state, enemy, coinReward, 12);
 };
 
 const defeatEnemy = (state: GameState, enemy: Plane, removedEnemies: Set<number>, canDropPowerUp: boolean) => {
@@ -725,6 +860,10 @@ const defeatEnemy = (state: GameState, enemy: Plane, removedEnemies: Set<number>
 	dropExperience(state, enemy);
 
 	if (enemy.kind === "boss") {
+		const coinReward = Math.round(260 + state.wave * 42 + state.defeatedBosses * 85);
+		dropCoins(state, enemy, coinReward, BOSS_COIN_DROP_COUNT, true);
+		addParticleBurst(state, enemy.x, enemy.y, "#fff27a", 76);
+		addParticleBurst(state, enemy.x, enemy.y, "#ffffff", 42);
 		state.bossActive = false;
 		openStageSelection(state);
 	} else if (enemy.kind !== "goldfish" && canDropPowerUp && Math.random() < 0.13) {
@@ -748,19 +887,29 @@ const resolveCollisions = (state: GameState) => {
 	for (const bullet of playerBullets) {
 		for (const enemy of state.enemies) {
 			if (removedEnemies.has(enemy.id)) continue;
-			const hitDistance = bullet.radius + enemy.radius;
-			if (distanceSquared(bullet.x, bullet.y, enemy.x, enemy.y) <= hitDistance * hitDistance) {
-				enemy.hp -= bullet.damage * getBossSkillDamageMultiplier(state, enemy);
-				if (bullet.pierce > 0) {
-					bullet.pierce -= 1;
-				} else {
-					removedBullets.add(bullet.id);
-				}
-				addParticleBurst(state, bullet.x, bullet.y, "#8bf4ff", 3);
+				const hitDistance = bullet.radius + enemy.radius;
+				if (distanceSquared(bullet.x, bullet.y, enemy.x, enemy.y) <= hitDistance * hitDistance) {
+					if (bullet.blastRadius) {
+						damageEnemies(state, bullet.damage, bullet.x, bullet.y, bullet.blastRadius, bullet.color);
+						removedBullets.add(bullet.id);
+						addParticleBurst(state, bullet.x, bullet.y, bullet.color, 32);
+						for (const blastEnemy of state.enemies) {
+							if (!removedEnemies.has(blastEnemy.id) && blastEnemy.hp <= 0) defeatEnemy(state, blastEnemy, removedEnemies, false);
+						}
+					} else {
+						enemy.hp -= bullet.damage * getBossSkillDamageMultiplier(state, enemy);
+						addParticleBurst(state, bullet.x, bullet.y, "#8bf4ff", 3);
+					}
 
-				if (enemy.hp <= 0) {
-					defeatEnemy(state, enemy, removedEnemies, true);
-				}
+					if (!bullet.blastRadius && bullet.pierce > 0) {
+						bullet.pierce -= 1;
+					} else if (!bullet.blastRadius) {
+						removedBullets.add(bullet.id);
+					}
+
+					if (!removedEnemies.has(enemy.id) && enemy.hp <= 0) {
+						defeatEnemy(state, enemy, removedEnemies, true);
+					}
 				break;
 			}
 		}
@@ -790,6 +939,19 @@ const resolveCollisions = (state: GameState) => {
 	}
 
 	for (const bullet of enemyBullets) {
+		for (const pet of state.pets) {
+			const shieldRadius = getPetShieldRadius(pet.level);
+			const hitDistance = bullet.radius + shieldRadius;
+			if (distanceSquared(bullet.x, bullet.y, pet.x, pet.y) <= hitDistance * hitDistance) {
+				removedBullets.add(bullet.id);
+				pet.fireCooldown = 0.18;
+				state.shake = Math.max(state.shake, 0.06);
+				addParticleBurst(state, pet.x, pet.y, pet.level >= 4 ? "#ffffff" : "#8bf4ff", 12 + pet.level * 3);
+				break;
+			}
+		}
+		if (removedBullets.has(bullet.id)) continue;
+
 		const hitDistance = bullet.radius + state.player.radius;
 		if (distanceSquared(bullet.x, bullet.y, state.player.x, state.player.y) <= hitDistance * hitDistance) {
 			removedBullets.add(bullet.id);
@@ -824,6 +986,24 @@ const resolveCollisions = (state: GameState) => {
 		state.bullets = [];
 		state.slashes = [];
 		state.powerUps = [];
+	}
+};
+
+const updateStageSelection = (state: GameState, dt: number) => {
+	state.time += dt;
+	state.shake = Math.max(0, state.shake - dt);
+	updatePlayer(state, dt, false);
+	updateExperienceOrbs(state, dt);
+	updateCollectionEffects(state, dt);
+	updateParticles(state, dt);
+
+	for (let index = 0; index < state.stageChoices.length; index++) {
+		const route = getStageRoutePosition(index);
+		const hitRadius = state.player.radius + route.radius * 0.58;
+		if (distanceSquared(state.player.x, state.player.y, route.x, route.y) <= hitRadius * hitRadius) {
+			selectStageRoute(state, state.stageChoices[index].id);
+			break;
+		}
 	}
 };
 
@@ -864,7 +1044,11 @@ const updateStars = (state: GameState, dt: number) => {
 export const updateGame = (state: GameState, dt: number) => {
 	updateStars(state, dt);
 	if (state.mode !== "playing") {
-		if (state.mode === "augment" || state.mode === "stage-select" || state.mode === "gameover") {
+		if (state.mode === "stage-select") {
+			updateStageSelection(state, dt);
+			return;
+		}
+		if (state.mode === "augment" || state.mode === "gameover") {
 			updateCollectionEffects(state, dt);
 			updateParticles(state, dt);
 		}
@@ -882,6 +1066,7 @@ export const updateGame = (state: GameState, dt: number) => {
 	state.comboTimer = Math.max(0, state.comboTimer - dt);
 	if (state.comboTimer <= 0) state.combo = 0;
 	updatePlayer(state, dt);
+	updateBossSkillCooldowns(state, dt);
 	updateSpawn(state, dt);
 	updateEnemies(state, dt);
 	updatePets(state, dt);

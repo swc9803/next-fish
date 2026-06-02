@@ -7,6 +7,7 @@ import {
 	WORLD_WIDTH,
 } from "./constants";
 import { clamp, randomRange } from "./math";
+import { getStageRoutePosition } from "./engine";
 import { getStagePalette } from "./stages";
 import type { Bullet, CollectionEffect, ExperienceOrb, GameState, Layout, Particle, Pet, Plane, PowerUp, Slash } from "./types";
 
@@ -290,22 +291,87 @@ const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
 
 const drawExperienceOrbs = (ctx: CanvasRenderingContext2D, experienceOrbs: ExperienceOrb[], time: number) => {
 	for (const orb of experienceOrbs) {
+		const isCoin = orb.kind === "coin";
+		const color = isCoin ? "#fff27a" : "#b6ff7a";
+		const shine = isCoin ? "#fff7c2" : "rgba(255,255,255,0.82)";
 		const pulse = 1 + Math.sin(time * 9 + orb.id) * 0.12;
 		ctx.save();
 		ctx.translate(orb.x, orb.y);
 		ctx.scale(pulse, pulse);
-		ctx.shadowColor = "#b6ff7a";
-		ctx.shadowBlur = 12;
-		ctx.fillStyle = "#b6ff7a";
-		ctx.beginPath();
-		ctx.arc(0, 0, orb.radius, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.fillStyle = "rgba(255,255,255,0.82)";
+		ctx.shadowColor = color;
+		ctx.shadowBlur = isCoin ? 16 : 12;
+		ctx.fillStyle = color;
+		if (isCoin) {
+			ctx.rotate(time * 2.4 + orb.id);
+			ctx.beginPath();
+			for (let i = 0; i < 8; i++) {
+				const angle = (Math.PI * 2 * i) / 8;
+				const radius = i % 2 === 0 ? orb.radius * 1.15 : orb.radius * 0.58;
+				ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+			}
+			ctx.closePath();
+			ctx.fill();
+		} else {
+			ctx.beginPath();
+			ctx.arc(0, 0, orb.radius, 0, Math.PI * 2);
+			ctx.fill();
+		}
+		ctx.fillStyle = shine;
 		ctx.beginPath();
 		ctx.arc(-orb.radius * 0.25, -orb.radius * 0.25, Math.max(1.2, orb.radius * 0.28), 0, Math.PI * 2);
 		ctx.fill();
 		ctx.restore();
 	}
+};
+
+const drawStageRoutes = (ctx: CanvasRenderingContext2D, state: GameState) => {
+	if (state.mode !== "stage-select") return;
+	const palette = getStagePalette(state.stage);
+	const arrows = ["↖", "↑", "↗"];
+
+	for (let index = 0; index < state.stageChoices.length; index++) {
+		const choice = state.stageChoices[index];
+		const route = getStageRoutePosition(index);
+		const pulse = 1 + Math.sin(state.time * 5.4 + index) * 0.08;
+		const angle = index === 0 ? -Math.PI * 0.22 : index === 2 ? Math.PI * 0.22 : 0;
+
+		ctx.save();
+		ctx.translate(route.x, route.y);
+		ctx.rotate(angle);
+		ctx.scale(pulse, pulse);
+		ctx.globalAlpha = 0.86;
+		ctx.shadowColor = palette.accent;
+		ctx.shadowBlur = 24;
+		ctx.strokeStyle = palette.accent;
+		ctx.lineWidth = 5;
+		ctx.lineCap = "round";
+		ctx.lineJoin = "round";
+		ctx.beginPath();
+		ctx.moveTo(0, 34);
+		ctx.lineTo(0, -24);
+		ctx.moveTo(0, -24);
+		ctx.lineTo(-17, -7);
+		ctx.moveTo(0, -24);
+		ctx.lineTo(17, -7);
+		ctx.stroke();
+		ctx.globalAlpha = 1;
+		ctx.rotate(-angle);
+		ctx.fillStyle = "#f7fdff";
+		ctx.font = "900 16px sans-serif";
+		ctx.textAlign = "center";
+		ctx.textBaseline = "middle";
+		ctx.fillText(arrows[index] ?? "↑", 0, -40);
+		ctx.font = "800 8px sans-serif";
+		ctx.fillText(`${choice.direction} · ${choice.id.toUpperCase()}`, 0, 42);
+		ctx.restore();
+	}
+
+	ctx.save();
+	ctx.fillStyle = "rgba(247, 253, 255, 0.78)";
+	ctx.font = "700 9px sans-serif";
+	ctx.textAlign = "center";
+	ctx.fillText("FOLLOW AN ARROW TO THE NEXT MAP", WORLD_WIDTH / 2, 112);
+	ctx.restore();
 };
 
 const drawCollectionEffects = (ctx: CanvasRenderingContext2D, effects: CollectionEffect[], time: number) => {
@@ -350,12 +416,24 @@ const drawCollectionEffects = (ctx: CanvasRenderingContext2D, effects: Collectio
 const drawPets = (ctx: CanvasRenderingContext2D, pets: Pet[], time: number) => {
 	for (const pet of pets) {
 		const pulse = 1 + Math.sin(time * 8 + pet.phase) * 0.08;
+		const shieldRadius = 18 + pet.level * 3.2;
+		const shieldAlpha = pet.fireCooldown > 0 ? 0.52 : 0.28;
 
 		ctx.save();
 		ctx.translate(pet.x, pet.y);
 		ctx.scale(pulse, pulse);
 		ctx.shadowColor = pet.level >= 4 ? "#ffffff" : "#7cf8a8";
-		ctx.shadowBlur = 14 + pet.level * 3;
+		ctx.shadowBlur = 16 + pet.level * 3;
+		ctx.globalAlpha = shieldAlpha;
+		ctx.fillStyle = pet.level >= 4 ? "rgba(255, 255, 255, 0.18)" : "rgba(139, 244, 255, 0.16)";
+		ctx.strokeStyle = pet.level >= 4 ? "rgba(255, 255, 255, 0.82)" : "rgba(139, 244, 255, 0.74)";
+		ctx.lineWidth = 2.2;
+		ctx.beginPath();
+		ctx.arc(0, 0, shieldRadius, Math.PI * 0.12, Math.PI * 1.88);
+		ctx.quadraticCurveTo(0, shieldRadius * 0.58, shieldRadius * 0.92, 0);
+		ctx.fill();
+		ctx.stroke();
+		ctx.globalAlpha = 1;
 		ctx.rotate(Math.sin(time * 3.4 + pet.phase) * 0.25);
 		ctx.fillStyle = pet.level >= 4 ? "#f8fff3" : "#d9ffe8";
 		ctx.strokeStyle = "rgba(255,255,255,0.72)";
@@ -406,6 +484,7 @@ export const drawGame = (ctx: CanvasRenderingContext2D, state: GameState, layout
 	ctx.translate(layout.offsetX + shakeX, layout.offsetY + shakeY);
 	ctx.scale(layout.scale, layout.scale);
 	drawBackground(ctx, state);
+	drawStageRoutes(ctx, state);
 	drawExperienceOrbs(ctx, state.experienceOrbs, state.time);
 	drawPowerUps(ctx, state.powerUps);
 	drawCollectionEffects(ctx, state.collectionEffects, state.time);

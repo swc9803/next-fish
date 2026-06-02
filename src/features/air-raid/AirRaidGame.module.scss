@@ -310,9 +310,77 @@
 	}
 }
 
-.controls {
+.controlDock {
 	position: relative;
 	z-index: 2;
+	display: grid;
+	gap: 0.55rem;
+	justify-items: center;
+}
+
+.bossSkillBar {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.45rem;
+	max-width: min(100%, 46rem);
+}
+
+.bossSkillButton {
+	--skill-color: #8bf4ff;
+
+	position: relative;
+	display: grid;
+	min-width: 5.6rem;
+	min-height: 2.75rem;
+	align-content: center;
+	gap: 0.12rem;
+	overflow: hidden;
+	padding: 0.36rem 0.62rem;
+	border: 1px solid color-mix(in srgb, var(--skill-color), transparent 48%);
+	border-radius: 8px;
+	color: #f7fbff;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--skill-color), transparent 78%), rgba(255, 255, 255, 0.045)),
+		rgba(4, 12, 24, 0.86);
+	box-shadow:
+		0 0.24rem 0 rgba(0, 0, 0, 0.42),
+		0 0 1.2rem color-mix(in srgb, var(--skill-color), transparent 82%);
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+	transition:
+		border-color 0.2s ease,
+		filter 0.2s ease,
+		transform 0.2s ease;
+
+	span {
+		color: var(--skill-color);
+		font-size: 0.66rem;
+		font-weight: 900;
+		letter-spacing: 0.06em;
+		line-height: 1;
+	}
+
+	strong {
+		color: #ffffff;
+		font-size: 0.72rem;
+		font-weight: 900;
+		line-height: 1;
+	}
+
+	&:hover:not(:disabled) {
+		border-color: color-mix(in srgb, var(--skill-color), white 16%);
+		filter: brightness(1.12);
+		transform: translateY(-1px);
+	}
+
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+}
+
+.controls {
 	display: flex;
 	justify-content: center;
 	gap: 0.75rem;
