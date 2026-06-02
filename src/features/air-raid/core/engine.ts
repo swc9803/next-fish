@@ -1,4 +1,14 @@
-import { MELEE_MAX_CHARGE, PLAYER_SPEED, WORLD_HEIGHT, WORLD_WIDTH } from "./constants";
+import {
+	ENEMY_FIRE_SAFE_MARGIN_X,
+	ENEMY_FIRE_SAFE_MARGIN_Y,
+	MELEE_MAX_CHARGE,
+	PLAYER_BOUNDS_PADDING_BOTTOM,
+	PLAYER_BOUNDS_PADDING_TOP,
+	PLAYER_BOUNDS_PADDING_X,
+	PLAYER_SPEED,
+	WORLD_HEIGHT,
+	WORLD_WIDTH,
+} from "./constants";
 import { openAugmentSelection } from "./augments";
 import { clamp, distanceSquared, randomRange } from "./math";
 import { getNextId } from "./state";
@@ -213,6 +223,18 @@ const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: nu
 	});
 };
 
+const getPlayerMinY = (radius: number) => radius + PLAYER_BOUNDS_PADDING_TOP;
+const getPlayerMaxY = (radius: number) => WORLD_HEIGHT - radius - PLAYER_BOUNDS_PADDING_BOTTOM;
+
+const canEnemyFire = (enemy: Plane) => {
+	const minX = enemy.radius + ENEMY_FIRE_SAFE_MARGIN_X;
+	const maxX = WORLD_WIDTH - enemy.radius - ENEMY_FIRE_SAFE_MARGIN_X;
+	const minY = enemy.radius + ENEMY_FIRE_SAFE_MARGIN_Y;
+	const maxY = WORLD_HEIGHT - enemy.radius - ENEMY_FIRE_SAFE_MARGIN_Y;
+
+	return enemy.x >= minX && enemy.x <= maxX && enemy.y >= minY && enemy.y <= maxY;
+};
+
 const spawnEnemy = (state: GameState) => {
 	const roll = Math.random();
 	const aceChance = Math.min(0.1 + state.wave * 0.012, 0.2);
@@ -291,10 +313,10 @@ const updatePlayer = (state: GameState, dt: number) => {
 		player.y += (dy / length) * PLAYER_SPEED * state.playerSpeedMultiplier * dt;
 	}
 
-	player.x = clamp(player.x, player.radius + 12, WORLD_WIDTH - player.radius - 12);
-	player.y = clamp(player.y, WORLD_HEIGHT * 0.42, WORLD_HEIGHT - player.radius - 16);
-	player.targetX = clamp(player.targetX, player.radius + 12, WORLD_WIDTH - player.radius - 12);
-	player.targetY = clamp(player.targetY, WORLD_HEIGHT * 0.42, WORLD_HEIGHT - player.radius - 16);
+	player.x = clamp(player.x, player.radius + PLAYER_BOUNDS_PADDING_X, WORLD_WIDTH - player.radius - PLAYER_BOUNDS_PADDING_X);
+	player.y = clamp(player.y, getPlayerMinY(player.radius), getPlayerMaxY(player.radius));
+	player.targetX = clamp(player.targetX, player.radius + PLAYER_BOUNDS_PADDING_X, WORLD_WIDTH - player.radius - PLAYER_BOUNDS_PADDING_X);
+	player.targetY = clamp(player.targetY, getPlayerMinY(player.radius), getPlayerMaxY(player.radius));
 	player.invincible = Math.max(0, player.invincible - dt);
 	player.meleeCooldown = Math.max(0, player.meleeCooldown - dt);
 	if (player.isCharging) {
@@ -331,7 +353,7 @@ const updateEnemies = (state: GameState, dt: number) => {
 		}
 
 		enemy.fireCooldown -= dt;
-		if (enemy.fireCooldown <= 0 && enemy.y > 20) {
+		if (enemy.fireCooldown <= 0 && canEnemyFire(enemy)) {
 			const angleToPlayer = Math.atan2(state.player.y - enemy.y, state.player.x - enemy.x);
 			if (enemy.kind === "boss") {
 				const sweep = Math.sin(enemy.age * 2.2) * 0.12;
@@ -379,9 +401,7 @@ const updateBullets = (state: GameState, dt: number) => {
 		bullet.y += bullet.vy * dt;
 	}
 
-	state.bullets = state.bullets.filter(
-		(bullet) => bullet.y > -40 && bullet.y < WORLD_HEIGHT + 48 && bullet.x > -40 && bullet.x < WORLD_WIDTH + 40,
-	);
+	state.bullets = state.bullets.filter((bullet) => bullet.y > -40 && bullet.y < WORLD_HEIGHT + 48 && bullet.x > -40 && bullet.x < WORLD_WIDTH + 40);
 };
 
 const updateParticles = (state: GameState, dt: number) => {
