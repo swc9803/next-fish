@@ -1,6 +1,6 @@
 export const WORLD_WIDTH = 420;
 export const WORLD_HEIGHT = 720;
-export const PLAYER_SPEED = 430;
+export const PLAYER_SPEED = 350;
 export const PLAYER_BOUNDS_PADDING_X = 12;
 export const PLAYER_BOUNDS_PADDING_TOP = 12;
 export const PLAYER_BOUNDS_PADDING_BOTTOM = 16;
@@ -10,3 +10,9 @@ export const MELEE_MAX_CHARGE = 1.35;
 export const TOUCH_DRAG_OFFSET = 58;
 export const STORAGE_KEY = "next-fish-air-raid-high-score";
 export const CONTROL_KEYS = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS"]);
+export const PLAYER_BULLET_VISUAL_SCALE = 0.56;
+export const PLAYER_BULLET_MIN_VISUAL_RADIUS = 1.05;
+export const PLAYER_BULLET_MAX_VISUAL_RADIUS = 3.8;
+export const PET_BULLET_BASE_RADIUS = 2.05;
+export const PET_BULLET_LEVEL_RADIUS = 0.12;
+export const PET_BULLET_MAX_RADIUS = 2.75;

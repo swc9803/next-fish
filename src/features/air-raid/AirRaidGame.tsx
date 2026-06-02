@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AirRaidAugmentOverlay } from "./components/AirRaidAugmentOverlay";
 import { AirRaidControls } from "./components/AirRaidControls";
 import { AirRaidHud } from "./components/AirRaidHud";
+import { AirRaidModelLayer } from "./components/AirRaidModelLayer";
 import { AirRaidOverlay } from "./components/AirRaidOverlay";
 import styles from "./AirRaidGame.module.scss";
 import { applyAugment } from "./core/augments";
@@ -337,7 +338,8 @@ export const AirRaidGame = () => {
 			<AirRaidHud hud={hud} />
 
 			<div ref={wrapperRef} className={styles.stage}>
-				<canvas ref={canvasRef} className={styles.canvas} aria-label="Sky 1945 game canvas" />
+				<canvas ref={canvasRef} className={styles.canvas} aria-label="Deep Sea 1945 game canvas" />
+				<AirRaidModelLayer stateRef={stateRef} layoutRef={layoutRef} />
 				<AirRaidOverlay
 					hud={hud}
 					metaProgress={metaProgress}

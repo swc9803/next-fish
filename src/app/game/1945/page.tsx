@@ -1,8 +1,8 @@
 import { AirRaidGame } from "@/features/air-raid";
 
 export const metadata = {
-	title: "Sky 1945",
-	description: "1945 스타일의 세로 스크롤 비행 슈팅 게임",
+	title: "Deep Sea 1945",
+	description: "물고기 모델과 조개 무기를 사용하는 세로 스크롤 바다 슈팅 게임",
 };
 
 const AirRaidPage = () => {

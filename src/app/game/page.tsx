@@ -5,11 +5,11 @@ import styles from "./page.module.scss";
 
 const games = [
 	{
-		title: "1945",
-		description: "탄막을 피하며 적 편대를 격추하고 보스를 상대하는 세로 스크롤 비행 슈팅 게임입니다.",
+		title: "Deep Sea 1945",
+		description: "심해 균열로 잠수하세요. 내 물고기와 회전 조개 무기로 적성 생물을 밀어내고 유물을 회수합니다.",
 		href: "/game/1945",
 		image: "/images/gallery6-1.webp",
-		status: "Play",
+		status: "Ready",
 		isPlayable: true,
 	},
 ];
@@ -18,9 +18,9 @@ const GamePage = () => {
 	return (
 		<main className={styles.page}>
 			<section className={styles.header}>
-				<p className={styles.kicker}>Game Archive</p>
-				<h1>게임 목록</h1>
-				<p className={styles.description}>플레이할 게임을 선택하세요.</p>
+				<p className={styles.kicker}>Arcade Deck</p>
+				<h1>작전 선택</h1>
+				<p className={styles.description}>출격 가능한 게임 카트리지입니다. 장비를 확인하고 바로 전장으로 진입하세요.</p>
 			</section>
 
 			<section className={styles.grid} aria-label="게임 목록">

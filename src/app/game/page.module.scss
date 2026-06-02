@@ -6,8 +6,9 @@
 	touch-action: pan-y;
 	padding: clamp(2rem, 5vw, 5rem);
 	background:
-		radial-gradient(circle at 15% 12%, rgba(58, 180, 172, 0.24), transparent 28rem),
-		linear-gradient(135deg, #08131f 0%, #10231e 45%, #1e1728 100%);
+		radial-gradient(circle at 16% 12%, rgba(255, 233, 137, 0.16), transparent 26rem),
+		radial-gradient(circle at 82% 18%, rgba(255, 111, 159, 0.14), transparent 24rem),
+		linear-gradient(135deg, #07111b 0%, #083043 46%, #171026 100%);
 	color: #f7fbff;
 }
 
@@ -25,7 +26,7 @@
 }
 
 .kicker {
-	color: #85e7d4;
+	color: #ffe989;
 	font-size: 0.85rem;
 	font-weight: 700;
 	letter-spacing: 0.12em;
@@ -59,12 +60,17 @@
 	display: grid;
 	min-height: 27rem;
 	overflow: hidden;
-	border: 1px solid rgba(255, 255, 255, 0.16);
+	border: 1px solid rgba(139, 244, 255, 0.22);
 	border-radius: 8px;
 	color: inherit;
 	text-decoration: none;
-	background: rgba(255, 255, 255, 0.08);
-	box-shadow: 0 1.25rem 4rem rgba(0, 0, 0, 0.28);
+	background:
+		linear-gradient(180deg, rgba(139, 244, 255, 0.08), rgba(255, 233, 137, 0.04)),
+		rgba(5, 14, 28, 0.82);
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+		0 1.25rem 4rem rgba(0, 0, 0, 0.28),
+		0 0 2.2rem rgba(139, 244, 255, 0.08);
 	transition:
 		transform 0.24s ease,
 		border-color 0.24s ease,
@@ -72,12 +78,14 @@
 
 	&:hover {
 		transform: translateY(-0.35rem);
-		border-color: rgba(133, 231, 212, 0.62);
-		background: rgba(255, 255, 255, 0.12);
+		border-color: rgba(255, 233, 137, 0.62);
+		background:
+			linear-gradient(180deg, rgba(255, 233, 137, 0.12), rgba(139, 244, 255, 0.06)),
+			rgba(5, 14, 28, 0.9);
 	}
 
 	&:focus-visible {
-		outline: 3px solid #85e7d4;
+		outline: 3px solid #ffe989;
 		outline-offset: 4px;
 	}
 }
@@ -99,14 +107,16 @@
 
 	img {
 		object-fit: cover;
-		filter: saturate(0.88) brightness(0.62);
+		filter: saturate(1.05) brightness(0.56) contrast(1.08);
 	}
 
 	&::after {
 		content: "";
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(180deg, rgba(8, 19, 31, 0.08), rgba(8, 19, 31, 0.88));
+		background:
+			linear-gradient(180deg, rgba(8, 19, 31, 0.05), rgba(8, 19, 31, 0.92)),
+			linear-gradient(90deg, rgba(139, 244, 255, 0.1), transparent 52%, rgba(255, 111, 159, 0.1));
 	}
 }
 
@@ -134,9 +144,16 @@
 }
 
 .status {
-	color: #85e7d4;
+	display: inline-flex;
+	min-height: 1.8rem;
+	align-items: center;
+	padding: 0.36rem 0.5rem;
+	border: 1px solid rgba(158, 255, 143, 0.32);
+	border-radius: 8px;
+	color: #9eff8f;
+	background: rgba(158, 255, 143, 0.08);
 	font-size: 0.78rem;
-	font-weight: 700;
+	font-weight: 900;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 }

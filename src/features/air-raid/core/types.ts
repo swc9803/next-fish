@@ -1,5 +1,5 @@
 export type GameMode = "ready" | "playing" | "paused" | "augment" | "gameover";
-export type EnemyKind = "scout" | "fighter" | "ace" | "bomber" | "boss";
+export type EnemyKind = "scout" | "fighter" | "ace" | "bomber" | "goldfish" | "boss";
 export type WeaponKind = "standard" | "fork" | "scatter" | "lance" | "laser";
 export type AugmentRarity = "common" | "rare" | "unique" | "legendary";
 export type AugmentId =
@@ -10,8 +10,18 @@ export type AugmentId =
 	| "focusing-lens"
 	| "split-prism"
 	| "piercing-rounds"
+	| "current-fins"
+	| "rapid-siphon"
+	| "pressure-chamber"
+	| "magnet-tide"
+	| "reef-armor"
+	| "heavy-pearl"
+	| "overclocked-gills"
+	| "glass-scales"
+	| "shield-battery"
 	| "blade-array"
 	| "charged-blade"
+	| "echoing-blade"
 	| "wingman-drone"
 	| "drone-swarm"
 	| "drone-core"
@@ -66,6 +76,9 @@ export type Plane = {
 	kind: EnemyKind;
 	fireCooldown: number;
 	age: number;
+	escapeTime?: number;
+	coinReward?: number;
+	experienceReward?: number;
 };
 
 export type Bullet = {
@@ -75,6 +88,7 @@ export type Bullet = {
 	vx: number;
 	vy: number;
 	radius: number;
+	visualRadius?: number;
 	damage: number;
 	pierce: number;
 	from: "player" | "enemy";
@@ -124,6 +138,19 @@ export type ExperienceOrb = {
 	radius: number;
 };
 
+export type CollectionEffect = {
+	id: number;
+	kind: "experience" | "coin" | "power" | "repair";
+	startX: number;
+	startY: number;
+	x: number;
+	y: number;
+	radius: number;
+	life: number;
+	maxLife: number;
+	phase: number;
+};
+
 export type Star = {
 	x: number;
 	y: number;
@@ -170,6 +197,7 @@ export type GameState = {
 	time: number;
 	spawnTimer: number;
 	bossTimer: number;
+	treasureTimer: number;
 	bossActive: boolean;
 	shake: number;
 	nextId: number;
@@ -207,6 +235,7 @@ export type GameState = {
 	particles: Particle[];
 	powerUps: PowerUp[];
 	experienceOrbs: ExperienceOrb[];
+	collectionEffects: CollectionEffect[];
 	stars: Star[];
 	keys: Set<string>;
 	pointerActive: boolean;

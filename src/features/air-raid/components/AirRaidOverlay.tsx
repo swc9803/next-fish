@@ -40,8 +40,8 @@ export const AirRaidOverlay = ({
 }: AirRaidOverlayProps) => {
 	if (mode === "playing" || mode === "augment") return null;
 
-	const startLabel = mode === "gameover" ? "다시 출격" : "출격";
-	const title = mode === "gameover" ? "작전 실패" : mode === "paused" ? "일시 정지" : "비행 준비";
+	const startLabel = mode === "gameover" ? "재출격" : "작전 개시";
+	const title = mode === "gameover" ? "선체 파손" : mode === "paused" ? "작전 정지" : "심해 출격 대기";
 	const showMetaPanel = mode === "ready" || mode === "gameover";
 	const slotBonusSummary = META_SLOT_BONUS_ORDER.filter((bonusId) => metaProgress.slotBonuses[bonusId] > 0)
 		.map((bonusId) => `${META_SLOT_BONUS_LABELS[bonusId]} +${metaProgress.slotBonuses[bonusId]}`)
@@ -50,18 +50,23 @@ export const AirRaidOverlay = ({
 	return (
 		<section className={styles.overlay}>
 			<div className={styles.panel}>
-				<p className={styles.kicker}>Sky 1945</p>
+				<p className={styles.kicker}>Mission Briefing</p>
 				<h1>{title}</h1>
 				<p className={styles.copy}>
-					적을 격추하면 경험치가 떨어지고, 기체로 먹어 레벨업하면 런 증강을 선택합니다. 영구 능력치는 출격 전에 주화로
-					강화합니다.
+					심해 균열이 열렸습니다. 적성 생물을 격파해 코어 진주를 회수하고, 전투 중 발견한 유물로 무장을 즉시 개조하세요.
+					귀환 후에는 인양 주화로 다음 잠수를 준비합니다.
 				</p>
+				<div className={styles.missionList}>
+					<span>CORE PEARL</span>
+					<span>ORBIT SHELLS</span>
+					<span>RELIC DRAFT</span>
+				</div>
 
 				{mode === "gameover" && (
 					<div className={styles.rewardLine}>
-						<span>격추 {hud.defeatedEnemies}</span>
-						<span>웨이브 {hud.wave}</span>
-						<span>획득 주화 +{hud.earnedCoins}</span>
+						<span>KILLS {hud.defeatedEnemies}</span>
+						<span>WAVE {hud.wave}</span>
+						<span>SALVAGE +{hud.earnedCoins}</span>
 					</div>
 				)}
 
@@ -80,22 +85,22 @@ export const AirRaidOverlay = ({
 			{showMetaPanel && (
 				<div className={styles.metaPanel}>
 					<div className={styles.metaHeader}>
-						<p className={styles.kicker}>Hangar</p>
-						<strong>보유 주화 {metaProgress.coins.toLocaleString()}</strong>
+						<p className={styles.kicker}>Reef Dock</p>
+						<strong>SALVAGE {metaProgress.coins.toLocaleString()}</strong>
 					</div>
 
 					<div className={styles.slotPanel}>
 						<button type="button" className={styles.slotMachine} disabled={metaProgress.coins < COIN_SLOT_COST} onClick={onCoinSlot}>
-							<span>Coin Slot</span>
-							<strong>주화 슬롯</strong>
-							<small>{COIN_SLOT_COST} 주화로 손실부터 잭팟까지 노립니다.</small>
-							<b>{COIN_SLOT_COST} 주화</b>
+							<span>Salvage Dive</span>
+							<strong>난파선 인양</strong>
+							<small>위험한 잔해를 뒤져 추가 주화를 노립니다. 빈손으로 돌아올 수도 있습니다.</small>
+							<b>{COIN_SLOT_COST} SALVAGE</b>
 						</button>
 						<button type="button" className={styles.slotMachine} disabled={metaProgress.coins < STAT_SLOT_COST} onClick={onStatSlot}>
-							<span>Stat Slot</span>
-							<strong>랜덤 능력치 슬롯</strong>
-							<small>싼 가격으로 무작위 능력치를 얻습니다. 저효율과 고효율이 섞여 있습니다.</small>
-							<b>{STAT_SLOT_COST} 주화</b>
+							<span>Mutator Pod</span>
+							<strong>변이 코어</strong>
+							<small>불안정한 코어를 장착합니다. 작은 진화부터 대형 변이까지 섞여 있습니다.</small>
+							<b>{STAT_SLOT_COST} SALVAGE</b>
 						</button>
 					</div>
 
@@ -103,16 +108,16 @@ export const AirRaidOverlay = ({
 						<div className={styles.slotResult} data-kind={slotResult.kind}>
 							<span>{slotResult.title}</span>
 							<strong>{slotResult.description}</strong>
-							{slotResult.kind === "coin" && <small>주화 변화 {formatCoinDelta(slotResult.deltaCoins)}</small>}
+							{slotResult.kind === "coin" && <small>SALVAGE {formatCoinDelta(slotResult.deltaCoins)}</small>}
 							{slotResult.kind === "stat" && slotResult.bonusId && (
 								<small>
-									{META_SLOT_BONUS_LABELS[slotResult.bonusId]} 누적 +{metaProgress.slotBonuses[slotResult.bonusId]}
+									{META_SLOT_BONUS_LABELS[slotResult.bonusId]} CORE +{metaProgress.slotBonuses[slotResult.bonusId]}
 								</small>
 							)}
 						</div>
 					)}
 
-					{slotBonusSummary && <p className={styles.slotSummary}>슬롯 보너스: {slotBonusSummary}</p>}
+					{slotBonusSummary && <p className={styles.slotSummary}>장착된 변이: {slotBonusSummary}</p>}
 
 					<div className={styles.metaGrid}>
 						{META_UPGRADE_ORDER.map((upgradeId) => {
@@ -135,7 +140,7 @@ export const AirRaidOverlay = ({
 									</span>
 									<strong>{definition.title}</strong>
 									<small>{definition.description}</small>
-									<b>{isMaxed ? "MAX" : `${cost?.toLocaleString()} 주화`}</b>
+									<b>{isMaxed ? "MAX" : `${cost?.toLocaleString()} SALVAGE`}</b>
 								</button>
 							);
 						})}

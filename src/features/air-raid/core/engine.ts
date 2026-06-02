@@ -2,6 +2,9 @@ import {
 	ENEMY_FIRE_SAFE_MARGIN_X,
 	ENEMY_FIRE_SAFE_MARGIN_Y,
 	MELEE_MAX_CHARGE,
+	PET_BULLET_BASE_RADIUS,
+	PET_BULLET_LEVEL_RADIUS,
+	PET_BULLET_MAX_RADIUS,
 	PLAYER_BOUNDS_PADDING_BOTTOM,
 	PLAYER_BOUNDS_PADDING_TOP,
 	PLAYER_BOUNDS_PADDING_X,
@@ -12,7 +15,10 @@ import {
 import { openAugmentSelection } from "./augments";
 import { clamp, distanceSquared, randomRange } from "./math";
 import { getNextId } from "./state";
-import type { EnemyKind, GameState, Plane } from "./types";
+import type { Bullet, CollectionEffect, EnemyKind, GameState, Plane, PowerUp } from "./types";
+
+const COLLECTION_EFFECT_LIFE = 0.28;
+const GOLDFISH_ESCAPE_TIME = 7.6;
 
 const addParticleBurst = (state: GameState, x: number, y: number, color: string, count: number) => {
 	for (let i = 0; i < count; i++) {
@@ -32,8 +38,24 @@ const addParticleBurst = (state: GameState, x: number, y: number, color: string,
 	}
 };
 
+const addCollectionEffect = (state: GameState, kind: CollectionEffect["kind"], x: number, y: number, radius: number) => {
+	state.collectionEffects.push({
+		id: getNextId(state),
+		kind,
+		startX: x,
+		startY: y,
+		x,
+		y,
+		radius,
+		life: COLLECTION_EFFECT_LIFE,
+		maxLife: COLLECTION_EFFECT_LIFE,
+		phase: Math.random() * Math.PI * 2,
+	});
+};
+
 const awardEnemyScore = (state: GameState, enemy: Plane) => {
-	const baseScore = enemy.kind === "boss" ? 2200 : enemy.kind === "bomber" ? 260 : enemy.kind === "ace" ? 230 : enemy.kind === "fighter" ? 180 : 110;
+	const baseScore =
+		enemy.kind === "boss" ? 2200 : enemy.kind === "goldfish" ? 1250 : enemy.kind === "bomber" ? 260 : enemy.kind === "ace" ? 230 : enemy.kind === "fighter" ? 180 : 110;
 	state.combo = Math.min(99, state.combo + 1);
 	state.comboTimer = 2.6;
 	state.score += Math.round(baseScore * (1 + Math.min(state.combo - 1, 18) * 0.05));
@@ -42,9 +64,11 @@ const awardEnemyScore = (state: GameState, enemy: Plane) => {
 };
 
 const calculateCoinReward = (state: GameState) =>
-	Math.max(0, Math.floor(state.defeatedEnemies * 2 + Math.max(0, state.wave - 1) * 25 + state.defeatedBosses * 60 + state.score / 900));
+	Math.max(0, state.earnedCoins + Math.floor(state.defeatedEnemies * 3 + Math.max(0, state.wave - 1) * 35 + state.defeatedBosses * 90 + state.score / 720));
 
 const getEnemyExperience = (state: GameState, enemy: Plane) => {
+	if (enemy.kind === "goldfish") return enemy.experienceReward ?? 90 + state.wave * 10;
+
 	const baseExperience = enemy.kind === "boss" ? 125 : enemy.kind === "bomber" ? 18 : enemy.kind === "ace" ? 16 : enemy.kind === "fighter" ? 12 : 8;
 	return baseExperience + Math.floor(state.wave * (enemy.kind === "boss" ? 4 : 0.8));
 };
@@ -65,7 +89,7 @@ const addExperience = (state: GameState, amount: number) => {
 
 const dropExperience = (state: GameState, enemy: Plane) => {
 	const totalExperience = getEnemyExperience(state, enemy);
-	const orbCount = enemy.kind === "boss" ? 12 : enemy.kind === "bomber" ? 4 : enemy.kind === "ace" ? 3 : 2;
+	const orbCount = enemy.kind === "boss" ? 12 : enemy.kind === "goldfish" ? 14 : enemy.kind === "bomber" ? 4 : enemy.kind === "ace" ? 3 : 2;
 	let remaining = totalExperience;
 
 	for (let i = 0; i < orbCount; i++) {
@@ -78,7 +102,7 @@ const dropExperience = (state: GameState, enemy: Plane) => {
 			vx: randomRange(-44, 44),
 			vy: randomRange(48, 98),
 			value,
-			radius: enemy.kind === "boss" ? 5.6 : 4.6,
+			radius: enemy.kind === "boss" || enemy.kind === "goldfish" ? 5.6 : 4.6,
 		});
 	}
 };
@@ -98,13 +122,14 @@ const addPlayerBullet = (
 	radius = 4,
 	color = "#8bf4ff",
 	pierceBonus = 0,
+	visualRadius?: number,
 ) => {
 	const powerBonus = 1 + state.player.power * 0.08;
 	const chaos = getShotChaos(state);
 	const nextVx = vx + (chaos > 0 ? randomRange(-85, 85) * chaos : 0);
 	const nextVy = vy + (chaos > 0 ? randomRange(-20, 28) * chaos : 0);
 
-	state.bullets.push({
+	const bullet: Bullet = {
 		id: getNextId(state),
 		x,
 		y,
@@ -115,42 +140,29 @@ const addPlayerBullet = (
 		pierce: state.bulletPierce + pierceBonus,
 		from: "player",
 		color,
-	});
+	};
+
+	if (visualRadius !== undefined) bullet.visualRadius = visualRadius;
+	state.bullets.push(bullet);
 };
 
 const firePlayer = (state: GameState) => {
 	const { player } = state;
-	const addPowerWingShots = () => {
-		if (player.power >= 2) {
-			addPlayerBullet(state, player.x - 12, player.y - 12, -55, -610, 0.92);
-			addPlayerBullet(state, player.x + 12, player.y - 12, 55, -610, 0.92);
-		}
-
-		if (player.power >= 4) {
-			addPlayerBullet(state, player.x - 22, player.y - 2, -115, -560, 0.78);
-			addPlayerBullet(state, player.x + 22, player.y - 2, 115, -560, 0.78);
-		}
-	};
+	const headY = player.y - 34;
+	const gillY = player.y - 22;
+	const sideFinY = player.y - 14;
 
 	if (state.weapon === "fork") {
 		const forkVx = state.prismSplitter ? 170 : 115;
-		addPlayerBullet(state, player.x - 14, player.y - 16, -forkVx, -635, 1.55, 4.6, "#92fff2");
-		addPlayerBullet(state, player.x + 14, player.y - 16, forkVx, -635, 1.55, 4.6, "#92fff2");
-		if (player.power >= 3) {
-			addPlayerBullet(state, player.x - 25, player.y - 5, -forkVx - 58, -585, 1.08, 4, "#92fff2");
-			addPlayerBullet(state, player.x + 25, player.y - 5, forkVx + 58, -585, 1.08, 4, "#92fff2");
-		}
+		addPlayerBullet(state, player.x - 14, gillY, -forkVx, -635, 1.55, 4.6, "#92fff2");
+		addPlayerBullet(state, player.x + 14, gillY, forkVx, -635, 1.55, 4.6, "#92fff2");
 		return;
 	}
 
 	if (state.weapon === "scatter") {
 		const sideCount = state.prismSplitter ? 3 : 2;
 		for (let i = -sideCount; i <= sideCount; i++) {
-			addPlayerBullet(state, player.x + i * 6, player.y - 16, i * 76, -600 + Math.abs(i) * 18, i === 0 ? 0.9 : 0.72, 3.8, "#b3ff74");
-		}
-		if (player.power >= 4) {
-			addPlayerBullet(state, player.x - 28, player.y - 2, -210, -520, 0.66, 3.6, "#b3ff74");
-			addPlayerBullet(state, player.x + 28, player.y - 2, 210, -520, 0.66, 3.6, "#b3ff74");
+			addPlayerBullet(state, player.x + i * 6, gillY, i * 76, -600 + Math.abs(i) * 18, i === 0 ? 0.9 : 0.72, 3.8, "#b3ff74");
 		}
 		return;
 	}
@@ -162,32 +174,30 @@ const firePlayer = (state: GameState) => {
 		const laserPierce = focus + (state.prismSplitter ? 1 : 0);
 
 		if (state.prismSplitter && focus === 0) {
-			addPlayerBullet(state, player.x - 8, player.y - 24, -34, -850, 0.26, 1.75, "#ff9cff", laserPierce);
-			addPlayerBullet(state, player.x + 8, player.y - 24, 34, -850, 0.26, 1.75, "#ff9cff", laserPierce);
+			addPlayerBullet(state, player.x - 8, headY, -34, -850, 0.26, 1.75, "#ff9cff", laserPierce);
+			addPlayerBullet(state, player.x + 8, headY, 34, -850, 0.26, 1.75, "#ff9cff", laserPierce);
 			return;
 		}
 
-		addPlayerBullet(state, player.x, player.y - 28, 0, -930, laserDamage, laserRadius, focus >= 2 ? "#ffffff" : "#ff9cff", laserPierce);
+		addPlayerBullet(state, player.x, headY, 0, -930, laserDamage, laserRadius, focus >= 2 ? "#ffffff" : "#ff9cff", laserPierce);
 
 		if (state.prismSplitter) {
-			addPlayerBullet(state, player.x - 13, player.y - 18, -24, -880, laserDamage * 0.72, Math.max(1.9, laserRadius * 0.75), "#ffb7ff", laserPierce);
-			addPlayerBullet(state, player.x + 13, player.y - 18, 24, -880, laserDamage * 0.72, Math.max(1.9, laserRadius * 0.75), "#ffb7ff", laserPierce);
+			addPlayerBullet(state, player.x - 13, gillY, -24, -880, laserDamage * 0.72, Math.max(1.9, laserRadius * 0.75), "#ffb7ff", laserPierce);
+			addPlayerBullet(state, player.x + 13, gillY, 24, -880, laserDamage * 0.72, Math.max(1.9, laserRadius * 0.75), "#ffb7ff", laserPierce);
 		}
 
 		if (focus >= 2) {
-			addPlayerBullet(state, player.x, player.y - 5, 0, -780, laserDamage * 0.58, laserRadius * 0.65, "#f6fdff", laserPierce);
+			addPlayerBullet(state, player.x, sideFinY, 0, -780, laserDamage * 0.58, laserRadius * 0.65, "#f6fdff", laserPierce);
 		}
 		return;
 	}
 
 	if (state.weapon === "lance") {
-		addPlayerBullet(state, player.x, player.y - 28, 0, -720, 2.45, 7, "#ffe989");
-		if (player.power >= 3) addPlayerBullet(state, player.x, player.y - 4, 0, -620, 1.25, 5, "#ffe989");
+		addPlayerBullet(state, player.x, headY, 0, -720, 2.45, 7, "#ffe989");
 		return;
 	}
 
-	addPlayerBullet(state, player.x, player.y - 22, 0, -650, 1.2);
-	addPowerWingShots();
+	addPlayerBullet(state, player.x, headY, 0, -650, 1.2);
 };
 
 const firePet = (state: GameState, petX: number, petY: number, level: number) => {
@@ -197,24 +207,26 @@ const firePet = (state: GameState, petX: number, petY: number, level: number) =>
 	const angle = target ? Math.atan2(target.y - petY, target.x - petX) : -Math.PI / 2;
 	const speed = 620 + level * 34;
 	const damage = (0.38 + level * 0.16) * state.petDamageMultiplier;
-	const radius = 2.6 + level * 0.22;
+	const radius = clamp(PET_BULLET_BASE_RADIUS + level * PET_BULLET_LEVEL_RADIUS, PET_BULLET_BASE_RADIUS, PET_BULLET_MAX_RADIUS);
+	const visualRadius = clamp(radius * 0.52, 1.05, 1.45);
 	const vx = Math.cos(angle) * speed;
 	const vy = Math.sin(angle) * speed;
 
-	addPlayerBullet(state, petX, petY - 6, vx, vy, damage, radius, level >= 4 ? "#ffffff" : "#7cf8a8", level >= 5 ? 1 : 0);
+	addPlayerBullet(state, petX, petY - 6, vx, vy, damage, radius, level >= 4 ? "#ffffff" : "#7cf8a8", level >= 5 ? 1 : 0, visualRadius);
 	if (level >= 3) {
-		addPlayerBullet(state, petX - 4, petY - 2, vx - 42, vy, damage * 0.56, radius * 0.78, "#a8ffd2");
-		addPlayerBullet(state, petX + 4, petY - 2, vx + 42, vy, damage * 0.56, radius * 0.78, "#a8ffd2");
+		addPlayerBullet(state, petX - 4, petY - 2, vx - 42, vy, damage * 0.56, radius * 0.78, "#a8ffd2", 0, visualRadius * 0.82);
+		addPlayerBullet(state, petX + 4, petY - 2, vx + 42, vy, damage * 0.56, radius * 0.78, "#a8ffd2", 0, visualRadius * 0.82);
 	}
 };
 
 const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: number) => {
+	const adjustedSpeed = speed * getEnemyBulletSpeedMultiplier(state.wave);
 	state.bullets.push({
 		id: getNextId(state),
 		x: enemy.x,
 		y: enemy.y + enemy.radius * 0.45,
-		vx: Math.cos(angle) * speed,
-		vy: Math.sin(angle) * speed,
+		vx: Math.cos(angle) * adjustedSpeed,
+		vy: Math.sin(angle) * adjustedSpeed,
 		radius: enemy.kind === "boss" ? 5 : 4,
 		damage: 1,
 		pierce: 0,
@@ -225,6 +237,25 @@ const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: nu
 
 const getPlayerMinY = (radius: number) => radius + PLAYER_BOUNDS_PADDING_TOP;
 const getPlayerMaxY = (radius: number) => WORLD_HEIGHT - radius - PLAYER_BOUNDS_PADDING_BOTTOM;
+
+const getDifficultyRamp = (wave: number) => clamp((wave - 1) / 8, 0, 1);
+
+const getEnemySpeedMultiplier = (wave: number) => 0.68 + getDifficultyRamp(wave) * 0.28;
+
+const getEnemyBulletSpeedMultiplier = (wave: number) => 0.78 + getDifficultyRamp(wave) * 0.18;
+
+const getInitialEnemyFireCooldown = (wave: number) => {
+	const ramp = getDifficultyRamp(wave);
+	return randomRange(1.75 - ramp * 0.35, 3.25 - ramp * 0.75);
+};
+
+const getEnemyRefireCooldown = (wave: number, kind: EnemyKind) => {
+	const ramp = getDifficultyRamp(wave);
+	if (kind === "boss") return 1.18 - ramp * 0.18;
+	if (kind === "ace") return 1.75 - ramp * 0.3;
+	if (kind === "bomber") return 2.15 - ramp * 0.32;
+	return 1.95 - ramp * 0.35;
+};
 
 const canEnemyFire = (enemy: Plane) => {
 	const minX = enemy.radius + ENEMY_FIRE_SAFE_MARGIN_X;
@@ -237,9 +268,12 @@ const canEnemyFire = (enemy: Plane) => {
 
 const spawnEnemy = (state: GameState) => {
 	const roll = Math.random();
-	const aceChance = Math.min(0.1 + state.wave * 0.012, 0.2);
-	const kind: EnemyKind = roll > 0.86 ? "bomber" : roll > 0.86 - aceChance ? "ace" : roll > 0.36 ? "fighter" : "scout";
+	const ramp = getDifficultyRamp(state.wave);
+	const bomberThreshold = 0.92 - ramp * 0.06;
+	const aceChance = Math.min(0.06 + state.wave * 0.01, 0.18);
+	const kind: EnemyKind = roll > bomberThreshold ? "bomber" : roll > bomberThreshold - aceChance ? "ace" : roll > 0.42 ? "fighter" : "scout";
 	const radius = kind === "bomber" ? 22 : kind === "ace" ? 16 : kind === "fighter" ? 17 : 14;
+	const speedMultiplier = getEnemySpeedMultiplier(state.wave);
 	const hp =
 		kind === "bomber"
 			? 5 + state.wave
@@ -255,13 +289,13 @@ const spawnEnemy = (state: GameState) => {
 		id: getNextId(state),
 		x,
 		y: -radius - 10,
-		vx: side * (kind === "ace" ? randomRange(88, 126) : randomRange(18, 45)),
-		vy: kind === "bomber" ? randomRange(42, 62) : kind === "ace" ? randomRange(118, 148) : randomRange(70, 112),
+		vx: side * (kind === "ace" ? randomRange(58, 90) : randomRange(12, 32)) * speedMultiplier,
+		vy: (kind === "bomber" ? randomRange(34, 50) : kind === "ace" ? randomRange(82, 112) : randomRange(52, 82)) * speedMultiplier,
 		radius,
 		hp,
 		maxHp: hp,
 		kind,
-		fireCooldown: randomRange(0.8, 1.8),
+		fireCooldown: getInitialEnemyFireCooldown(state.wave),
 		age: 0,
 	});
 };
@@ -273,14 +307,38 @@ const spawnBoss = (state: GameState) => {
 		id: getNextId(state),
 		x: WORLD_WIDTH / 2,
 		y: -72,
-		vx: 82,
-		vy: 52,
+		vx: 64,
+		vy: 42,
 		radius: 54,
 		hp,
 		maxHp: hp,
 		kind: "boss",
-		fireCooldown: 0.8,
+		fireCooldown: 1.35,
 		age: 0,
+	});
+};
+
+const spawnGoldfish = (state: GameState) => {
+	const radius = 18;
+	const fromLeft = Math.random() > 0.5;
+	const hp = 58 + state.wave * 13;
+	const coinReward = Math.round(65 + state.wave * 24);
+
+	state.enemies.push({
+		id: getNextId(state),
+		x: fromLeft ? -radius - 18 : WORLD_WIDTH + radius + 18,
+		y: randomRange(88, 238),
+		vx: (fromLeft ? 1 : -1) * randomRange(46, 64),
+		vy: randomRange(6, 18),
+		radius,
+		hp,
+		maxHp: hp,
+		kind: "goldfish",
+		fireCooldown: Number.POSITIVE_INFINITY,
+		age: 0,
+		escapeTime: GOLDFISH_ESCAPE_TIME,
+		coinReward,
+		experienceReward: Math.round(86 + state.wave * 11),
 	});
 };
 
@@ -324,9 +382,9 @@ const updatePlayer = (state: GameState, dt: number) => {
 	}
 
 	player.fireCooldown -= dt;
-	const weaponRate = state.weapon === "laser" ? 0.055 : state.weapon === "lance" ? 0.26 : state.weapon === "scatter" ? 0.2 : 0.17;
+	const weaponRate = state.weapon === "laser" ? 0.075 : state.weapon === "lance" ? 0.34 : state.weapon === "scatter" ? 0.27 : state.weapon === "fork" ? 0.25 : 0.24;
 	const reloadMultiplier = state.weapon === "fork" || state.weapon === "scatter" || state.weapon === "lance" ? 1 / state.reloadSpeedMultiplier : 1;
-	const fireRate = clamp((weaponRate - player.power * 0.018) * state.fireCooldownMultiplier * reloadMultiplier, 0.045, 0.34);
+	const fireRate = clamp((weaponRate - player.power * 0.018) * state.fireCooldownMultiplier * reloadMultiplier, 0.045, 0.5);
 	if (player.fireCooldown <= 0) {
 		firePlayer(state);
 		player.fireCooldown = fireRate;
@@ -344,13 +402,21 @@ const updateEnemies = (state: GameState, dt: number) => {
 				enemy.x += enemy.vx * dt;
 				if (enemy.x < 76 || enemy.x > WORLD_WIDTH - 76) enemy.vx *= -1;
 			}
+		} else if (enemy.kind === "goldfish") {
+			const escapeRatio = enemy.escapeTime ? clamp(enemy.age / enemy.escapeTime, 0, 1) : 0;
+			const dartSpeed = 1 + escapeRatio * 0.48;
+			enemy.x += enemy.vx * dartSpeed * dt;
+			enemy.y += (enemy.vy + Math.sin(enemy.age * 4.2) * 26) * dt;
 		} else {
-			const weave = enemy.kind === "ace" ? 82 : enemy.kind === "fighter" ? 44 : 28;
-			const waveSpeed = enemy.kind === "ace" ? 5.8 : enemy.kind === "fighter" ? 3.4 : 2.1;
+			const movementMultiplier = getEnemySpeedMultiplier(state.wave);
+			const weave = (enemy.kind === "ace" ? 82 : enemy.kind === "fighter" ? 44 : 28) * movementMultiplier;
+			const waveSpeed = (enemy.kind === "ace" ? 5.8 : enemy.kind === "fighter" ? 3.4 : 2.1) * (0.76 + getDifficultyRamp(state.wave) * 0.18);
 			enemy.x += Math.sin(enemy.age * waveSpeed) * weave * dt + enemy.vx * dt;
 			enemy.y += enemy.vy * dt;
 			if (enemy.x < enemy.radius || enemy.x > WORLD_WIDTH - enemy.radius) enemy.vx *= -1;
 		}
+
+		if (enemy.kind === "goldfish") continue;
 
 		enemy.fireCooldown -= dt;
 		if (enemy.fireCooldown <= 0 && canEnemyFire(enemy)) {
@@ -358,14 +424,14 @@ const updateEnemies = (state: GameState, dt: number) => {
 			if (enemy.kind === "boss") {
 				const sweep = Math.sin(enemy.age * 2.2) * 0.12;
 				for (let i = -2; i <= 2; i++) addEnemyBullet(state, enemy, angleToPlayer + sweep + i * 0.18, 245);
-				enemy.fireCooldown = 0.78;
+				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind);
 			} else if (enemy.kind === "ace") {
 				addEnemyBullet(state, enemy, angleToPlayer - 0.13, 270);
 				addEnemyBullet(state, enemy, angleToPlayer + 0.13, 270);
-				enemy.fireCooldown = 1.0;
+				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind);
 			} else {
 				addEnemyBullet(state, enemy, angleToPlayer, enemy.kind === "bomber" ? 210 : 250);
-				enemy.fireCooldown = enemy.kind === "bomber" ? 1.45 : 1.15;
+				enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind);
 			}
 		}
 	}
@@ -377,11 +443,11 @@ const updatePets = (state: GameState, dt: number) => {
 
 	for (let i = 0; i < count; i++) {
 		const pet = state.pets[i];
-		const centerOffset = (i - (count - 1) / 2) * 44;
-		const orbit = Math.sin(state.time * 3.1 + pet.phase) * 8;
-		const targetX = clamp(state.player.x + centerOffset + orbit, 24, WORLD_WIDTH - 24);
-		const targetY = clamp(state.player.y + 34 + Math.cos(state.time * 2.4 + pet.phase) * 10, WORLD_HEIGHT * 0.46, WORLD_HEIGHT - 28);
-		const follow = Math.min(1, dt * 9.5);
+		const angle = state.time * (1.55 + pet.level * 0.08) + pet.phase;
+		const orbitRadius = 35 + Math.min(4, pet.level) * 4 + Math.sin(state.time * 3 + pet.phase) * 2;
+		const targetX = clamp(state.player.x + Math.cos(angle) * orbitRadius, 24, WORLD_WIDTH - 24);
+		const targetY = clamp(state.player.y + Math.sin(angle) * orbitRadius * 0.72, 28, WORLD_HEIGHT - 28);
+		const follow = Math.min(1, dt * 12);
 
 		pet.x += (targetX - pet.x) * follow;
 		pet.y += (targetY - pet.y) * follow;
@@ -416,42 +482,36 @@ const updateParticles = (state: GameState, dt: number) => {
 };
 
 const updatePowerUps = (state: GameState, dt: number) => {
-	const magnetRadius = 42 * state.magnetMultiplier;
 	for (const powerUp of state.powerUps) {
-		const dx = state.player.x - powerUp.x;
-		const dy = state.player.y - powerUp.y;
-		const distance = Math.hypot(dx, dy);
-		if (distance < magnetRadius && distance > 0) {
-			const pull = (1 - distance / magnetRadius) * 360;
-			powerUp.x += (dx / distance) * pull * dt;
-			powerUp.y += (dy / distance) * pull * dt;
-		}
 		powerUp.y += powerUp.vy * dt;
 	}
 
 	state.powerUps = state.powerUps.filter((powerUp) => powerUp.y < WORLD_HEIGHT + 32);
 };
 
+const getPickupRadius = (state: GameState, itemRadius: number, baseBonus: number) => state.player.radius + itemRadius + baseBonus * state.magnetMultiplier;
+
+const collectPowerUp = (state: GameState, powerUp: PowerUp) => {
+	if (powerUp.kind === "repair") {
+		state.player.lives = Math.min(state.player.maxLives, state.player.lives + 1);
+	} else {
+		state.player.power = Math.min(5, state.player.power + 1);
+	}
+
+	addCollectionEffect(state, powerUp.kind, powerUp.x, powerUp.y, powerUp.radius);
+};
+
 const updateExperienceOrbs = (state: GameState, dt: number) => {
 	const collectedOrbs = new Set<number>();
-	const magnetRadius = 34 * state.magnetMultiplier;
 
 	for (const orb of state.experienceOrbs) {
-		const dx = state.player.x - orb.x;
-		const dy = state.player.y - orb.y;
-		const distance = Math.hypot(dx, dy);
+		const pickupRadius = getPickupRadius(state, orb.radius, 24);
 
-		if (distance <= state.player.radius + orb.radius) {
+		if (distanceSquared(orb.x, orb.y, state.player.x, state.player.y) <= pickupRadius * pickupRadius) {
 			collectedOrbs.add(orb.id);
 			addExperience(state, orb.value);
-			addParticleBurst(state, orb.x, orb.y, "#b6ff7a", 4);
+			addCollectionEffect(state, "experience", orb.x, orb.y, orb.radius);
 			continue;
-		}
-
-		if (distance < magnetRadius && distance > 0) {
-			const pull = (1 - distance / magnetRadius) * 340;
-			orb.vx += (dx / distance) * pull * dt;
-			orb.vy += (dy / distance) * pull * dt;
 		}
 
 		orb.x += orb.vx * dt;
@@ -463,6 +523,24 @@ const updateExperienceOrbs = (state: GameState, dt: number) => {
 	state.experienceOrbs = state.experienceOrbs.filter(
 		(orb) => !collectedOrbs.has(orb.id) && orb.y < WORLD_HEIGHT + 32 && orb.x > -32 && orb.x < WORLD_WIDTH + 32,
 	);
+};
+
+const updateCollectionEffects = (state: GameState, dt: number) => {
+	for (const effect of state.collectionEffects) {
+		effect.life -= dt;
+		const progress = clamp(1 - effect.life / effect.maxLife, 0, 1);
+		const eased = 1 - (1 - progress) ** 3;
+
+		effect.x = effect.startX + (state.player.x - effect.startX) * eased;
+		effect.y = effect.startY + (state.player.y - effect.startY) * eased;
+
+		if (effect.life <= 0) {
+			const color = effect.kind === "experience" ? "#b6ff7a" : effect.kind === "repair" ? "#9eff8f" : "#fff27a";
+			addParticleBurst(state, state.player.x, state.player.y, color, effect.kind === "experience" ? 3 : 8);
+		}
+	}
+
+	state.collectionEffects = state.collectionEffects.filter((effect) => effect.life > 0);
 };
 
 const updateShield = (state: GameState, dt: number) => {
@@ -558,6 +636,49 @@ const updateSlashes = (state: GameState, dt: number) => {
 	state.slashes = state.slashes.filter((slash) => slash.life > 0);
 };
 
+const getEnemyBurstColor = (enemy: Plane) => {
+	if (enemy.kind === "boss") return "#ff8ad7";
+	if (enemy.kind === "goldfish") return "#fff27a";
+	return "#ffb15f";
+};
+
+const awardGoldfishBonus = (state: GameState, enemy: Plane) => {
+	const coinReward = enemy.coinReward ?? Math.round(65 + state.wave * 24);
+	state.earnedCoins += coinReward;
+
+	for (let i = 0; i < 10; i++) {
+		addCollectionEffect(state, "coin", enemy.x + randomRange(-enemy.radius, enemy.radius), enemy.y + randomRange(-enemy.radius * 0.75, enemy.radius * 0.75), randomRange(4.2, 6.2));
+	}
+};
+
+const defeatEnemy = (state: GameState, enemy: Plane, removedEnemies: Set<number>, canDropPowerUp: boolean) => {
+	removedEnemies.add(enemy.id);
+	awardEnemyScore(state, enemy);
+	state.shake = Math.max(state.shake, enemy.kind === "boss" ? 0.42 : enemy.kind === "goldfish" ? 0.32 : 0.13);
+	addParticleBurst(state, enemy.x, enemy.y, getEnemyBurstColor(enemy), enemy.kind === "boss" ? 58 : enemy.kind === "goldfish" ? 42 : 18);
+
+	if (enemy.kind === "goldfish") {
+		awardGoldfishBonus(state, enemy);
+	}
+
+	dropExperience(state, enemy);
+
+	if (enemy.kind === "boss") {
+		state.bossActive = false;
+		state.bossTimer = 24;
+		state.wave += 1;
+	} else if (enemy.kind !== "goldfish" && canDropPowerUp && Math.random() < 0.13) {
+		state.powerUps.push({
+			id: getNextId(state),
+			x: enemy.x,
+			y: enemy.y,
+			vy: 88,
+			radius: 12,
+			kind: Math.random() < 0.22 ? "repair" : "power",
+		});
+	}
+};
+
 const resolveCollisions = (state: GameState) => {
 	const playerBullets = state.bullets.filter((bullet) => bullet.from === "player");
 	const enemyBullets = state.bullets.filter((bullet) => bullet.from === "enemy");
@@ -578,26 +699,7 @@ const resolveCollisions = (state: GameState) => {
 				addParticleBurst(state, bullet.x, bullet.y, "#8bf4ff", 3);
 
 				if (enemy.hp <= 0) {
-					removedEnemies.add(enemy.id);
-					awardEnemyScore(state, enemy);
-					state.shake = enemy.kind === "boss" ? 0.42 : 0.13;
-					addParticleBurst(state, enemy.x, enemy.y, enemy.kind === "boss" ? "#ff8ad7" : "#ffb15f", enemy.kind === "boss" ? 58 : 18);
-					dropExperience(state, enemy);
-
-					if (enemy.kind === "boss") {
-						state.bossActive = false;
-						state.bossTimer = 24;
-						state.wave += 1;
-					} else if (Math.random() < 0.13) {
-						state.powerUps.push({
-							id: getNextId(state),
-							x: enemy.x,
-							y: enemy.y,
-							vy: 88,
-							radius: 12,
-							kind: Math.random() < 0.22 ? "repair" : "power",
-						});
-					}
+					defeatEnemy(state, enemy, removedEnemies, true);
 				}
 				break;
 			}
@@ -615,16 +717,7 @@ const resolveCollisions = (state: GameState) => {
 				addParticleBurst(state, enemy.x, enemy.y, slash.charge > 0.75 ? "#fff27a" : "#8bf4ff", 8);
 
 				if (enemy.hp <= 0) {
-					removedEnemies.add(enemy.id);
-					awardEnemyScore(state, enemy);
-					addParticleBurst(state, enemy.x, enemy.y, enemy.kind === "boss" ? "#ff8ad7" : "#ffb15f", enemy.kind === "boss" ? 58 : 18);
-					dropExperience(state, enemy);
-
-					if (enemy.kind === "boss") {
-						state.bossActive = false;
-						state.bossTimer = 24;
-						state.wave += 1;
-					}
+					defeatEnemy(state, enemy, removedEnemies, false);
 				}
 			}
 		}
@@ -648,26 +741,23 @@ const resolveCollisions = (state: GameState) => {
 		const hitDistance = enemy.radius + state.player.radius;
 		if (enemy.y > -20 && distanceSquared(enemy.x, enemy.y, state.player.x, state.player.y) <= hitDistance * hitDistance) {
 			removedEnemies.add(enemy.id);
-			if (enemy.kind !== "boss") addParticleBurst(state, enemy.x, enemy.y, "#ffb15f", 12);
+			if (enemy.kind !== "boss") addParticleBurst(state, enemy.x, enemy.y, getEnemyBurstColor(enemy), 12);
 			damagePlayer(state);
 		}
 	}
 
 	for (const powerUp of state.powerUps) {
-		const hitDistance = powerUp.radius + state.player.radius;
-		if (distanceSquared(powerUp.x, powerUp.y, state.player.x, state.player.y) <= hitDistance * hitDistance) {
-			if (powerUp.kind === "repair") {
-				state.player.lives = Math.min(state.player.maxLives, state.player.lives + 1);
-			} else {
-				state.player.power = Math.min(5, state.player.power + 1);
-			}
+		const pickupRadius = getPickupRadius(state, powerUp.radius, 28);
+		if (distanceSquared(powerUp.x, powerUp.y, state.player.x, state.player.y) <= pickupRadius * pickupRadius) {
+			collectPowerUp(state, powerUp);
 			removedBullets.add(powerUp.id);
-			addParticleBurst(state, powerUp.x, powerUp.y, powerUp.kind === "repair" ? "#9eff8f" : "#fff27a", 14);
 		}
 	}
 
 	state.bullets = state.bullets.filter((bullet) => !removedBullets.has(bullet.id));
-	state.enemies = state.enemies.filter((enemy) => !removedEnemies.has(enemy.id) && enemy.y < WORLD_HEIGHT + enemy.radius + 40);
+	state.enemies = state.enemies.filter(
+		(enemy) => !removedEnemies.has(enemy.id) && (enemy.kind !== "goldfish" || !enemy.escapeTime || enemy.age < enemy.escapeTime) && enemy.y < WORLD_HEIGHT + enemy.radius + 40,
+	);
 	state.powerUps = state.powerUps.filter((powerUp) => !removedBullets.has(powerUp.id));
 };
 
@@ -675,11 +765,19 @@ const updateSpawn = (state: GameState, dt: number) => {
 	state.wave = Math.max(state.wave, 1 + Math.floor(state.score / 1800));
 	state.spawnTimer -= dt;
 	state.bossTimer -= dt;
+	state.treasureTimer -= dt;
 
 	if (state.spawnTimer <= 0 && !state.bossActive) {
 		spawnEnemy(state);
-		const speedUp = Math.min(0.55, state.wave * 0.035);
-		state.spawnTimer = randomRange(0.46, 0.92) - speedUp;
+		const speedUp = Math.min(0.38, Math.max(0, state.wave - 1) * 0.032);
+		state.spawnTimer = randomRange(0.82, 1.34) - speedUp;
+	}
+
+	if (state.treasureTimer <= 0) {
+		if (!state.bossActive && state.wave >= 3 && !state.enemies.some((enemy) => enemy.kind === "goldfish")) {
+			spawnGoldfish(state);
+		}
+		state.treasureTimer = randomRange(118, 182);
 	}
 
 	if (state.bossTimer <= 0 && !state.bossActive) {
@@ -699,9 +797,19 @@ const updateStars = (state: GameState, dt: number) => {
 
 export const updateGame = (state: GameState, dt: number) => {
 	updateStars(state, dt);
-	if (state.mode !== "playing") return;
+	if (state.mode !== "playing") {
+		if (state.mode === "augment" || state.mode === "gameover") {
+			updateCollectionEffects(state, dt);
+			updateParticles(state, dt);
+		}
+		return;
+	}
 	addExperience(state, 0);
-	if (state.mode !== "playing") return;
+	if (state.mode !== "playing") {
+		updateCollectionEffects(state, dt);
+		updateParticles(state, dt);
+		return;
+	}
 
 	state.time += dt;
 	state.shake = Math.max(0, state.shake - dt);
@@ -717,5 +825,6 @@ export const updateGame = (state: GameState, dt: number) => {
 	updateSlashes(state, dt);
 	resolveCollisions(state);
 	updateExperienceOrbs(state, dt);
+	updateCollectionEffects(state, dt);
 	updateParticles(state, dt);
 };
