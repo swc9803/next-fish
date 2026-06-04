@@ -159,6 +159,7 @@ export const makeHud = (state: GameState): HudState => ({
 	stageChoices: state.stageChoices,
 	pendingBossSkill: state.pendingBossSkill,
 	lives: state.player.lives,
+	maxLives: state.player.maxLives,
 	power: state.player.power,
 	weapon: state.weapon,
 	augmentCount: state.augments.length,

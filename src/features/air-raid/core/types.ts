@@ -283,6 +283,7 @@ export type HudState = {
 	stageChoices: StageChoice[];
 	pendingBossSkill: BossSkillId | null;
 	lives: number;
+	maxLives: number;
 	power: number;
 	weapon: WeaponKind;
 	augmentCount: number;

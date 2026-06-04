@@ -10,6 +10,8 @@ type AirRaidHudProps = {
 
 export const AirRaidHud = ({ hud }: AirRaidHudProps) => {
 	const experiencePercent = Math.min(100, Math.round((hud.experience / hud.nextExperience) * 100));
+	const hullPercent = Math.min(100, Math.round((hud.lives / hud.maxLives) * 100));
+	const hullSegments = Array.from({ length: hud.maxLives }, (_, index) => index < hud.lives);
 
 	return (
 		<div className={styles.topBar}>
@@ -34,8 +36,20 @@ export const AirRaidHud = ({ hud }: AirRaidHudProps) => {
 				</span>
 				<span className={styles.statCell} data-tone="vital">
 					<b>HULL</b>
-					<strong>{hud.lives}</strong>
-					<small>POWER {hud.power}</small>
+					<strong>
+						{hud.lives}/{hud.maxLives}
+					</strong>
+					<i className={styles.hullMeter} aria-hidden="true">
+						<em style={{ width: `${hullPercent}%` }} />
+					</i>
+					<small className={styles.hullFooter}>
+						<span className={styles.hullPips} aria-label={`Hull ${hud.lives} of ${hud.maxLives}`}>
+							{hullSegments.map((filled, index) => (
+								<span key={index} data-filled={filled} />
+							))}
+						</span>
+						<span>PWR {hud.power}</span>
+					</small>
 				</span>
 				<span className={`${styles.statCell} ${styles.expCell}`} data-tone="xp">
 					<b>DEPTH</b>
