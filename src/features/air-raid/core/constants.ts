@@ -1,6 +1,8 @@
 export const WORLD_WIDTH = 420;
 export const WORLD_HEIGHT = 720;
 export const PLAYER_SPEED = 175;
+export const PLAYER_HITBOX_RADIUS = 9;
+export const PLAYER_HITBOX_HEAD_OFFSET_Y = 15;
 export const PLAYER_BOUNDS_PADDING_X = 12;
 export const PLAYER_BOUNDS_PADDING_TOP = 12;
 export const PLAYER_BOUNDS_PADDING_BOTTOM = 16;

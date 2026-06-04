@@ -5,6 +5,8 @@ import {
 	PLAYER_BOUNDS_PADDING_BOTTOM,
 	PLAYER_BOUNDS_PADDING_TOP,
 	PLAYER_BOUNDS_PADDING_X,
+	PLAYER_HITBOX_HEAD_OFFSET_Y,
+	PLAYER_HITBOX_RADIUS,
 	PLAYER_SPEED,
 	WORLD_HEIGHT,
 	WORLD_WIDTH,
@@ -29,6 +31,12 @@ const BOSS_SKILL_COOLDOWNS: Record<BossSkillId, number> = {
 	"kelp-snare": 17,
 	"ruin-prism": 24,
 };
+
+export const getPlayerHitbox = (state: GameState) => ({
+	x: state.player.x,
+	y: state.player.y - PLAYER_HITBOX_HEAD_OFFSET_Y,
+	radius: PLAYER_HITBOX_RADIUS,
+});
 
 export const getStageRoutePosition = (index: number) => ({
 	x: [88, WORLD_WIDTH / 2, WORLD_WIDTH - 88][index] ?? WORLD_WIDTH / 2,
@@ -883,6 +891,7 @@ const resolveCollisions = (state: GameState) => {
 	const enemyBullets = state.bullets.filter((bullet) => bullet.from === "enemy");
 	const removedBullets = new Set<number>();
 	const removedEnemies = new Set<number>();
+	const playerHitbox = getPlayerHitbox(state);
 
 	for (const bullet of playerBullets) {
 		for (const enemy of state.enemies) {
@@ -952,16 +961,16 @@ const resolveCollisions = (state: GameState) => {
 		}
 		if (removedBullets.has(bullet.id)) continue;
 
-		const hitDistance = bullet.radius + state.player.radius;
-		if (distanceSquared(bullet.x, bullet.y, state.player.x, state.player.y) <= hitDistance * hitDistance) {
+		const hitDistance = bullet.radius + playerHitbox.radius;
+		if (distanceSquared(bullet.x, bullet.y, playerHitbox.x, playerHitbox.y) <= hitDistance * hitDistance) {
 			removedBullets.add(bullet.id);
 			damagePlayer(state);
 		}
 	}
 
 	for (const enemy of state.enemies) {
-		const hitDistance = enemy.radius + state.player.radius;
-		if (enemy.y > -20 && distanceSquared(enemy.x, enemy.y, state.player.x, state.player.y) <= hitDistance * hitDistance) {
+		const hitDistance = enemy.radius + playerHitbox.radius;
+		if (enemy.y > -20 && distanceSquared(enemy.x, enemy.y, playerHitbox.x, playerHitbox.y) <= hitDistance * hitDistance) {
 			removedEnemies.add(enemy.id);
 			if (enemy.kind !== "boss") addParticleBurst(state, enemy.x, enemy.y, getEnemyBurstColor(enemy), 12);
 			damagePlayer(state);

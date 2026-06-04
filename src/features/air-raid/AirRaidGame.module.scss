@@ -95,6 +95,7 @@
 
 	&[data-tone="vital"] {
 		--hud-color: #9eff8f;
+		min-width: 7.2rem;
 	}
 
 	&[data-tone="xp"] {
@@ -132,6 +133,53 @@
 		font-weight: 800;
 		line-height: 1;
 		white-space: nowrap;
+	}
+}
+
+.hullMeter {
+	display: block;
+	width: 100%;
+	height: 0.34rem;
+	overflow: hidden;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 999px;
+	background: rgba(255, 79, 109, 0.22);
+
+	em {
+		display: block;
+		height: 100%;
+		background: linear-gradient(90deg, #9eff8f, #ffe989);
+		box-shadow: 0 0 0.75rem rgba(158, 255, 143, 0.42);
+	}
+}
+
+.hullPips {
+	display: flex;
+	flex: 1 1 auto;
+	gap: 0.14rem;
+	min-width: 2.6rem;
+
+	span {
+		flex: 1 1 0;
+		height: 0.22rem;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.16);
+
+		&[data-filled="true"] {
+			background: #9eff8f;
+			box-shadow: 0 0 0.45rem rgba(158, 255, 143, 0.38);
+		}
+	}
+}
+
+.hullFooter {
+	display: flex;
+	align-items: center;
+	gap: 0.34rem;
+
+	> span:last-child {
+		flex: 0 0 auto;
+		color: rgba(247, 251, 255, 0.72);
 	}
 }
 

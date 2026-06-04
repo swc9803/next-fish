@@ -7,7 +7,7 @@ import {
 	WORLD_WIDTH,
 } from "./constants";
 import { clamp, randomRange } from "./math";
-import { getStageRoutePosition } from "./engine";
+import { getPlayerHitbox, getStageRoutePosition } from "./engine";
 import { getStagePalette } from "./stages";
 import type { Bullet, CollectionEffect, ExperienceOrb, GameState, Layout, Particle, Pet, Plane, PowerUp, Slash } from "./types";
 
@@ -199,6 +199,7 @@ const drawEnemies = (ctx: CanvasRenderingContext2D, enemies: Plane[]) => {
 
 const drawPlayer = (ctx: CanvasRenderingContext2D, state: GameState) => {
 	const { player } = state;
+	const hitbox = getPlayerHitbox(state);
 
 	if (player.isCharging) {
 		const chargeRatio = clamp(player.meleeCharge / MELEE_MAX_CHARGE, 0, 1);
@@ -229,17 +230,17 @@ const drawPlayer = (ctx: CanvasRenderingContext2D, state: GameState) => {
 	ctx.lineWidth = 1.4;
 	ctx.setLineDash([4, 3]);
 	ctx.beginPath();
-	ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+	ctx.arc(hitbox.x, hitbox.y, hitbox.radius, 0, Math.PI * 2);
 	ctx.stroke();
 	ctx.setLineDash([]);
 	ctx.beginPath();
-	ctx.moveTo(player.x - 5, player.y);
-	ctx.lineTo(player.x + 5, player.y);
-	ctx.moveTo(player.x, player.y - 5);
-	ctx.lineTo(player.x, player.y + 5);
+	ctx.moveTo(hitbox.x - 4, hitbox.y);
+	ctx.lineTo(hitbox.x + 4, hitbox.y);
+	ctx.moveTo(hitbox.x, hitbox.y - 4);
+	ctx.lineTo(hitbox.x, hitbox.y + 4);
 	ctx.stroke();
 	ctx.font = "7px sans-serif";
-	ctx.fillText("HIT", player.x + player.radius + 3, player.y + 2);
+	ctx.fillText("HIT", hitbox.x + hitbox.radius + 3, hitbox.y + 2);
 	ctx.restore();
 };
 
