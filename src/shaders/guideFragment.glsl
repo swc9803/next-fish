@@ -53,9 +53,9 @@ void main() {
   vec2 centeredHole = holeCenter * aspect;
   float dist = distance(centeredUv, centeredHole);
   float eased = smoothstep(0.0, 1.0, progress);
-  float edgeNoise = (fbm(vUv * 18.0 + time * 0.35) - 0.5) * 0.12;
-  float radius = mix(0.04, maxRadius, eased);
-  float feather = mix(0.035, 0.18, eased);
+  float edgeNoise = (fbm(vUv * 18.0 + time * 0.35) - 0.5) * mix(0.018, 0.12, eased);
+  float radius = maxRadius * eased;
+  float feather = mix(0.006, 0.18, eased);
   float alphaMask = smoothstep(radius - feather, radius + feather, dist + edgeNoise);
 
   if (alphaMask < 0.01) {
