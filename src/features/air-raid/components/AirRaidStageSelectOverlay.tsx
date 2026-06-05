@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 import { BOSS_SKILLS, STAGES } from "../core/stages";
 import type { BossSkillId, GameMode, StageChoice, StageKind } from "../core/types";
-import styles from "../AirRaidGame.module.scss";
+import styles from "./AirRaidStageSelectOverlay.module.scss";
 
 type AirRaidStageSelectOverlayProps = {
 	bossSkills: BossSkillId[];
@@ -52,7 +52,7 @@ export const AirRaidStageSelectOverlay = ({ bossSkills, choices, mode, pendingBo
 							style={{ "--route-color": stage.palette.accent } as CSSProperties}
 							onClick={() => onSelect(choice.id)}
 						>
-							<span className={styles.routeDirection}>{choice.direction}</span>
+								<span className={styles.routeDirection}>{choice.direction}시</span>
 							<b>{choice.title}</b>
 							<strong>{stage.threat}</strong>
 							<small>{choice.description}</small>

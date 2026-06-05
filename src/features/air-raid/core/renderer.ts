@@ -7,7 +7,7 @@ import {
 	WORLD_WIDTH,
 } from "./constants";
 import { clamp, randomRange } from "./math";
-import { getPlayerHitbox, getStageRoutePosition } from "./engine";
+import { getPlayerHitbox, getStageRoutePosition } from "./geometry";
 import { getStagePalette } from "./stages";
 import type { Bullet, CollectionEffect, ExperienceOrb, GameState, Layout, Particle, Pet, Plane, PowerUp, Slash } from "./types";
 
