@@ -21,29 +21,33 @@ export const AUGMENTS: Record<AugmentId, AugmentDefinition> = {
 		id: "forked-cannon",
 		rarity: "rare",
 		title: "양갈래 해류",
-		description: "정중앙 물방울을 포기하고 좌우로 강한 해류탄을 두 발 흘려보냅니다.",
-		flavor: "가운데가 비는 대신 옆으로 퍼진 무리를 빨리 걷어냅니다.",
+		description: "좌우로 강한 해류탄을 쏩니다. 다시 선택하면 최대 3단계까지 진화합니다.",
+		flavor: "진화할수록 가운데 빈틈이 줄고 측면 화력이 거칠어집니다.",
+		maxStacks: 3,
 	},
 	"scatter-pods": {
 		id: "scatter-pods",
 		rarity: "rare",
 		title: "산호 파편",
-		description: "넓은 각도로 퍼지는 산호 조각 무리로 주 무기를 교체합니다.",
-		flavor: "경험치 오브를 먹으러 움직일 때 빈틈을 줄여줍니다.",
+		description: "넓은 각도로 퍼지는 산호 조각 무리로 교체합니다. 다시 선택하면 진화합니다.",
+		flavor: "진화할수록 파편 수가 늘어 가까운 적을 빨리 걷어냅니다.",
+		maxStacks: 3,
 	},
 	"lance-core": {
 		id: "lance-core",
 		rarity: "rare",
 		title: "소라 관통창",
-		description: "느리지만 강한 직선 소라창으로 무기를 교체합니다.",
-		flavor: "재장전 업그레이드가 있으면 보스전에서 더 안정적입니다.",
+		description: "느리지만 강한 직선 소라창으로 교체합니다. 다시 선택하면 진화합니다.",
+		flavor: "진화한 소라창은 보스전에서 폭발과 보조창을 남깁니다.",
+		maxStacks: 3,
 	},
 	"needle-laser": {
 		id: "needle-laser",
 		rarity: "rare",
 		title: "심해 광선",
-		description: "빠르고 가는 고속 광선 무기로 교체합니다.",
-		flavor: "초점 진주를 모으면 보스전이 날카로워집니다.",
+		description: "빠르고 가는 고속 광선으로 교체합니다. 다시 선택하면 진화합니다.",
+		flavor: "진화할수록 광선 줄기가 늘고 초점 진주 효율이 좋아집니다.",
+		maxStacks: 3,
 	},
 	"focusing-lens": {
 		id: "focusing-lens",
@@ -193,6 +197,30 @@ export const AUGMENTS: Record<AugmentId, AugmentDefinition> = {
 		flavor: "주변을 도는 무기들이 한 박자 빠르게 따라옵니다.",
 		maxStacks: 3,
 	},
+	"abyssal-bargain": {
+		id: "abyssal-bargain",
+		rarity: "unique",
+		title: "심해 거래",
+		description: "최대 체력을 1 잃는 대신 피해량과 인양 보상이 크게 증가합니다.",
+		flavor: "선체 일부를 저당 잡히고 코어 출력을 당겨 씁니다.",
+		maxStacks: 2,
+	},
+	"volatile-cache": {
+		id: "volatile-cache",
+		rarity: "rare",
+		title: "불안정한 전리품",
+		description: "적이 더 자주 몰려오지만 경험치와 인양 보상이 증가합니다.",
+		flavor: "더 시끄러운 곳에 좋은 잔해가 모입니다.",
+		maxStacks: 3,
+	},
+	"redline-current": {
+		id: "redline-current",
+		rarity: "unique",
+		title: "레드라인 조류",
+		description: "보스가 빨리 접근하고 적 화력이 거칠어집니다. 대신 유물 선택지가 늘어납니다.",
+		flavor: "짧고 위험한 항로일수록 진화 속도는 빨라집니다.",
+		maxStacks: 2,
+	},
 	"legendary-carrier": {
 		id: "legendary-carrier",
 		rarity: "legendary",
@@ -226,6 +254,9 @@ const AUGMENT_POOL: AugmentId[] = [
 	"drone-swarm",
 	"drone-core",
 	"pet-overdrive",
+	"abyssal-bargain",
+	"volatile-cache",
+	"redline-current",
 	"legendary-carrier",
 ];
 
@@ -259,6 +290,12 @@ const upgradePets = (state: GameState, amount = 1) => {
 	}
 };
 
+const upgradeWeapon = (state: GameState, weapon: WeaponKind) => {
+	state.weapon = weapon;
+	state.weaponLevels[weapon] = Math.min(3, Math.max(1, state.weaponLevels[weapon] + 1));
+	if (state.weaponLevels[weapon] >= 3) state.shake = Math.max(state.shake, 0.34);
+};
+
 const canOfferAugment = (state: GameState, augmentId: AugmentId) => {
 	const augment = AUGMENTS[augmentId];
 	const stacks = countAugmentStacks(state, augmentId);
@@ -269,7 +306,7 @@ const canOfferAugment = (state: GameState, augmentId: AugmentId) => {
 	if (augmentId === "split-prism" && state.prismSplitter) return false;
 	if (augmentId === "drone-swarm" && state.pets.length >= 5) return false;
 	if ((augmentId === "drone-core" || augmentId === "pet-overdrive") && state.pets.length === 0) return false;
-	if (augmentId === "glass-scales" && state.player.maxLives <= 1) return false;
+	if ((augmentId === "glass-scales" || augmentId === "abyssal-bargain") && state.player.maxLives <= 1) return false;
 	if (augmentId === "legendary-carrier" && state.experienceLevel < 6) return false;
 	return true;
 };
@@ -304,8 +341,9 @@ const pickWeightedAugment = (state: GameState, available: AugmentId[]) => {
 export const getAugmentChoices = (state: GameState) => {
 	const available = AUGMENT_POOL.filter((augmentId) => canOfferAugment(state, augmentId));
 	const choices: AugmentId[] = [];
+	const choiceLimit = Math.min(4, 3 + state.augmentChoiceBonus);
 
-	while (available.length > 0 && choices.length < 3) {
+	while (available.length > 0 && choices.length < choiceLimit) {
 		const augmentId = pickWeightedAugment(state, available);
 		const index = available.indexOf(augmentId);
 		available.splice(index, 1);
@@ -336,17 +374,17 @@ export const applyAugment = (state: GameState, augmentId: AugmentId) => {
 
 	switch (augmentId) {
 		case "forked-cannon":
-			state.weapon = "fork";
+			upgradeWeapon(state, "fork");
 			break;
 		case "scatter-pods":
-			state.weapon = "scatter";
+			upgradeWeapon(state, "scatter");
 			break;
 		case "lance-core":
-			state.weapon = "lance";
+			upgradeWeapon(state, "lance");
 			state.bulletPierce += 1;
 			break;
 		case "needle-laser":
-			state.weapon = "laser";
+			upgradeWeapon(state, "laser");
 			break;
 		case "focusing-lens":
 			state.laserFocus += 1;
@@ -421,6 +459,26 @@ export const applyAugment = (state: GameState, augmentId: AugmentId) => {
 		case "pet-overdrive":
 			state.petDamageMultiplier *= 1.18;
 			state.petFireCooldownMultiplier *= 0.84;
+			break;
+		case "abyssal-bargain":
+			state.player.maxLives = Math.max(1, state.player.maxLives - 1);
+			state.player.lives = Math.min(state.player.lives, state.player.maxLives);
+			state.damageMultiplier *= 1.55;
+			state.rewardMultiplier *= 1.16;
+			state.riskStacks += 1;
+			break;
+		case "volatile-cache":
+			state.rewardMultiplier *= 1.24;
+			state.spawnIntensityMultiplier *= 1.14;
+			state.threatMultiplier *= 1.06;
+			state.riskStacks += 1;
+			break;
+		case "redline-current":
+			state.bossTimer = Math.max(8, state.bossTimer - 7);
+			state.augmentChoiceBonus = Math.min(1, state.augmentChoiceBonus + 1);
+			state.threatMultiplier *= 1.12;
+			state.rewardMultiplier *= 1.12;
+			state.riskStacks += 1;
 			break;
 		case "legendary-carrier":
 			addPet(state, 2);

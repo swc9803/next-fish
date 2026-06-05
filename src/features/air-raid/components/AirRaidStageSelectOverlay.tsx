@@ -51,11 +51,13 @@ export const AirRaidStageSelectOverlay = ({ bossSkills, choices, mode, pendingBo
 							data-weak={isWeak}
 							style={{ "--route-color": stage.palette.accent } as CSSProperties}
 							onClick={() => onSelect(choice.id)}
-						>
+							>
 								<span className={styles.routeDirection}>{choice.direction}시</span>
 							<b>{choice.title}</b>
-							<strong>{stage.threat}</strong>
+							<strong>{choice.routeTitle}</strong>
 							<small>{choice.description}</small>
+							<small>{choice.routeDescription}</small>
+							<i>위협: {stage.threat}</i>
 							<i>보스: {choice.boss}</i>
 							<em>보상: {rewardSkill.title}</em>
 							{weaknessSkill && <mark>{isWeak ? `${weaknessSkill.title} 상성 우위` : `${weaknessSkill.title} 필요`}</mark>}

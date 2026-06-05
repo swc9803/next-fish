@@ -9,7 +9,7 @@ import {
 import { clamp, randomRange } from "./math";
 import { getPlayerHitbox, getStageRoutePosition } from "./geometry";
 import { getStagePalette } from "./stages";
-import type { Bullet, CollectionEffect, ExperienceOrb, GameState, Layout, Particle, Pet, Plane, PowerUp, Slash } from "./types";
+import type { Bullet, CollectionEffect, ExperienceOrb, GameState, Layout, Particle, Pet, Plane, PowerUp, Slash, WarningZone } from "./types";
 
 const drawFishSilhouette = (ctx: CanvasRenderingContext2D, x: number, y: number, scale: number, fill: string, accent: string, isPlayer: boolean) => {
 	ctx.save();
@@ -137,9 +137,20 @@ const drawBullets = (ctx: CanvasRenderingContext2D, bullets: Bullet[]) => {
 const drawEnemies = (ctx: CanvasRenderingContext2D, enemies: Plane[]) => {
 	for (const enemy of enemies) {
 		const palette = getStagePalette(enemy.stage);
-		const scale = enemy.kind === "boss" ? 1.38 : enemy.kind === "bomber" ? 0.83 : enemy.kind === "goldfish" ? 0.74 : enemy.kind === "ace" ? 0.69 : 0.62;
-		const fill = enemy.kind === "boss" ? palette.bossFill : enemy.kind === "bomber" ? "#75543d" : enemy.kind === "goldfish" ? "#d99622" : enemy.kind === "ace" ? palette.enemyFill : "#566b7b";
-		const accent = enemy.kind === "boss" ? palette.accent : enemy.kind === "goldfish" ? "#fff27a" : enemy.kind === "ace" ? "#ffe989" : palette.accent;
+		const scale = enemy.kind === "boss" ? 1.38 : enemy.kind === "bomber" ? 0.83 : enemy.kind === "goldfish" ? 0.74 : enemy.kind === "supply" ? 0.72 : enemy.kind === "ace" ? 0.69 : 0.62;
+		const fill =
+			enemy.kind === "boss"
+				? palette.bossFill
+				: enemy.kind === "bomber"
+					? "#75543d"
+					: enemy.kind === "goldfish"
+						? "#d99622"
+						: enemy.kind === "supply"
+							? "#d9ffe8"
+							: enemy.kind === "ace"
+								? palette.enemyFill
+								: "#566b7b";
+		const accent = enemy.kind === "boss" ? palette.accent : enemy.kind === "goldfish" ? "#fff27a" : enemy.kind === "supply" ? "#9eff8f" : enemy.kind === "ace" ? "#ffe989" : palette.accent;
 
 		if (enemy.kind === "goldfish") {
 			ctx.save();
@@ -151,6 +162,21 @@ const drawEnemies = (ctx: CanvasRenderingContext2D, enemies: Plane[]) => {
 			ctx.beginPath();
 			ctx.arc(enemy.x, enemy.y, enemy.radius + 8, 0, Math.PI * 2);
 			ctx.stroke();
+			ctx.restore();
+		}
+
+		if (enemy.kind === "supply") {
+			ctx.save();
+			ctx.globalAlpha = 0.42 + Math.sin(enemy.age * 8) * 0.08;
+			ctx.shadowColor = "#9eff8f";
+			ctx.shadowBlur = 22;
+			ctx.strokeStyle = "#9eff8f";
+			ctx.lineWidth = 2;
+			ctx.setLineDash([5, 4]);
+			ctx.beginPath();
+			ctx.arc(enemy.x, enemy.y, enemy.radius + 10, 0, Math.PI * 2);
+			ctx.stroke();
+			ctx.setLineDash([]);
 			ctx.restore();
 		}
 
@@ -176,16 +202,18 @@ const drawEnemies = (ctx: CanvasRenderingContext2D, enemies: Plane[]) => {
 				ctx.fillRect(enemy.x - width / 2, enemy.y - 80, width, 5);
 				ctx.fillStyle = palette.accent;
 			ctx.fillRect(enemy.x - width / 2, enemy.y - 80, width * (enemy.hp / enemy.maxHp), 5);
-		} else if (enemy.kind === "goldfish") {
+		} else if (enemy.kind === "goldfish" || enemy.kind === "supply") {
 			const width = enemy.radius * 2.4;
-			const escapeRatio = enemy.escapeTime ? clamp(1 - enemy.age / enemy.escapeTime, 0, 1) : 1;
-			ctx.fillStyle = "rgba(255,255,255,0.2)";
-			ctx.fillRect(enemy.x - width / 2, enemy.y - enemy.radius - 22, width, 3);
-			ctx.fillStyle = "#fff27a";
-			ctx.fillRect(enemy.x - width / 2, enemy.y - enemy.radius - 22, width * escapeRatio, 3);
+			if (enemy.kind === "goldfish") {
+				const escapeRatio = enemy.escapeTime ? clamp(1 - enemy.age / enemy.escapeTime, 0, 1) : 1;
+				ctx.fillStyle = "rgba(255,255,255,0.2)";
+				ctx.fillRect(enemy.x - width / 2, enemy.y - enemy.radius - 22, width, 3);
+				ctx.fillStyle = "#fff27a";
+				ctx.fillRect(enemy.x - width / 2, enemy.y - enemy.radius - 22, width * escapeRatio, 3);
+			}
 			ctx.fillStyle = "rgba(255,255,255,0.18)";
 			ctx.fillRect(enemy.x - width / 2, enemy.y - enemy.radius - 16, width, 3);
-			ctx.fillStyle = "#ffd65c";
+			ctx.fillStyle = enemy.kind === "supply" ? "#9eff8f" : "#ffd65c";
 			ctx.fillRect(enemy.x - width / 2, enemy.y - enemy.radius - 16, width * (enemy.hp / enemy.maxHp), 3);
 		} else if (enemy.hp < enemy.maxHp) {
 			const width = enemy.radius * 1.8;
@@ -194,6 +222,41 @@ const drawEnemies = (ctx: CanvasRenderingContext2D, enemies: Plane[]) => {
 			ctx.fillStyle = accent;
 			ctx.fillRect(enemy.x - width / 2, enemy.y - enemy.radius - 12, width * (enemy.hp / enemy.maxHp), 3);
 		}
+	}
+};
+
+const drawWarningZones = (ctx: CanvasRenderingContext2D, warnings: WarningZone[]) => {
+	for (const warning of warnings) {
+		const progress = clamp(1 - warning.life / warning.maxLife, 0, 1);
+		const alpha = 0.22 + progress * 0.42;
+
+		ctx.save();
+		ctx.globalAlpha = alpha;
+		ctx.shadowColor = warning.color;
+		ctx.shadowBlur = 18 + progress * 18;
+		ctx.strokeStyle = warning.color;
+		ctx.fillStyle = `${warning.color}24`;
+		ctx.lineWidth = Math.max(3, warning.width * 0.18);
+		ctx.setLineDash(progress < 0.65 ? [10, 8] : []);
+
+		if (warning.kind === "laser") {
+			ctx.fillRect(warning.x - warning.width / 2, warning.y, warning.width, WORLD_HEIGHT - warning.y);
+			ctx.beginPath();
+			ctx.moveTo(warning.x, warning.y);
+			ctx.lineTo(warning.x, WORLD_HEIGHT);
+			ctx.stroke();
+		} else {
+			ctx.beginPath();
+			ctx.arc(warning.x, warning.y, warning.radius, 0, Math.PI * 2);
+			ctx.stroke();
+			ctx.globalAlpha = alpha * 0.35;
+			ctx.beginPath();
+			ctx.arc(warning.x, warning.y, warning.radius, 0, Math.PI * 2);
+			ctx.arc(warning.x, warning.y, Math.max(0, warning.radius - warning.width), 0, Math.PI * 2, true);
+			ctx.fill("evenodd");
+		}
+		ctx.setLineDash([]);
+		ctx.restore();
 	}
 };
 
@@ -363,7 +426,7 @@ const drawStageRoutes = (ctx: CanvasRenderingContext2D, state: GameState) => {
 		ctx.textBaseline = "middle";
 		ctx.fillText(arrows[index] ?? "↑", 0, -40);
 		ctx.font = "800 8px sans-serif";
-		ctx.fillText(`${choice.direction} · ${choice.id.toUpperCase()}`, 0, 42);
+		ctx.fillText(`${choice.direction} · ${choice.routeTitle}`, 0, 42);
 		ctx.restore();
 	}
 
@@ -489,6 +552,7 @@ export const drawGame = (ctx: CanvasRenderingContext2D, state: GameState, layout
 	drawExperienceOrbs(ctx, state.experienceOrbs, state.time);
 	drawPowerUps(ctx, state.powerUps);
 	drawCollectionEffects(ctx, state.collectionEffects, state.time);
+	drawWarningZones(ctx, state.warningZones);
 	drawBullets(ctx, state.bullets.filter((bullet) => bullet.from === "enemy"));
 	drawEnemies(ctx, state.enemies);
 	drawSlashes(ctx, state.slashes);

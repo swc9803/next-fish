@@ -1,4 +1,5 @@
 import { ENEMY_FIRE_SAFE_MARGIN_X, ENEMY_FIRE_SAFE_MARGIN_Y, PLAYER_SPEED, WORLD_HEIGHT, WORLD_WIDTH } from "./constants";
+import { addParticleBurst } from "./effects";
 import { getPlayerMaxY, getPlayerMinY } from "./geometry";
 import { clamp, randomRange } from "./math";
 import { getStageEnemyTuning, getStagePalette, pickStageEnemyKind } from "./stages";
@@ -21,6 +22,7 @@ const getInitialEnemyFireCooldown = (wave: number) => {
 const getEnemyRefireCooldown = (wave: number, kind: EnemyKind) => {
 	const ramp = getDifficultyRamp(wave);
 	if (kind === "boss") return 1.18 - ramp * 0.18;
+	if (kind === "supply" || kind === "goldfish") return Number.POSITIVE_INFINITY;
 	if (kind === "ace") return 1.75 - ramp * 0.3;
 	if (kind === "bomber") return 2.15 - ramp * 0.32;
 	return 1.95 - ramp * 0.35;
@@ -38,7 +40,7 @@ const canEnemyFire = (enemy: Plane) => {
 };
 
 const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: number) => {
-	const adjustedSpeed = speed * getEnemyBulletSpeedMultiplier(state.wave);
+	const adjustedSpeed = speed * getEnemyBulletSpeedMultiplier(state.wave) * Math.min(1.32, state.threatMultiplier);
 	const palette = getStagePalette(enemy.stage);
 	state.bullets.push({
 		id: getNextId(state),
@@ -94,10 +96,14 @@ const fireEnemyPattern = (state: GameState, enemy: Plane) => {
 	const ramp = getDifficultyRamp(state.wave);
 
 	if (enemy.kind === "boss") {
+		const isPhaseTwo = (enemy.bossPhase ?? 1) >= 2;
 		const baseAngle = getEnemyAimAngle(state, enemy, 0.42 + ramp * 0.12);
-		const sweep = Math.sin(enemy.age * 2.2) * 0.1;
-		for (let i = -2; i <= 2; i++) addEnemyBullet(state, enemy, baseAngle + sweep + i * 0.16, 238);
-		addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.68, laneSign * 62), 205);
+		const sweep = Math.sin(enemy.age * (isPhaseTwo ? 3 : 2.2)) * (isPhaseTwo ? 0.16 : 0.1);
+		for (let i = isPhaseTwo ? -3 : -2; i <= (isPhaseTwo ? 3 : 2); i++) addEnemyBullet(state, enemy, baseAngle + sweep + i * 0.15, isPhaseTwo ? 258 : 238);
+		addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.68, laneSign * 62), isPhaseTwo ? 232 : 205);
+		if (isPhaseTwo) {
+			for (let i = 0; i < 8; i++) addEnemyBullet(state, enemy, Math.PI * 0.18 + (Math.PI * 0.64 * i) / 7, 184);
+		}
 		return;
 	}
 
@@ -121,11 +127,31 @@ const fireEnemyPattern = (state: GameState, enemy: Plane) => {
 	addEnemyBullet(state, enemy, getEnemyAimAngle(state, enemy, 0.24, laneSign * 24), 226);
 };
 
+const addBossWarning = (state: GameState, enemy: Plane) => {
+	const palette = getStagePalette(enemy.stage);
+	const isPhaseTwo = (enemy.bossPhase ?? 1) >= 2;
+	const useRing = isPhaseTwo && Math.sin(enemy.id + enemy.age * 1.7) > 0;
+
+	state.warningZones.push({
+		id: getNextId(state),
+		kind: useRing ? "ring" : "laser",
+		x: useRing ? enemy.x : clamp(state.player.x + randomRange(-46, 46), 36, WORLD_WIDTH - 36),
+		y: useRing ? enemy.y + 44 : enemy.y + 64,
+		radius: useRing ? 136 + randomRange(-12, 18) : WORLD_HEIGHT,
+		width: useRing ? 26 : isPhaseTwo ? 42 : 34,
+		angle: useRing ? 0 : Math.PI / 2,
+		life: isPhaseTwo ? 0.72 : 0.86,
+		maxLife: isPhaseTwo ? 0.72 : 0.86,
+		color: palette.accent,
+		stage: enemy.stage,
+	});
+};
+
 const spawnEnemy = (state: GameState) => {
 	const kind: EnemyKind = pickStageEnemyKind(state.stage);
 	const radius = kind === "bomber" ? 22 : kind === "ace" ? 16 : kind === "fighter" ? 17 : 14;
 	const tuning = getStageEnemyTuning(state.stage);
-	const speedMultiplier = getEnemySpeedMultiplier(state.wave) * tuning.speedMultiplier;
+	const speedMultiplier = getEnemySpeedMultiplier(state.wave) * tuning.speedMultiplier * Math.min(1.24, state.threatMultiplier);
 	const baseHp =
 		kind === "bomber"
 			? 5 + state.wave
@@ -148,7 +174,7 @@ const spawnEnemy = (state: GameState) => {
 		hp,
 		maxHp: hp,
 		kind,
-		fireCooldown: getInitialEnemyFireCooldown(state.wave) * tuning.fireDelayMultiplier,
+		fireCooldown: (getInitialEnemyFireCooldown(state.wave) * tuning.fireDelayMultiplier) / Math.min(1.22, state.threatMultiplier),
 		age: 0,
 		stage: state.stage,
 	});
@@ -169,8 +195,32 @@ const spawnBoss = (state: GameState) => {
 		maxHp: hp,
 		kind: "boss",
 		fireCooldown: 1.35,
+		bossPhase: 1,
+		specialCooldown: 2.8,
 		age: 0,
 		stage: state.stage,
+	});
+};
+
+const spawnSupplyCraft = (state: GameState) => {
+	const radius = 21;
+	const fromLeft = Math.random() > 0.5;
+
+	state.enemies.push({
+		id: getNextId(state),
+		x: fromLeft ? -radius - 24 : WORLD_WIDTH + radius + 24,
+		y: randomRange(150, 360),
+		vx: (fromLeft ? 1 : -1) * randomRange(42, 58),
+		vy: randomRange(-4, 12),
+		radius,
+		hp: 16 + state.wave * 3,
+		maxHp: 16 + state.wave * 3,
+		kind: "supply",
+		fireCooldown: Number.POSITIVE_INFINITY,
+		age: 0,
+		stage: state.stage,
+		coinReward: Math.round(28 + state.wave * 9),
+		experienceReward: Math.round(18 + state.wave * 4),
 	});
 };
 
@@ -206,14 +256,31 @@ export const updateEnemies = (state: GameState, dt: number) => {
 			if (enemy.y < 86) {
 				enemy.y += enemy.vy * dt;
 			} else {
+				const hpRatio = enemy.hp / enemy.maxHp;
+				if (hpRatio <= 0.5 && enemy.bossPhase !== 2) {
+					enemy.bossPhase = 2;
+					enemy.vx *= 1.24;
+					enemy.fireCooldown = Math.min(enemy.fireCooldown, 0.45);
+					enemy.specialCooldown = 0.65;
+					state.shake = Math.max(state.shake, 0.36);
+					addParticleBurst(state, enemy.x, enemy.y, getStagePalette(enemy.stage).accent, 44);
+				}
 				enemy.x += enemy.vx * dt;
 				if (enemy.x < 76 || enemy.x > WORLD_WIDTH - 76) enemy.vx *= -1;
+				enemy.specialCooldown = Math.max(0, (enemy.specialCooldown ?? 2.8) - dt);
+				if (enemy.specialCooldown <= 0) {
+					addBossWarning(state, enemy);
+					enemy.specialCooldown = randomRange(enemy.bossPhase === 2 ? 3.6 : 4.8, enemy.bossPhase === 2 ? 5.2 : 6.7) / Math.min(1.18, state.threatMultiplier);
+				}
 			}
 		} else if (enemy.kind === "goldfish") {
 			const escapeRatio = enemy.escapeTime ? clamp(enemy.age / enemy.escapeTime, 0, 1) : 0;
 			const dartSpeed = 1 + escapeRatio * 0.48;
 			enemy.x += enemy.vx * dartSpeed * dt;
 			enemy.y += (enemy.vy + Math.sin(enemy.age * 4.2) * 26) * dt;
+		} else if (enemy.kind === "supply") {
+			enemy.x += enemy.vx * dt;
+			enemy.y += (enemy.vy + Math.sin(enemy.age * 3.2) * 18) * dt;
 		} else {
 			const movementMultiplier = getEnemySpeedMultiplier(state.wave);
 			const weave = (enemy.kind === "ace" ? 82 : enemy.kind === "fighter" ? 44 : 28) * movementMultiplier;
@@ -223,12 +290,12 @@ export const updateEnemies = (state: GameState, dt: number) => {
 			if (enemy.x < enemy.radius || enemy.x > WORLD_WIDTH - enemy.radius) enemy.vx *= -1;
 		}
 
-		if (enemy.kind === "goldfish") continue;
+		if (enemy.kind === "goldfish" || enemy.kind === "supply") continue;
 
 		enemy.fireCooldown -= dt;
 		if (enemy.fireCooldown <= 0 && canEnemyFire(enemy)) {
 			fireEnemyPattern(state, enemy);
-			enemy.fireCooldown = getEnemyRefireCooldown(state.wave, enemy.kind) * getStageFireDelay(enemy);
+			enemy.fireCooldown = (getEnemyRefireCooldown(state.wave, enemy.kind) * getStageFireDelay(enemy)) / Math.min(1.22, state.threatMultiplier);
 		}
 	}
 };
@@ -238,11 +305,12 @@ export const updateSpawn = (state: GameState, dt: number) => {
 	state.spawnTimer -= dt;
 	state.bossTimer -= dt;
 	state.treasureTimer -= dt;
+	state.supplyTimer -= dt;
 
 	if (state.spawnTimer <= 0 && !state.bossActive) {
 		spawnEnemy(state);
 		const speedUp = Math.min(0.38, Math.max(0, state.wave - 1) * 0.032);
-		state.spawnTimer = randomRange(0.82, 1.34) - speedUp;
+		state.spawnTimer = (randomRange(0.82, 1.34) - speedUp) / Math.max(0.75, state.spawnIntensityMultiplier * Math.min(1.18, state.threatMultiplier));
 	}
 
 	if (state.treasureTimer <= 0) {
@@ -250,6 +318,13 @@ export const updateSpawn = (state: GameState, dt: number) => {
 			spawnGoldfish(state);
 		}
 		state.treasureTimer = randomRange(118, 182);
+	}
+
+	if (state.supplyTimer <= 0) {
+		if (!state.bossActive && !state.enemies.some((enemy) => enemy.kind === "supply")) {
+			spawnSupplyCraft(state);
+		}
+		state.supplyTimer = randomRange(42, 68);
 	}
 
 	if (state.bossTimer <= 0 && !state.bossActive) {

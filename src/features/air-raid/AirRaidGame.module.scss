@@ -253,6 +253,40 @@
 	}
 }
 
+.reportGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.5rem;
+	margin-top: 0.75rem;
+
+	span {
+		display: grid;
+		gap: 0.2rem;
+		min-height: 4rem;
+		padding: 0.65rem;
+		border: 1px solid rgba(139, 244, 255, 0.18);
+		border-radius: 8px;
+		background: rgba(139, 244, 255, 0.07);
+
+		&[data-wide="true"] {
+			grid-column: 1 / -1;
+		}
+	}
+
+	b {
+		color: #8bf4ff;
+		font-size: 0.68rem;
+		font-weight: 900;
+		letter-spacing: 0.08em;
+	}
+
+	strong {
+		color: #ffffff;
+		font-size: 1rem;
+		line-height: 1.2;
+	}
+}
+
 .metaPanel {
 	width: 100%;
 	max-height: min(42rem, 86vh);

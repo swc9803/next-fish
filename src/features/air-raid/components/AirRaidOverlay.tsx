@@ -7,6 +7,7 @@ import {
 	META_UPGRADE_ORDER,
 	STAT_SLOT_COST,
 } from "../core/meta";
+import { AUGMENTS } from "../core/augments";
 import type { GameMode, HudState, MetaProgress, MetaUpgradeId, SlotSpinResult } from "../core/types";
 import styles from "../AirRaidGame.module.scss";
 
@@ -43,6 +44,7 @@ export const AirRaidOverlay = ({
 	const startLabel = mode === "gameover" ? "재출격" : "작전 개시";
 	const title = mode === "gameover" ? "선체 파손" : mode === "paused" ? "작전 정지" : "심해 출격 대기";
 	const showMetaPanel = mode === "ready" || mode === "gameover";
+	const lastAugment = hud.lastAugmentId ? AUGMENTS[hud.lastAugmentId] : null;
 	const slotBonusSummary = META_SLOT_BONUS_ORDER.filter((bonusId) => metaProgress.slotBonuses[bonusId] > 0)
 		.map((bonusId) => `${META_SLOT_BONUS_LABELS[bonusId]} +${metaProgress.slotBonuses[bonusId]}`)
 		.join(" · ");
@@ -66,7 +68,35 @@ export const AirRaidOverlay = ({
 					<div className={styles.rewardLine}>
 						<span>KILLS {hud.defeatedEnemies}</span>
 						<span>WAVE {hud.wave}</span>
+						<span>MAX COMBO x{hud.maxCombo}</span>
 						<span>SALVAGE +{hud.earnedCoins}</span>
+					</div>
+				)}
+
+				{mode === "gameover" && (
+					<div className={styles.reportGrid} aria-label="전투 리포트">
+						<span>
+							<b>MISSIONS</b>
+							<strong>{hud.missionsCompleted}</strong>
+						</span>
+						<span>
+							<b>BOSS DMG</b>
+							<strong>{Math.round(hud.bossDamageDealt).toLocaleString()}</strong>
+						</span>
+						<span>
+							<b>SUPPLY</b>
+							<strong>{hud.suppliesCollected}</strong>
+						</span>
+						<span>
+							<b>HITS TAKEN</b>
+							<strong>{hud.damageTaken}</strong>
+						</span>
+						{lastAugment && (
+							<span data-wide="true">
+								<b>LAST RELIC</b>
+								<strong>{lastAugment.title}</strong>
+							</span>
+						)}
 					</div>
 				)}
 
