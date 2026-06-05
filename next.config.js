@@ -4,6 +4,14 @@ const nextConfig = {
 	sassOptions: {},
 	reactStrictMode: false,
 	productionBrowserSourceMaps: false,
+	turbopack: {
+		rules: {
+			"*.glsl": {
+				loaders: ["raw-loader"],
+				as: "*.js",
+			},
+		},
+	},
 	webpack: (config) => {
 		config.module.rules.push({
 			test: /\.(glsl|vs|fs)$/,
