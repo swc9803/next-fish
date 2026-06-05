@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 import { BOSS_SKILLS } from "../core/stages";
 import type { BossSkillId, GameMode } from "../core/types";
-import styles from "../AirRaidGame.module.scss";
+import styles from "./AirRaidControls.module.scss";
 
 type AirRaidControlsProps = {
 	bossSkillCooldowns: Record<BossSkillId, number>;

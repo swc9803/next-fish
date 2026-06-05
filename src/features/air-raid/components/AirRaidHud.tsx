@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { WEAPON_LABELS } from "../core/augments";
 import type { HudState } from "../core/types";
-import styles from "../AirRaidGame.module.scss";
+import styles from "./AirRaidHud.module.scss";
 
 type AirRaidHudProps = {
 	hud: HudState;
