@@ -3,6 +3,7 @@ import { addParticleBurst, updateCollectionEffects, updateParticles } from "./ef
 import { updateEnemies, updateSpawn } from "./enemies";
 import { getPetShieldRadius, getPlayerHitbox, getPlayerMaxY, getPlayerMinY, getStageRoutePosition } from "./geometry";
 import { clamp, distanceSquared } from "./math";
+import { failFlawlessMission, recordMissionCoinsCollected, recordMissionEnemyDefeated, updateStageMission } from "./missions";
 import { collectPowerUp, getPickupRadius, updateExperienceOrbs, updatePowerUps } from "./pickups";
 import { addExperience, awardEnemyScore, calculateCoinReward, dropCoins, dropExperience } from "./rewards";
 import { getBossSkillDamageMultiplier, openStageSelection, selectStageRoute } from "./stages";
@@ -20,10 +21,17 @@ const BOSS_SKILL_COOLDOWNS: Record<BossSkillId, number> = {
 	"ruin-prism": 24,
 };
 
+const applyDamageToEnemy = (state: GameState, enemy: Plane, amount: number) => {
+	const damage = amount * getBossSkillDamageMultiplier(state, enemy);
+	const beforeHp = enemy.hp;
+	enemy.hp -= damage;
+	if (enemy.kind === "boss") state.bossDamageDealt += Math.max(0, Math.min(beforeHp, damage));
+};
+
 const damageEnemies = (state: GameState, amount: number, x: number, y: number, radius: number, color: string) => {
 	for (const enemy of state.enemies) {
-		if (distanceSquared(enemy.x, enemy.y, x, y) <= radius * radius) {
-			enemy.hp -= amount * state.damageMultiplier * getBossSkillDamageMultiplier(state, enemy);
+		if (enemy.kind !== "supply" && distanceSquared(enemy.x, enemy.y, x, y) <= radius * radius) {
+			applyDamageToEnemy(state, enemy, amount * state.damageMultiplier);
 			addParticleBurst(state, enemy.x, enemy.y, color, enemy.kind === "boss" ? 18 : 9);
 		}
 	}
@@ -173,6 +181,30 @@ const updatePets = (state: GameState, dt: number) => {
 		pet.x += (targetX - pet.x) * follow;
 		pet.y += (targetY - pet.y) * follow;
 		pet.fireCooldown = Math.max(0, pet.fireCooldown - dt);
+
+		const target = state.enemies
+			.filter((enemy) => enemy.kind !== "supply")
+			.sort((a, b) => distanceSquared(pet.x, pet.y, a.x, a.y) - distanceSquared(pet.x, pet.y, b.x, b.y))[0];
+		if (target && pet.fireCooldown <= 0) {
+			const dx = target.x - pet.x;
+			const dy = target.y - pet.y;
+			const distance = Math.max(1, Math.hypot(dx, dy));
+			const speed = 520 + pet.level * 34;
+			state.bullets.push({
+				id: getNextId(state),
+				x: pet.x,
+				y: pet.y,
+				vx: (dx / distance) * speed,
+				vy: (dy / distance) * speed,
+				radius: 3.4 + pet.level * 0.32,
+				visualRadius: 3.4 + pet.level * 0.28,
+				damage: (0.36 + pet.level * 0.14) * state.damageMultiplier * state.petDamageMultiplier,
+				pierce: pet.level >= 4 ? 1 : 0,
+				from: "player",
+				color: pet.level >= 4 ? "#ffffff" : "#9eff8f",
+			});
+			pet.fireCooldown = Math.max(0.18, (0.68 - Math.min(5, pet.level) * 0.055) * state.petFireCooldownMultiplier);
+		}
 	}
 };
 
@@ -215,6 +247,8 @@ const damagePlayer = (state: GameState) => {
 		return;
 	}
 
+	state.damageTaken += 1;
+	failFlawlessMission(state);
 	player.lives -= 1;
 	player.power = Math.max(1, player.power - 1);
 	player.invincible = 2.3;
@@ -228,6 +262,50 @@ const damagePlayer = (state: GameState) => {
 		state.highScore = Math.max(state.highScore, state.score);
 		state.earnedCoins = calculateCoinReward(state);
 	}
+};
+
+const updateWarningZones = (state: GameState, dt: number) => {
+	const resolvedWarnings = new Set<number>();
+
+	for (const warning of state.warningZones) {
+		warning.life -= dt;
+		if (warning.life > 0) continue;
+
+		resolvedWarnings.add(warning.id);
+		state.shake = Math.max(state.shake, warning.kind === "ring" ? 0.28 : 0.2);
+		addParticleBurst(state, warning.x, warning.y, warning.color, warning.kind === "ring" ? 36 : 24);
+
+		if (warning.kind === "laser") {
+			const hitbox = getPlayerHitbox(state);
+			if (Math.abs(hitbox.x - warning.x) <= warning.width * 0.5 + hitbox.radius && hitbox.y > warning.y - 24) damagePlayer(state);
+			for (const enemy of state.enemies) {
+				if (enemy.kind !== "boss" && enemy.kind !== "supply" && Math.abs(enemy.x - warning.x) <= warning.width * 0.6 + enemy.radius) {
+					applyDamageToEnemy(state, enemy, 4);
+				}
+			}
+		} else if (warning.kind === "ring") {
+			const hitbox = getPlayerHitbox(state);
+			const distance = Math.hypot(hitbox.x - warning.x, hitbox.y - warning.y);
+			if (Math.abs(distance - warning.radius) <= warning.width + hitbox.radius) damagePlayer(state);
+			for (let i = 0; i < 12; i++) {
+				const angle = (Math.PI * 2 * i) / 12;
+				state.bullets.push({
+					id: getNextId(state),
+					x: warning.x + Math.cos(angle) * warning.radius * 0.18,
+					y: warning.y + Math.sin(angle) * warning.radius * 0.18,
+					vx: Math.cos(angle) * 210,
+					vy: Math.sin(angle) * 210,
+					radius: 4.5,
+					damage: 1,
+					pierce: 0,
+					from: "enemy",
+					color: warning.color,
+				});
+			}
+		}
+	}
+
+	state.warningZones = state.warningZones.filter((warning) => !resolvedWarnings.has(warning.id));
 };
 
 const addSlash = (state: GameState, chargeRatio: number) => {
@@ -295,9 +373,29 @@ const awardGoldfishBonus = (state: GameState, enemy: Plane) => {
 	dropCoins(state, enemy, coinReward, 12);
 };
 
+const collectSupplyCraft = (state: GameState, enemy: Plane, removedEnemies: Set<number>) => {
+	removedEnemies.add(enemy.id);
+	state.suppliesCollected += 1;
+	state.player.power = Math.min(5, state.player.power + 1);
+	state.player.lives = Math.min(state.player.maxLives, state.player.lives + 1);
+	if (state.shieldUnlocked) state.shieldCharges = Math.min(state.shieldMaxCharges, state.shieldCharges + 1);
+	const coinReward = Math.round((enemy.coinReward ?? 38 + state.wave * 8) * state.rewardMultiplier * state.routeRewardMultiplier);
+	state.earnedCoins += coinReward;
+	recordMissionCoinsCollected(state, coinReward);
+	addExperience(state, enemy.experienceReward ?? 20 + state.wave * 4);
+	addParticleBurst(state, enemy.x, enemy.y, "#9eff8f", 34);
+};
+
+const breakSupplyCraft = (state: GameState, enemy: Plane, removedEnemies: Set<number>) => {
+	removedEnemies.add(enemy.id);
+	dropCoins(state, enemy, Math.round((enemy.coinReward ?? 28) * 0.35), 5);
+	addParticleBurst(state, enemy.x, enemy.y, "#ffb45f", 22);
+};
+
 const defeatEnemy = (state: GameState, enemy: Plane, removedEnemies: Set<number>, canDropPowerUp: boolean) => {
 	removedEnemies.add(enemy.id);
 	awardEnemyScore(state, enemy);
+	recordMissionEnemyDefeated(state, enemy.kind === "boss");
 	state.shake = Math.max(state.shake, enemy.kind === "boss" ? 0.42 : enemy.kind === "goldfish" ? 0.32 : 0.13);
 	addParticleBurst(state, enemy.x, enemy.y, getEnemyBurstColor(enemy), enemy.kind === "boss" ? 58 : enemy.kind === "goldfish" ? 42 : 18);
 
@@ -338,6 +436,13 @@ const resolveCollisions = (state: GameState) => {
 			if (removedEnemies.has(enemy.id)) continue;
 				const hitDistance = bullet.radius + enemy.radius;
 				if (distanceSquared(bullet.x, bullet.y, enemy.x, enemy.y) <= hitDistance * hitDistance) {
+					if (enemy.kind === "supply") {
+						enemy.hp -= bullet.damage;
+						removedBullets.add(bullet.id);
+						addParticleBurst(state, bullet.x, bullet.y, "#9eff8f", 4);
+						if (enemy.hp <= 0) breakSupplyCraft(state, enemy, removedEnemies);
+						break;
+					}
 					if (bullet.blastRadius) {
 						damageEnemies(state, bullet.damage, bullet.x, bullet.y, bullet.blastRadius, bullet.color);
 						removedBullets.add(bullet.id);
@@ -346,7 +451,7 @@ const resolveCollisions = (state: GameState) => {
 							if (!removedEnemies.has(blastEnemy.id) && blastEnemy.hp <= 0) defeatEnemy(state, blastEnemy, removedEnemies, false);
 						}
 					} else {
-						enemy.hp -= bullet.damage * getBossSkillDamageMultiplier(state, enemy);
+						applyDamageToEnemy(state, enemy, bullet.damage);
 						addParticleBurst(state, bullet.x, bullet.y, "#8bf4ff", 3);
 					}
 
@@ -370,7 +475,12 @@ const resolveCollisions = (state: GameState) => {
 
 			const hitDistance = slash.radius + enemy.radius * 0.25;
 			if (enemy.y < state.player.y + 24 && distanceSquared(slash.x, slash.y, enemy.x, enemy.y) <= hitDistance * hitDistance) {
-				enemy.hp -= slash.damage * getBossSkillDamageMultiplier(state, enemy);
+				if (enemy.kind === "supply") {
+					breakSupplyCraft(state, enemy, removedEnemies);
+					slash.hitEnemyIds.push(enemy.id);
+					continue;
+				}
+				applyDamageToEnemy(state, enemy, slash.damage);
 				slash.hitEnemyIds.push(enemy.id);
 				addParticleBurst(state, enemy.x, enemy.y, slash.charge > 0.75 ? "#fff27a" : "#8bf4ff", 8);
 
@@ -411,6 +521,10 @@ const resolveCollisions = (state: GameState) => {
 	for (const enemy of state.enemies) {
 		const hitDistance = enemy.radius + playerHitbox.radius;
 		if (enemy.y > -20 && distanceSquared(enemy.x, enemy.y, playerHitbox.x, playerHitbox.y) <= hitDistance * hitDistance) {
+			if (enemy.kind === "supply") {
+				collectSupplyCraft(state, enemy, removedEnemies);
+				continue;
+			}
 			removedEnemies.add(enemy.id);
 			if (enemy.kind !== "boss") addParticleBurst(state, enemy.x, enemy.y, getEnemyBurstColor(enemy), 12);
 			damagePlayer(state);
@@ -427,7 +541,11 @@ const resolveCollisions = (state: GameState) => {
 
 	state.bullets = state.bullets.filter((bullet) => !removedBullets.has(bullet.id));
 	state.enemies = state.enemies.filter(
-		(enemy) => !removedEnemies.has(enemy.id) && (enemy.kind !== "goldfish" || !enemy.escapeTime || enemy.age < enemy.escapeTime) && enemy.y < WORLD_HEIGHT + enemy.radius + 40,
+		(enemy) =>
+			!removedEnemies.has(enemy.id) &&
+			(enemy.kind !== "goldfish" || !enemy.escapeTime || enemy.age < enemy.escapeTime) &&
+			(enemy.kind !== "supply" || (enemy.x > -enemy.radius - 64 && enemy.x < WORLD_WIDTH + enemy.radius + 64)) &&
+			enemy.y < WORLD_HEIGHT + enemy.radius + 40,
 	);
 	state.powerUps = state.powerUps.filter((powerUp) => !removedBullets.has(powerUp.id));
 	if (state.mode === "stage-select") {
@@ -435,6 +553,7 @@ const resolveCollisions = (state: GameState) => {
 		state.bullets = [];
 		state.slashes = [];
 		state.powerUps = [];
+		state.warningZones = [];
 	}
 };
 
@@ -492,11 +611,18 @@ export const updateGame = (state: GameState, dt: number) => {
 	if (state.comboTimer <= 0) state.combo = 0;
 	updatePlayer(state, dt);
 	updateBossSkillCooldowns(state, dt);
+	updateStageMission(state, dt);
+	if (state.mode !== "playing") {
+		updateCollectionEffects(state, dt);
+		updateParticles(state, dt);
+		return;
+	}
 	updateSpawn(state, dt);
 	updateEnemies(state, dt);
 	updatePets(state, dt);
 	updateShield(state, dt);
 	updateBullets(state, dt);
+	updateWarningZones(state, dt);
 	updatePowerUps(state, dt);
 	updateSlashes(state, dt);
 	resolveCollisions(state);

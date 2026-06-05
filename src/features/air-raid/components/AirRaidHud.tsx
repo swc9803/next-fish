@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { WEAPON_LABELS } from "../core/augments";
+import { STAGE_ROUTE_MODIFIERS } from "../core/stages";
 import type { HudState } from "../core/types";
 import styles from "./AirRaidHud.module.scss";
 
@@ -12,6 +13,14 @@ export const AirRaidHud = ({ hud }: AirRaidHudProps) => {
 	const experiencePercent = Math.min(100, Math.round((hud.experience / hud.nextExperience) * 100));
 	const hullPercent = Math.min(100, Math.round((hud.lives / hud.maxLives) * 100));
 	const hullSegments = Array.from({ length: hud.maxLives }, (_, index) => index < hud.lives);
+	const mission = hud.stageMission;
+	const missionProgress =
+		mission && mission.kind === "survive"
+			? `${Math.ceil(Math.max(0, mission.target - mission.progress))}s`
+			: mission
+				? `${Math.floor(mission.progress)}/${mission.target}`
+				: "";
+	const routeTitle = STAGE_ROUTE_MODIFIERS[hud.routeModifier].title;
 
 	return (
 		<div className={styles.topBar}>
@@ -60,14 +69,25 @@ export const AirRaidHud = ({ hud }: AirRaidHudProps) => {
 				</span>
 				<span className={styles.statCell} data-tone="weapon">
 					<b>WEAPON</b>
-					<strong>{WEAPON_LABELS[hud.weapon]}</strong>
+					<strong>
+						{WEAPON_LABELS[hud.weapon]}
+						{hud.weaponLevel > 1 ? ` Mk${hud.weaponLevel}` : ""}
+					</strong>
 					<small>{hud.augmentCount} RELICS</small>
 				</span>
+				<span className={styles.bonusChip}>{routeTitle}</span>
+				{mission && (
+					<span className={styles.bonusChip}>
+						{mission.completed ? "MISSION CLEAR" : mission.failed ? "MISSION LOST" : `${mission.title} ${missionProgress}`}
+					</span>
+				)}
 				{hud.damageBonusPercent > 0 && <span className={styles.bonusChip}>DMG +{hud.damageBonusPercent}%</span>}
 				{hud.fireRateBonusPercent > 0 && <span className={styles.bonusChip}>FIRE +{hud.fireRateBonusPercent}%</span>}
 				{hud.speedBonusPercent > 0 && <span className={styles.bonusChip}>SPD +{hud.speedBonusPercent}%</span>}
 				{hud.magnetBonusPercent > 0 && <span className={styles.bonusChip}>PULL +{hud.magnetBonusPercent}%</span>}
 				{hud.reloadBonusPercent > 0 && <span className={styles.bonusChip}>LOAD +{hud.reloadBonusPercent}%</span>}
+				{hud.rewardMultiplier > 1.05 && <span className={styles.bonusChip}>LOOT x{hud.rewardMultiplier.toFixed(2)}</span>}
+				{hud.threatMultiplier > 1.05 && <span className={styles.bonusChip}>RISK x{hud.threatMultiplier.toFixed(2)}</span>}
 				{hud.shieldMaxCharges > 0 && <span className={styles.bonusChip}>SHELL {hud.shieldCharges}/{hud.shieldMaxCharges}</span>}
 				{hud.petCount > 0 && (
 					<span className={styles.bonusChip}>
@@ -75,6 +95,7 @@ export const AirRaidHud = ({ hud }: AirRaidHudProps) => {
 					</span>
 				)}
 				{hud.earnedCoins > 0 && <span className={styles.bonusChip}>SALVAGE +{hud.earnedCoins}</span>}
+				{hud.suppliesCollected > 0 && <span className={styles.bonusChip}>SUPPLY {hud.suppliesCollected}</span>}
 				{hud.laserFocus > 0 && <span className={styles.bonusChip}>FOCUS {hud.laserFocus}</span>}
 				{hud.projectileChaos > 0 && <span className={styles.bonusChip}>DRIFT {Math.round(hud.projectileChaos * 10)}</span>}
 				{hud.bossSkills.length > 0 && <span className={styles.bonusChip}>BOSS SKILL {hud.bossSkills.length}</span>}

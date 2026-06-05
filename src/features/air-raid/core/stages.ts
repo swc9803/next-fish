@@ -1,4 +1,15 @@
-import type { BossSkillId, EnemyKind, GameState, Plane, StageChoice, StageDirection, StageKind } from "./types";
+import type {
+	BossSkillId,
+	EnemyKind,
+	GameState,
+	Plane,
+	StageChoice,
+	StageDirection,
+	StageKind,
+	StageMission,
+	StageMissionKind,
+	StageRouteModifierId,
+} from "./types";
 
 export type StagePalette = {
 	top: string;
@@ -18,12 +29,22 @@ type StageDefinition = {
 	threat: string;
 	rewardSkill: BossSkillId;
 	weaknessSkill?: BossSkillId;
-	enemyWeights: Record<Exclude<EnemyKind, "boss" | "goldfish">, number>;
+	enemyWeights: Record<Exclude<EnemyKind, "boss" | "goldfish" | "supply">, number>;
 	hpMultiplier: number;
 	speedMultiplier: number;
 	fireDelayMultiplier: number;
 	bossHpMultiplier: number;
 	palette: StagePalette;
+};
+
+type StageRouteModifierDefinition = {
+	id: StageRouteModifierId;
+	title: string;
+	description: string;
+	rewardMultiplier: number;
+	spawnIntensityMultiplier: number;
+	bossTimer: number;
+	augmentChoiceBonus: number;
 };
 
 type BossSkillDefinition = {
@@ -38,6 +59,42 @@ type BossSkillDefinition = {
 
 export const STAGE_ORDER: StageKind[] = ["coral", "abyss", "volcanic", "glacier", "kelp", "ruins"];
 const STAGE_DIRECTIONS: StageDirection[] = ["10", "12", "2"];
+
+export const STAGE_ROUTE_MODIFIERS: Record<StageRouteModifierId, StageRouteModifierDefinition> = {
+	bounty: {
+		id: "bounty",
+		title: "난류 보상로",
+		description: "적이 더 자주 몰려오지만 경험치와 인양 보상이 증가합니다.",
+		rewardMultiplier: 1.28,
+		spawnIntensityMultiplier: 1.2,
+		bossTimer: 32,
+		augmentChoiceBonus: 0,
+	},
+	balanced: {
+		id: "balanced",
+		title: "정면 안정로",
+		description: "위험도와 보상이 균형 잡힌 경로입니다. 진입 시 선체를 조금 정비합니다.",
+		rewardMultiplier: 1,
+		spawnIntensityMultiplier: 1,
+		bossTimer: 28,
+		augmentChoiceBonus: 0,
+	},
+	elite: {
+		id: "elite",
+		title: "심층 급행로",
+		description: "보스가 더 빨리 나타납니다. 대신 유물 선택지가 하나 늘어납니다.",
+		rewardMultiplier: 1.12,
+		spawnIntensityMultiplier: 1.08,
+		bossTimer: 20,
+		augmentChoiceBonus: 1,
+	},
+};
+
+const ROUTE_MODIFIERS_BY_DIRECTION: Record<StageDirection, StageRouteModifierId> = {
+	"10": "bounty",
+	"12": "balanced",
+	"2": "elite",
+};
 
 export const BOSS_SKILLS: Record<BossSkillId, BossSkillDefinition> = {
 	"coral-surge": {
@@ -256,9 +313,15 @@ export const getStageChoices = (state: GameState): StageChoice[] => {
 
 	return pool.slice(0, 3).map((stage, index) => {
 		const definition = STAGES[stage];
+		const direction = STAGE_DIRECTIONS[index];
+		const routeModifier = ROUTE_MODIFIERS_BY_DIRECTION[direction];
+		const modifierDefinition = STAGE_ROUTE_MODIFIERS[routeModifier];
 		return {
 			id: definition.id,
-			direction: STAGE_DIRECTIONS[index],
+			direction,
+			routeModifier,
+			routeTitle: modifierDefinition.title,
+			routeDescription: modifierDefinition.description,
 			title: definition.title,
 			description: definition.description,
 			boss: definition.boss,
@@ -268,9 +331,9 @@ export const getStageChoices = (state: GameState): StageChoice[] => {
 	});
 };
 
-export const pickStageEnemyKind = (stage: StageKind): Exclude<EnemyKind, "boss" | "goldfish"> => {
+export const pickStageEnemyKind = (stage: StageKind): Exclude<EnemyKind, "boss" | "goldfish" | "supply"> => {
 	const weights = STAGES[stage].enemyWeights;
-	const entries = Object.entries(weights) as Array<[Exclude<EnemyKind, "boss" | "goldfish">, number]>;
+	const entries = Object.entries(weights) as Array<[Exclude<EnemyKind, "boss" | "goldfish" | "supply">, number]>;
 	const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
 	let roll = Math.random() * total;
 
@@ -280,6 +343,90 @@ export const pickStageEnemyKind = (stage: StageKind): Exclude<EnemyKind, "boss" 
 	}
 
 	return "fighter";
+};
+
+const MISSION_KINDS: StageMissionKind[] = ["defeat", "survive", "collect-coins", "flawless", "boss"];
+
+export const createStageMission = (state: GameState, stage: StageKind, routeModifier: StageRouteModifierId): StageMission => {
+	const stageIndex = STAGE_ORDER.indexOf(stage);
+	const kind = MISSION_KINDS[(state.clearedStages.length + stageIndex + state.wave) % MISSION_KINDS.length];
+	const rewardScale = STAGE_ROUTE_MODIFIERS[routeModifier].rewardMultiplier;
+	const baseCoins = Math.round((42 + state.wave * 12 + state.clearedStages.length * 16) * rewardScale);
+	const baseExperience = Math.round(30 + state.wave * 7 + state.clearedStages.length * 6);
+
+	switch (kind) {
+		case "survive":
+			return {
+				id: `${stage}-${state.wave}-survive`,
+				kind,
+				title: "압력 버티기",
+				description: "제한 시간 동안 심해 탄막을 견디세요.",
+				target: 42 + Math.min(22, state.wave * 2),
+				progress: 0,
+				rewardCoins: baseCoins,
+				rewardExperience: baseExperience,
+				completed: false,
+				failed: false,
+				startDamageTaken: state.damageTaken,
+			};
+		case "collect-coins":
+			return {
+				id: `${stage}-${state.wave}-coins`,
+				kind,
+				title: "인양 회수",
+				description: "전투 중 떨어진 인양 주화를 회수하세요.",
+				target: Math.round(75 + state.wave * 18),
+				progress: 0,
+				rewardCoins: Math.round(baseCoins * 1.2),
+				rewardExperience: baseExperience,
+				completed: false,
+				failed: false,
+				startDamageTaken: state.damageTaken,
+			};
+		case "flawless":
+			return {
+				id: `${stage}-${state.wave}-flawless`,
+				kind,
+				title: "무피격 항로",
+				description: "피격 없이 적을 격파하세요.",
+				target: 14 + Math.min(14, state.wave),
+				progress: 0,
+				rewardCoins: Math.round(baseCoins * 1.35),
+				rewardExperience: Math.round(baseExperience * 1.15),
+				completed: false,
+				failed: false,
+				startDamageTaken: state.damageTaken,
+			};
+		case "boss":
+			return {
+				id: `${stage}-${state.wave}-boss`,
+				kind,
+				title: "코어 추출",
+				description: "이 해역의 보스를 격파하세요.",
+				target: 1,
+				progress: 0,
+				rewardCoins: Math.round(baseCoins * 1.45),
+				rewardExperience: Math.round(baseExperience * 1.25),
+				completed: false,
+				failed: false,
+				startDamageTaken: state.damageTaken,
+			};
+		case "defeat":
+		default:
+			return {
+				id: `${stage}-${state.wave}-defeat`,
+				kind: "defeat",
+				title: "무리 소탕",
+				description: "지정 수만큼 적성 생물을 격파하세요.",
+				target: 18 + Math.min(18, state.wave * 2),
+				progress: 0,
+				rewardCoins: baseCoins,
+				rewardExperience: baseExperience,
+				completed: false,
+				failed: false,
+				startDamageTaken: state.damageTaken,
+			};
+	}
 };
 
 export const getStagePalette = (stage?: StageKind) => STAGES[stage ?? "coral"].palette;
@@ -323,22 +470,31 @@ export const openStageSelection = (state: GameState) => {
 };
 
 export const selectStageRoute = (state: GameState, stage: StageKind) => {
-	if (state.mode !== "stage-select" || !state.stageChoices.some((choice) => choice.id === stage)) return false;
+	const choice = state.stageChoices.find((stageChoice) => stageChoice.id === stage);
+	if (state.mode !== "stage-select" || !choice) return false;
+	const routeModifier = STAGE_ROUTE_MODIFIERS[choice.routeModifier];
 
 	state.stage = stage;
+	state.routeModifier = choice.routeModifier;
+	state.routeRewardMultiplier = routeModifier.rewardMultiplier;
+	state.spawnIntensityMultiplier = routeModifier.spawnIntensityMultiplier;
+	state.augmentChoiceBonus = routeModifier.augmentChoiceBonus;
+	state.stageMission = createStageMission(state, stage, choice.routeModifier);
 	state.stageChoices = [];
 	state.pendingBossSkill = null;
 	state.mode = "playing";
 	state.wave = Math.max(state.wave + 1, 1 + state.clearedStages.length);
 	state.spawnTimer = 0.75;
-	state.bossTimer = 28;
+	state.bossTimer = routeModifier.bossTimer;
 	state.bossActive = false;
 	state.enemies = [];
 	state.bullets = [];
 	state.slashes = [];
 	state.powerUps = [];
+	state.warningZones = [];
 	state.experienceOrbs = [];
 	state.player.invincible = Math.max(state.player.invincible, 1.6);
+	if (choice.routeModifier === "balanced") state.player.lives = Math.min(state.player.maxLives, state.player.lives + 1);
 	state.shake = Math.max(state.shake, 0.18);
 	return true;
 };

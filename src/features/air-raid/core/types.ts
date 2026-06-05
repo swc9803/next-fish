@@ -1,10 +1,13 @@
 export type GameMode = "ready" | "playing" | "paused" | "augment" | "stage-select" | "gameover";
-export type EnemyKind = "scout" | "fighter" | "ace" | "bomber" | "goldfish" | "boss";
+export type EnemyKind = "scout" | "fighter" | "ace" | "bomber" | "goldfish" | "supply" | "boss";
 export type WeaponKind = "standard" | "fork" | "scatter" | "lance" | "laser";
 export type AugmentRarity = "common" | "rare" | "unique" | "legendary";
 export type StageKind = "coral" | "abyss" | "volcanic" | "glacier" | "kelp" | "ruins";
 export type BossSkillId = "coral-surge" | "abyss-lance" | "ember-current" | "frost-shell" | "kelp-snare" | "ruin-prism";
 export type StageDirection = "10" | "12" | "2";
+export type StageRouteModifierId = "bounty" | "balanced" | "elite";
+export type StageMissionKind = "survive" | "defeat" | "collect-coins" | "flawless" | "boss";
+export type WarningZoneKind = "laser" | "ring" | "charge";
 export type AugmentId =
 	| "forked-cannon"
 	| "scatter-pods"
@@ -29,6 +32,9 @@ export type AugmentId =
 	| "drone-swarm"
 	| "drone-core"
 	| "pet-overdrive"
+	| "abyssal-bargain"
+	| "volatile-cache"
+	| "redline-current"
 	| "legendary-carrier";
 
 export type MetaUpgradeId = "health" | "shieldCycle" | "speed" | "fireRate" | "damage" | "magnet" | "reload" | "pet";
@@ -70,11 +76,28 @@ export type AugmentDefinition = {
 export type StageChoice = {
 	id: StageKind;
 	direction: StageDirection;
+	routeModifier: StageRouteModifierId;
+	routeTitle: string;
+	routeDescription: string;
 	title: string;
 	description: string;
 	boss: string;
 	rewardSkill: BossSkillId;
 	weaknessSkill?: BossSkillId;
+};
+
+export type StageMission = {
+	id: string;
+	kind: StageMissionKind;
+	title: string;
+	description: string;
+	target: number;
+	progress: number;
+	rewardCoins: number;
+	rewardExperience: number;
+	completed: boolean;
+	failed: boolean;
+	startDamageTaken: number;
 };
 
 export type Plane = {
@@ -90,6 +113,8 @@ export type Plane = {
 	fireCooldown: number;
 	age: number;
 	stage?: StageKind;
+	bossPhase?: 1 | 2;
+	specialCooldown?: number;
 	escapeTime?: number;
 	coinReward?: number;
 	experienceReward?: number;
@@ -202,6 +227,20 @@ export type Pet = {
 	phase: number;
 };
 
+export type WarningZone = {
+	id: number;
+	kind: WarningZoneKind;
+	x: number;
+	y: number;
+	radius: number;
+	width: number;
+	angle: number;
+	life: number;
+	maxLife: number;
+	color: string;
+	stage?: StageKind;
+};
+
 export type GameState = {
 	mode: GameMode;
 	score: number;
@@ -213,24 +252,34 @@ export type GameState = {
 	comboTimer: number;
 	wave: number;
 	stage: StageKind;
+	routeModifier: StageRouteModifierId;
 	clearedStages: StageKind[];
 	bossSkills: BossSkillId[];
 	bossSkillCooldowns: Record<BossSkillId, number>;
 	stageChoices: StageChoice[];
 	pendingBossSkill: BossSkillId | null;
+	stageMission: StageMission | null;
 	time: number;
 	spawnTimer: number;
 	bossTimer: number;
 	treasureTimer: number;
+	supplyTimer: number;
 	bossActive: boolean;
 	shake: number;
 	nextId: number;
 	weapon: WeaponKind;
+	weaponLevels: Record<WeaponKind, number>;
 	damageMultiplier: number;
 	fireCooldownMultiplier: number;
 	playerSpeedMultiplier: number;
 	magnetMultiplier: number;
 	reloadSpeedMultiplier: number;
+	rewardMultiplier: number;
+	threatMultiplier: number;
+	spawnIntensityMultiplier: number;
+	routeRewardMultiplier: number;
+	augmentChoiceBonus: number;
+	riskStacks: number;
 	bulletPierce: number;
 	laserFocus: number;
 	prismSplitter: boolean;
@@ -247,6 +296,11 @@ export type GameState = {
 	shieldMaxCharges: number;
 	defeatedEnemies: number;
 	defeatedBosses: number;
+	maxCombo: number;
+	damageTaken: number;
+	bossDamageDealt: number;
+	missionsCompleted: number;
+	suppliesCollected: number;
 	earnedCoins: number;
 	coinRewardClaimed: boolean;
 	augmentChoices: AugmentId[];
@@ -260,6 +314,7 @@ export type GameState = {
 	powerUps: PowerUp[];
 	experienceOrbs: ExperienceOrb[];
 	collectionEffects: CollectionEffect[];
+	warningZones: WarningZone[];
 	stars: Star[];
 	keys: Set<string>;
 	pointerActive: boolean;
@@ -286,8 +341,10 @@ export type HudState = {
 	maxLives: number;
 	power: number;
 	weapon: WeaponKind;
+	weaponLevel: number;
 	augmentCount: number;
 	augmentChoices: AugmentId[];
+	lastAugmentId: AugmentId | null;
 	laserFocus: number;
 	projectileChaos: number;
 	meleeUnlocked: boolean;
@@ -303,7 +360,16 @@ export type HudState = {
 	shieldCharges: number;
 	shieldMaxCharges: number;
 	defeatedEnemies: number;
+	maxCombo: number;
+	damageTaken: number;
+	bossDamageDealt: number;
+	missionsCompleted: number;
+	suppliesCollected: number;
 	earnedCoins: number;
+	stageMission: StageMission | null;
+	routeModifier: StageRouteModifierId;
+	rewardMultiplier: number;
+	threatMultiplier: number;
 };
 
 export type Layout = {

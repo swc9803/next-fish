@@ -45,8 +45,8 @@ export const useAirRaidCanvas = ({
 		const resize = () => {
 			const rect = wrapper.getBoundingClientRect();
 			const dpr = Math.min(window.devicePixelRatio || 1, 2);
-			const width = Math.max(320, rect.width);
-			const height = Math.max(520, rect.height);
+			const width = Math.max(1, rect.width);
+			const height = Math.max(1, rect.height);
 
 			canvas.width = Math.floor(width * dpr);
 			canvas.height = Math.floor(height * dpr);

@@ -1,6 +1,7 @@
 import { WORLD_HEIGHT, WORLD_WIDTH } from "./constants";
 import { addCollectionEffect } from "./effects";
 import { clamp, distanceSquared } from "./math";
+import { recordMissionCoinsCollected } from "./missions";
 import { addExperience } from "./rewards";
 import type { GameState, PowerUp } from "./types";
 
@@ -35,6 +36,7 @@ export const updateExperienceOrbs = (state: GameState, dt: number) => {
 			collectedOrbs.add(orb.id);
 			if (kind === "coin") {
 				state.earnedCoins += orb.value;
+				recordMissionCoinsCollected(state, orb.value);
 				addCollectionEffect(state, "coin", orb.x, orb.y, orb.radius);
 			} else {
 				addExperience(state, orb.value);
@@ -59,6 +61,14 @@ export const updateExperienceOrbs = (state: GameState, dt: number) => {
 				orb.vy *= 0.955;
 			}
 		} else {
+			const collectorPet = state.pets.find((pet) => pet.level >= 3 && distanceSquared(orb.x, orb.y, pet.x, pet.y) <= (42 + pet.level * 9) ** 2);
+			if (collectorPet) {
+				const dx = collectorPet.x - orb.x;
+				const dy = collectorPet.y - orb.y;
+				const distance = Math.max(1, Math.hypot(dx, dy));
+				orb.vx += (dx / distance) * 240 * dt;
+				orb.vy += (dy / distance) * 240 * dt;
+			}
 			orb.vx *= 0.985;
 			orb.vy = Math.min(180, orb.vy + 28 * dt);
 		}

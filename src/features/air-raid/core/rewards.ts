@@ -5,11 +5,13 @@ import { getNextId } from "./state";
 import type { GameState, Plane } from "./types";
 
 export const awardEnemyScore = (state: GameState, enemy: Plane) => {
+	if (enemy.kind === "supply") return;
 	const baseScore =
 		enemy.kind === "boss" ? 2200 : enemy.kind === "goldfish" ? 1250 : enemy.kind === "bomber" ? 260 : enemy.kind === "ace" ? 230 : enemy.kind === "fighter" ? 180 : 110;
 	state.combo = Math.min(99, state.combo + 1);
+	state.maxCombo = Math.max(state.maxCombo, state.combo);
 	state.comboTimer = 2.6;
-	state.score += Math.round(baseScore * (1 + Math.min(state.combo - 1, 18) * 0.05));
+	state.score += Math.round(baseScore * state.rewardMultiplier * state.routeRewardMultiplier * (1 + Math.min(state.combo - 1, 18) * 0.05));
 	state.defeatedEnemies += 1;
 	if (enemy.kind === "boss") state.defeatedBosses += 1;
 };
@@ -18,10 +20,11 @@ export const calculateCoinReward = (state: GameState) =>
 	Math.max(0, state.earnedCoins + Math.floor(state.defeatedEnemies * 3 + Math.max(0, state.wave - 1) * 35 + state.defeatedBosses * 90 + state.score / 720));
 
 const getEnemyExperience = (state: GameState, enemy: Plane) => {
+	if (enemy.kind === "supply") return enemy.experienceReward ?? 22 + state.wave * 4;
 	if (enemy.kind === "goldfish") return enemy.experienceReward ?? 90 + state.wave * 10;
 
 	const baseExperience = enemy.kind === "boss" ? 125 : enemy.kind === "bomber" ? 18 : enemy.kind === "ace" ? 16 : enemy.kind === "fighter" ? 12 : 8;
-	return baseExperience + Math.floor(state.wave * (enemy.kind === "boss" ? 4 : 0.8));
+	return Math.round((baseExperience + Math.floor(state.wave * (enemy.kind === "boss" ? 4 : 0.8))) * state.rewardMultiplier * state.routeRewardMultiplier);
 };
 
 const getNextExperience = (level: number, currentNext: number) => Math.round(currentNext * 1.22 + 18 + level * 6);
@@ -62,7 +65,7 @@ export const dropExperience = (state: GameState, enemy: Plane) => {
 };
 
 export const dropCoins = (state: GameState, enemy: Plane, totalCoins: number, count: number, autoCollect = false) => {
-	let remaining = Math.max(0, Math.floor(totalCoins));
+	let remaining = Math.max(0, Math.floor(totalCoins * state.rewardMultiplier * state.routeRewardMultiplier));
 
 	for (let i = 0; i < count; i++) {
 		const slotsLeft = count - i;
