@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo, RefObject, useState } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial } from "three";
+import { Object3D, Mesh, TorusGeometry, MeshBasicMaterial, Vector3 } from "three";
 
 import { useTyping } from "@/hooks/useTyping";
 import { ROUTER_LOGOS } from "@/data/fishScene";
@@ -14,13 +14,26 @@ interface LogoProps {
 	url: string;
 	modelPath: string;
 	position: [number, number, number];
+	scale?: number;
+	portalOffset?: [number, number, number];
 	isInternal?: boolean;
-	showGalleryOverlay?: () => void;
+	onInternalNavigate?: (url: string) => void;
 	text?: string;
 	hideSpeechBubble?: boolean;
 }
 
-const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, showGalleryOverlay, text, hideSpeechBubble = false }: LogoProps) => {
+const LogoModel = ({
+	modelPath,
+	position,
+	scale = 3.5,
+	portalOffset = [0, 0, 0],
+	url,
+	fishRef,
+	isInternal = false,
+	onInternalNavigate,
+	text,
+	hideSpeechBubble = false,
+}: LogoProps) => {
 	const { scene } = useGLTF(modelPath);
 	const modelRef = useRef<Object3D>(null);
 	const progressCircleRef = useRef<Mesh>(null);
@@ -30,6 +43,7 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	const prevArcRef = useRef<number | null>(null);
 	const bubbleElemRef = useRef<HTMLDivElement>(null);
 	const visibleRef = useRef(false);
+	const portalWorldPositionRef = useRef(new Vector3());
 
 	const [visible, setVisible] = useState(false);
 	const circleMaterial = useMemo(() => new MeshBasicMaterial({ color: "#000c44" }), []);
@@ -37,9 +51,9 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 
 	const DETECT_DISTANCE = 5;
 	const isMobile = useIsMobile();
-	const bubblePosition: [number, number, number] = isMobile ? [-0.25, -0.5, -2.0] : [-0.25, 0.5, -1.5];
+	const bubblePosition: [number, number, number] = isMobile ? [1.1, 2.25, -2.0] : [1.6, 6.7, -1.5];
 
-	const typedText = useTyping(text || "", visible, 150);
+	const typedText = useTyping(text || "", visible, 50);
 
 	useEffect(() => {
 		// 진행도 원 초기 세팅
@@ -72,7 +86,8 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 		const fish = fishRef.current;
 		if (!model || !fish || !ring) return;
 
-		const dist = model.position.distanceTo(fish.position);
+		ring.getWorldPosition(portalWorldPositionRef.current);
+		const dist = portalWorldPositionRef.current.distanceTo(fish.position);
 		const isNear = dist < DETECT_DISTANCE;
 
 		if (visibleRef.current !== isNear) {
@@ -90,8 +105,8 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 			if (progress >= 1 && !triggeredRef.current) {
 				triggeredRef.current = true;
 
-				if (isInternal && url === "/gallery") {
-					showGalleryOverlay?.();
+				if (isInternal) {
+					onInternalNavigate?.(url);
 				} else {
 					window.open(url, "_blank");
 				}
@@ -117,10 +132,10 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 	}, [scene]);
 
 	return (
-		<group ref={modelRef} position={position} scale={3.5}>
+		<group ref={modelRef} position={position} scale={scale}>
 			<primitive object={scene} />
-			<mesh ref={backgroundCircleRef} position={[0, 0.009, 0]} />
-			<mesh ref={progressCircleRef} position={[0, 0.01, 0]} />
+			<mesh ref={backgroundCircleRef} position={[portalOffset[0], portalOffset[1] + 0.009, portalOffset[2]]} />
+			<mesh ref={progressCircleRef} position={[portalOffset[0], portalOffset[1] + 0.01, portalOffset[2]]} />
 			{text && (
 				<Html position={bubblePosition} distanceFactor={15} wrapperClass="prevent_click">
 					<div className="speech_bubble" ref={bubbleElemRef}>
@@ -134,11 +149,11 @@ const LogoModel = ({ modelPath, position, url, fishRef, isInternal = false, show
 
 interface MoveRouterProps {
 	fishRef: RefObject<Object3D | null>;
-	showGalleryOverlay?: () => void;
+	onInternalNavigate?: (url: string) => void;
 	hideSpeechBubble?: boolean;
 }
 
-export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: MoveRouterProps) => {
+export const MoveRouter = ({ fishRef, onInternalNavigate, hideSpeechBubble }: MoveRouterProps) => {
 	return (
 		<group>
 			{ROUTER_LOGOS.map((logo) => (
@@ -147,9 +162,12 @@ export const MoveRouter = ({ fishRef, showGalleryOverlay, hideSpeechBubble }: Mo
 					url={logo.url}
 					modelPath={logo.modelPath}
 					position={toVector3Tuple(logo.position)}
+					scale={"scale" in logo ? logo.scale : undefined}
+					portalOffset={"portalOffset" in logo ? toVector3Tuple(logo.portalOffset) : undefined}
 					fishRef={fishRef}
 					isInternal={"isInternal" in logo ? logo.isInternal : false}
-					showGalleryOverlay={showGalleryOverlay}
+					onInternalNavigate={onInternalNavigate}
+					text={"text" in logo ? logo.text : undefined}
 					hideSpeechBubble={hideSpeechBubble}
 				/>
 			))}

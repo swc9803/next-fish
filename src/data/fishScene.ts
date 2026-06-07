@@ -40,12 +40,6 @@ export const TALKATIVE_MODELS = [
 		bubblePosition: [-19, 1, 11],
 		text: "각 로고에 다가가면 사이트가 열립니다.",
 	},
-	{
-		modelPath: "/models/update.glb",
-		modelPosition: [-125, 0.5, 10],
-		bubblePosition: [-126, 1, 5],
-		text: "곧 게임이 추가될 예정입니다!",
-	},
 ] as const;
 
 export const ROUTER_LOGOS = [
@@ -73,5 +67,16 @@ export const ROUTER_LOGOS = [
 		modelPath: "/models/car.glb",
 		position: [35, 0.5, 7],
 		isInternal: true,
+		text: "갤러리로 이동합니다.",
+	},
+	{
+		id: "game",
+		url: "/game",
+		modelPath: "/models/update.glb",
+		position: [-124, 0.5, 10],
+		scale: 3.5,
+		portalOffset: [1.7, 0, 0],
+		isInternal: true,
+		text: "게임 존으로 이동합니다.\n계속 업데이트 중 입니다.",
 	},
 ] as const;

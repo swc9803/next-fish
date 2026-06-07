@@ -193,6 +193,9 @@ textarea {
 	opacity: 0;
 	transition: opacity 1s ease;
 	z-index: 1;
+	&.game {
+		background: linear-gradient(180deg, rgba(7, 17, 27, 0.08), #07111b 72%, #171026);
+	}
 	&.show {
 		opacity: 1;
 	}

@@ -127,6 +127,15 @@ export const FishModel = ({ fishRef, setIsInBombZone, isGameOver, deathPosition,
 		}
 	}, [animations, fishRef, isGameOver]);
 
+	useEffect(() => {
+		return () => {
+			gsap.killTweensOf(fishScene.position);
+			fishScene.position.set(0, 0, 0);
+			fishScene.rotation.set(0, 0, 0);
+			fishScene.scale.set(1, 1, 1);
+		};
+	}, [fishScene]);
+
 	useFrame((_, delta) => {
 		if (isGameOver || !fishRef.current) return;
 

@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 
-export const GalleryTransitionOverlay = () => {
+interface GalleryTransitionOverlayProps {
+	variant?: "gallery" | "game";
+}
+
+export const GalleryTransitionOverlay = ({ variant = "gallery" }: GalleryTransitionOverlayProps) => {
 	const [visible, setVisible] = useState(false);
 
 	useEffect(() => {
@@ -8,5 +12,5 @@ export const GalleryTransitionOverlay = () => {
 		return () => cancelAnimationFrame(raf);
 	}, []);
 
-	return <div className={`move_gallery_overlay ${visible ? "show" : ""}`} />;
+	return <div className={`move_gallery_overlay ${variant === "game" ? "game" : ""} ${visible ? "show" : ""}`} />;
 };

@@ -5,12 +5,20 @@ import styles from "./page.module.scss";
 
 const games = [
 	{
-		title: "Deep Sea 1945",
+		title: "슈팅 게임",
 		description: "심해 균열로 잠수하세요. 내 물고기와 회전 조개 무기로 적성 생물을 밀어내고 유물을 회수합니다.",
-		href: "/game/1945",
+		href: "/game/shooting-game",
 		image: "/images/gallery6-1.webp",
 		status: "Ready",
 		isPlayable: true,
+	},
+	{
+		title: "준비 중",
+		description: "새로운 심해 미션을 준비하고 있습니다. 다음 카트리지가 장착되면 이곳에서 바로 출격할 수 있습니다.",
+		href: "",
+		image: "/images/gallery3-2.webp",
+		status: "Coming Soon",
+		isPlayable: false,
 	},
 ];
 
@@ -32,7 +40,7 @@ const GamePage = () => {
 							</div>
 							<div className={styles.cardBody}>
 								<div>
-									<p className={styles.status}>{game.status}</p>
+									<p className={`${styles.status} ${!game.isPlayable ? styles.pending : ""}`}>{game.status}</p>
 									<h2>{game.title}</h2>
 								</div>
 								<p>{game.description}</p>
