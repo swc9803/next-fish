@@ -16,35 +16,36 @@ export const AirRaidHud = ({ hud }: AirRaidHudProps) => {
 	const mission = hud.stageMission;
 	const missionProgress =
 		mission && mission.kind === "survive"
-			? `${Math.ceil(Math.max(0, mission.target - mission.progress))}s`
+			? `${Math.ceil(Math.max(0, mission.target - mission.progress))}초`
 			: mission
 				? `${Math.floor(mission.progress)}/${mission.target}`
 				: "";
 	const routeTitle = STAGE_ROUTE_MODIFIERS[hud.routeModifier].title;
+	const weaponLevelLabel = hud.weaponLevel > 1 ? ` ${hud.weaponLevel}단계` : "";
 
 	return (
 		<div className={styles.topBar}>
 			<Link className={styles.backLink} href="/game">
-				ARSENAL
+				격납고
 			</Link>
 			<div className={styles.stats} aria-label="게임 상태">
 				<span className={styles.statCell} data-tone="score">
-					<b>SCORE</b>
+					<b>점수</b>
 					<strong>{hud.score.toLocaleString()}</strong>
-					<small>BEST {hud.highScore.toLocaleString()}</small>
+					<small>최고 {hud.highScore.toLocaleString()}</small>
 				</span>
 				<span className={styles.statCell} data-tone="danger">
-					<b>WAVE</b>
+					<b>웨이브</b>
 					<strong>{hud.wave}</strong>
 					<small>{hud.stageTitle}</small>
 				</span>
 				<span className={styles.statCell} data-tone="stage">
-					<b>STAGE</b>
+					<b>보스</b>
 					<strong>{hud.stageBoss}</strong>
-					<small>{hud.combo > 1 ? `COMBO x${hud.combo}` : "BOSS ROUTE"}</small>
+					<small>{hud.combo > 1 ? `콤보 x${hud.combo}` : "보스 항로"}</small>
 				</span>
 				<span className={styles.statCell} data-tone="vital">
-					<b>HULL</b>
+					<b>내구도</b>
 					<strong>
 						{hud.lives}/{hud.maxLives}
 					</strong>
@@ -57,48 +58,120 @@ export const AirRaidHud = ({ hud }: AirRaidHudProps) => {
 								<span key={index} data-filled={filled} />
 							))}
 						</span>
-						<span>PWR {hud.power}</span>
+						<span>화력 {hud.power}</span>
 					</small>
 				</span>
 				<span className={`${styles.statCell} ${styles.expCell}`} data-tone="xp">
-					<b>DEPTH</b>
-					<strong>Lv {hud.experienceLevel}</strong>
+					<b>성장</b>
+					<strong>{hud.experienceLevel}레벨</strong>
 					<i aria-hidden="true">
 						<em style={{ width: `${experiencePercent}%` }} />
 					</i>
 				</span>
 				<span className={styles.statCell} data-tone="weapon">
-					<b>WEAPON</b>
+					<b>무기</b>
 					<strong>
 						{WEAPON_LABELS[hud.weapon]}
-						{hud.weaponLevel > 1 ? ` Mk${hud.weaponLevel}` : ""}
+						{weaponLevelLabel}
 					</strong>
-					<small>{hud.augmentCount} RELICS</small>
+					<small>유물 {hud.augmentCount}개</small>
 				</span>
-				<span className={styles.bonusChip}>{routeTitle}</span>
+				<span className={styles.bonusChip}>
+					<small>항로</small>
+					<b>{routeTitle}</b>
+				</span>
 				{mission && (
 					<span className={styles.bonusChip}>
-						{mission.completed ? "MISSION CLEAR" : mission.failed ? "MISSION LOST" : `${mission.title} ${missionProgress}`}
+						<small>임무</small>
+						<b>{mission.completed ? "완료" : mission.failed ? "실패" : `${mission.title} ${missionProgress}`}</b>
 					</span>
 				)}
-				{hud.damageBonusPercent > 0 && <span className={styles.bonusChip}>DMG +{hud.damageBonusPercent}%</span>}
-				{hud.fireRateBonusPercent > 0 && <span className={styles.bonusChip}>FIRE +{hud.fireRateBonusPercent}%</span>}
-				{hud.speedBonusPercent > 0 && <span className={styles.bonusChip}>SPD +{hud.speedBonusPercent}%</span>}
-				{hud.magnetBonusPercent > 0 && <span className={styles.bonusChip}>PULL +{hud.magnetBonusPercent}%</span>}
-				{hud.reloadBonusPercent > 0 && <span className={styles.bonusChip}>LOAD +{hud.reloadBonusPercent}%</span>}
-				{hud.rewardMultiplier > 1.05 && <span className={styles.bonusChip}>LOOT x{hud.rewardMultiplier.toFixed(2)}</span>}
-				{hud.threatMultiplier > 1.05 && <span className={styles.bonusChip}>RISK x{hud.threatMultiplier.toFixed(2)}</span>}
-				{hud.shieldMaxCharges > 0 && <span className={styles.bonusChip}>SHELL {hud.shieldCharges}/{hud.shieldMaxCharges}</span>}
+				{hud.damageBonusPercent > 0 && (
+					<span className={styles.bonusChip}>
+						<small>공격력</small>
+						<b>+{hud.damageBonusPercent}%</b>
+					</span>
+				)}
+				{hud.fireRateBonusPercent > 0 && (
+					<span className={styles.bonusChip}>
+						<small>연사</small>
+						<b>+{hud.fireRateBonusPercent}%</b>
+					</span>
+				)}
+				{hud.speedBonusPercent > 0 && (
+					<span className={styles.bonusChip}>
+						<small>속도</small>
+						<b>+{hud.speedBonusPercent}%</b>
+					</span>
+				)}
+				{hud.magnetBonusPercent > 0 && (
+					<span className={styles.bonusChip}>
+						<small>회수</small>
+						<b>+{hud.magnetBonusPercent}%</b>
+					</span>
+				)}
+				{hud.reloadBonusPercent > 0 && (
+					<span className={styles.bonusChip}>
+						<small>장전</small>
+						<b>+{hud.reloadBonusPercent}%</b>
+					</span>
+				)}
+				{hud.rewardMultiplier > 1.05 && (
+					<span className={styles.bonusChip}>
+						<small>보상</small>
+						<b>x{hud.rewardMultiplier.toFixed(2)}</b>
+					</span>
+				)}
+				{hud.threatMultiplier > 1.05 && (
+					<span className={styles.bonusChip}>
+						<small>위험도</small>
+						<b>x{hud.threatMultiplier.toFixed(2)}</b>
+					</span>
+				)}
+				{hud.shieldMaxCharges > 0 && (
+					<span className={styles.bonusChip}>
+						<small>보호막</small>
+						<b>{hud.shieldCharges}/{hud.shieldMaxCharges}</b>
+					</span>
+				)}
 				{hud.petCount > 0 && (
 					<span className={styles.bonusChip}>
-						ORBIT {hud.petCount} / Lv {hud.petLevelTotal}
+						<small>조개</small>
+						<b>
+							{hud.petCount}개 / 총 {hud.petLevelTotal}레벨
+						</b>
 					</span>
 				)}
-				{hud.earnedCoins > 0 && <span className={styles.bonusChip}>SALVAGE +{hud.earnedCoins}</span>}
-				{hud.suppliesCollected > 0 && <span className={styles.bonusChip}>SUPPLY {hud.suppliesCollected}</span>}
-				{hud.laserFocus > 0 && <span className={styles.bonusChip}>FOCUS {hud.laserFocus}</span>}
-				{hud.projectileChaos > 0 && <span className={styles.bonusChip}>DRIFT {Math.round(hud.projectileChaos * 10)}</span>}
-				{hud.bossSkills.length > 0 && <span className={styles.bonusChip}>BOSS SKILL {hud.bossSkills.length}</span>}
+				{hud.earnedCoins > 0 && (
+					<span className={styles.bonusChip}>
+						<small>인양</small>
+						<b>+{hud.earnedCoins}</b>
+					</span>
+				)}
+				{hud.suppliesCollected > 0 && (
+					<span className={styles.bonusChip}>
+						<small>보급</small>
+						<b>{hud.suppliesCollected}회</b>
+					</span>
+				)}
+				{hud.laserFocus > 0 && (
+					<span className={styles.bonusChip}>
+						<small>집중</small>
+						<b>{hud.laserFocus}</b>
+					</span>
+				)}
+				{hud.projectileChaos > 0 && (
+					<span className={styles.bonusChip}>
+						<small>탄퍼짐</small>
+						<b>{Math.round(hud.projectileChaos * 10)}</b>
+					</span>
+				)}
+				{hud.bossSkills.length > 0 && (
+					<span className={styles.bonusChip}>
+						<small>보스 스킬</small>
+						<b>{hud.bossSkills.length}개</b>
+					</span>
+				)}
 			</div>
 		</div>
 	);

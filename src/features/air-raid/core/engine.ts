@@ -545,6 +545,7 @@ const resolveCollisions = (state: GameState) => {
 			!removedEnemies.has(enemy.id) &&
 			(enemy.kind !== "goldfish" || !enemy.escapeTime || enemy.age < enemy.escapeTime) &&
 			(enemy.kind !== "supply" || (enemy.x > -enemy.radius - 64 && enemy.x < WORLD_WIDTH + enemy.radius + 64)) &&
+			(enemy.kind === "boss" || enemy.kind === "goldfish" || enemy.kind === "supply" || enemy.y > -enemy.radius - 80) &&
 			enemy.y < WORLD_HEIGHT + enemy.radius + 40,
 	);
 	state.powerUps = state.powerUps.filter((powerUp) => !removedBullets.has(powerUp.id));

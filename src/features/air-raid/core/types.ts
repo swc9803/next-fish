@@ -2,6 +2,7 @@ export type GameMode = "ready" | "playing" | "paused" | "augment" | "stage-selec
 export type EnemyKind = "scout" | "fighter" | "ace" | "bomber" | "goldfish" | "supply" | "boss";
 export type WeaponKind = "standard" | "fork" | "scatter" | "lance" | "laser";
 export type AugmentRarity = "common" | "rare" | "unique" | "legendary";
+export type AugmentAttribute = "bomb" | "blade" | "machineGun" | "shotgun" | "pierce" | "laser" | "drone" | "defense" | "mobility" | "power" | "utility" | "risk";
 export type StageKind = "coral" | "abyss" | "volcanic" | "glacier" | "kelp" | "ruins";
 export type BossSkillId = "coral-surge" | "abyss-lance" | "ember-current" | "frost-shell" | "kelp-snare" | "ruin-prism";
 export type StageDirection = "10" | "12" | "2";
@@ -70,6 +71,7 @@ export type AugmentDefinition = {
 	title: string;
 	description: string;
 	flavor: string;
+	attribute?: AugmentAttribute;
 	maxStacks?: number;
 };
 
@@ -344,6 +346,7 @@ export type HudState = {
 	weaponLevel: number;
 	augmentCount: number;
 	augmentChoices: AugmentId[];
+	augmentStacks: Partial<Record<AugmentId, number>>;
 	lastAugmentId: AugmentId | null;
 	laserFocus: number;
 	projectileChaos: number;

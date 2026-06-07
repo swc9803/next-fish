@@ -24,6 +24,7 @@ const createHudSignature = (hud: HudState) =>
 		hud.weaponLevel,
 		hud.augmentCount,
 		hud.augmentChoices.join(","),
+		hud.augmentChoices.map((augmentId) => hud.augmentStacks[augmentId] ?? 0).join(","),
 		hud.lastAugmentId ?? "",
 		hud.petCount,
 		hud.petLevelTotal,

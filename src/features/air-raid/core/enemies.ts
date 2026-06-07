@@ -7,6 +7,7 @@ import { getNextId } from "./state";
 import type { EnemyKind, GameState, Plane } from "./types";
 
 const GOLDFISH_ESCAPE_TIME = 7.6;
+const NORMAL_ENEMY_ADVANCE_LIMIT_Y = WORLD_HEIGHT * 0.62;
 
 const getDifficultyRamp = (wave: number) => clamp((wave - 1) / 8, 0, 1);
 
@@ -41,7 +42,6 @@ const canEnemyFire = (enemy: Plane) => {
 
 const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: number) => {
 	const adjustedSpeed = speed * getEnemyBulletSpeedMultiplier(state.wave) * Math.min(1.32, state.threatMultiplier);
-	const palette = getStagePalette(enemy.stage);
 	state.bullets.push({
 		id: getNextId(state),
 		x: enemy.x,
@@ -52,7 +52,7 @@ const addEnemyBullet = (state: GameState, enemy: Plane, angle: number, speed: nu
 		damage: 1,
 		pierce: 0,
 		from: "enemy",
-		color: enemy.kind === "boss" ? palette.accent : "#ffcb74",
+		color: enemy.kind === "boss" ? "#ff4f9a" : "#ff4f6d",
 	});
 };
 
@@ -287,6 +287,11 @@ export const updateEnemies = (state: GameState, dt: number) => {
 			const waveSpeed = (enemy.kind === "ace" ? 5.8 : enemy.kind === "fighter" ? 3.4 : 2.1) * (0.76 + getDifficultyRamp(state.wave) * 0.18);
 			enemy.x += Math.sin(enemy.age * waveSpeed) * weave * dt + enemy.vx * dt;
 			enemy.y += enemy.vy * dt;
+			if (enemy.y >= NORMAL_ENEMY_ADVANCE_LIMIT_Y - enemy.radius) {
+				enemy.y = NORMAL_ENEMY_ADVANCE_LIMIT_Y - enemy.radius;
+				enemy.vy = -Math.abs(enemy.vy) * 0.72;
+				enemy.fireCooldown = Math.min(enemy.fireCooldown, 0.22);
+			}
 			if (enemy.x < enemy.radius || enemy.x > WORLD_WIDTH - enemy.radius) enemy.vx *= -1;
 		}
 
