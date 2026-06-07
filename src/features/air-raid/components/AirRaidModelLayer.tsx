@@ -71,17 +71,27 @@ const ModelPrimitive = memo(({ path, normalize = false }: { path: string; normal
 
 ModelPrimitive.displayName = "ModelPrimitive";
 
-const AnimatedFishModel = memo(({ timeScaleRef }: { timeScaleRef: RefObject<number> }) => {
+const AnimatedFishModel = memo(({ stateRef, timeScaleRef }: { stateRef: RefObject<GameState | null>; timeScaleRef: RefObject<number> }) => {
 	const { scene, animations } = useGLTF(FISH_MODEL_PATH);
 	const fishColor = useFishStore((state) => state.fishColor);
 	const object = useMemo(() => {
 		const clone = cloneSkeleton(scene);
 		centerObject(clone);
+		clone.traverse((child) => {
+			if (child instanceof Mesh) {
+				child.material = Array.isArray(child.material)
+					? child.material.map((material) => material.clone())
+					: child.material.clone();
+			}
+		});
 		return clone;
 	}, [scene]);
 	const mixerRef = useRef<AnimationMixer | null>(null);
 	const swimActionRef = useRef<AnimationAction | null>(null);
 	const materialsRef = useRef<MeshStandardMaterial[]>([]);
+	const baseColorRef = useRef(new Color(fishColor));
+	const flashColorRef = useRef(new Color("#ffffff"));
+	const flashEmissiveRef = useRef(new Color("#8bf4ff"));
 
 	useEffect(() => {
 		const materials: MeshStandardMaterial[] = [];
@@ -98,8 +108,13 @@ const AnimatedFishModel = memo(({ timeScaleRef }: { timeScaleRef: RefObject<numb
 
 	useEffect(() => {
 		const nextColor = new Color(fishColor);
+		baseColorRef.current.copy(nextColor);
 		for (const material of materialsRef.current) {
 			material.color.copy(nextColor);
+			material.emissive.set(0x000000);
+			material.emissiveIntensity = 0;
+			material.opacity = 1;
+			material.transparent = false;
 			material.needsUpdate = true;
 		}
 	}, [fishColor]);
@@ -123,9 +138,22 @@ const AnimatedFishModel = memo(({ timeScaleRef }: { timeScaleRef: RefObject<numb
 		};
 	}, [animations, object]);
 
-	useFrame((_, delta) => {
+	useFrame((state, delta) => {
 		if (swimActionRef.current) swimActionRef.current.timeScale = timeScaleRef.current;
 		mixerRef.current?.update(delta);
+
+		const invincible = stateRef.current?.player.invincible ?? 0;
+		const flash = invincible > 0 ? (Math.sin(state.clock.elapsedTime * 34) + 1) * 0.5 : 0;
+		const alpha = invincible > 0 ? 0.36 + flash * 0.64 : 1;
+		for (const material of materialsRef.current) {
+			material.color.copy(baseColorRef.current).lerp(flashColorRef.current, flash * 0.78);
+			material.emissive.copy(flashEmissiveRef.current);
+			material.emissiveIntensity = invincible > 0 ? 0.34 + flash * 1.25 : 0;
+			material.opacity = alpha;
+			material.transparent = invincible > 0;
+			material.depthWrite = invincible <= 0 || alpha > 0.7;
+			material.needsUpdate = true;
+		}
 	});
 
 	return <primitive object={object} />;
@@ -254,7 +282,7 @@ const OceanModelScene = ({ stateRef, layoutRef }: AirRaidModelLayerProps) => {
 			<directionalLight position={[2, 5, 8]} intensity={2.4} />
 			<pointLight position={[-3, -4, 9]} color="#7df8ff" intensity={1.6} distance={9} />
 			<group ref={fishGroupRef} visible={false}>
-				<AnimatedFishModel timeScaleRef={animationTimeScaleRef} />
+				<AnimatedFishModel stateRef={stateRef} timeScaleRef={animationTimeScaleRef} />
 			</group>
 			{Array.from({ length: MAX_ORBIT_WEAPONS }, (_, index) => (
 				<group

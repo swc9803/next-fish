@@ -1,7 +1,7 @@
 import { MELEE_MAX_CHARGE, WORLD_HEIGHT, WORLD_WIDTH } from "./constants";
 import { randomRange } from "./math";
 import { createStageMission, STAGES } from "./stages";
-import type { GameState, HudState, MetaProgress, WeaponKind } from "./types";
+import type { AugmentId, GameState, HudState, MetaProgress, WeaponKind } from "./types";
 
 const createStars = () =>
 	Array.from({ length: 90 }, () => ({
@@ -191,6 +191,10 @@ export const makeHud = (state: GameState): HudState => ({
 	weaponLevel: state.weaponLevels[state.weapon],
 	augmentCount: state.augments.length,
 	augmentChoices: state.augmentChoices,
+	augmentStacks: state.augments.reduce<Partial<Record<AugmentId, number>>>((stacks, augmentId) => {
+		stacks[augmentId] = (stacks[augmentId] ?? 0) + 1;
+		return stacks;
+	}, {}),
 	lastAugmentId: state.augments[state.augments.length - 1] ?? null,
 	laserFocus: state.laserFocus,
 	projectileChaos: state.projectileChaos,

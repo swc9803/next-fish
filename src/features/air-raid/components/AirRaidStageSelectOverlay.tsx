@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { BOSS_SKILLS, STAGES } from "../core/stages";
 import type { BossSkillId, GameMode, StageChoice, StageKind } from "../core/types";
@@ -13,24 +13,47 @@ type AirRaidStageSelectOverlayProps = {
 };
 
 export const AirRaidStageSelectOverlay = ({ bossSkills, choices, mode, pendingBossSkill, onSelect }: AirRaidStageSelectOverlayProps) => {
+	const [selectedStage, setSelectedStage] = useState<StageKind | null>(null);
+	const travelTimerRef = useRef<number | null>(null);
+
+	useEffect(() => {
+		if (mode !== "stage-select") setSelectedStage(null);
+		return () => {
+			if (travelTimerRef.current) {
+				window.clearTimeout(travelTimerRef.current);
+				travelTimerRef.current = null;
+			}
+		};
+	}, [mode]);
+
 	if (mode !== "stage-select") return null;
 
 	const pendingSkill = pendingBossSkill ? BOSS_SKILLS[pendingBossSkill] : null;
+	const isTravelling = selectedStage !== null;
+
+	const handleSelect = (stage: StageKind) => {
+		if (isTravelling) return;
+		setSelectedStage(stage);
+		travelTimerRef.current = window.setTimeout(() => {
+			onSelect(stage);
+			travelTimerRef.current = null;
+		}, 820);
+	};
 
 	return (
-		<section className={styles.stageRouteOverlay}>
+		<section className={styles.stageRouteOverlay} data-travelling={isTravelling}>
 			<div className={styles.routeHeader}>
-				<p className={styles.kicker}>Boss Skill Acquired</p>
+				<p className={styles.kicker}>보스 코어 회수</p>
 				<h1>{pendingSkill?.title ?? "해역 제압"}</h1>
 				<p>{pendingSkill?.description ?? "보스 코어를 회수했습니다. 다음 침투 경로를 선택하세요."}</p>
 				<div className={styles.skillRack} aria-label="보유 보스 스킬">
 					{bossSkills.map((skillId) => {
 						const skill = BOSS_SKILLS[skillId];
-							return (
-								<span key={skill.id} style={{ "--skill-color": skill.color } as CSSProperties}>
-									{skill.shortTitle}
-								</span>
-							);
+						return (
+							<span key={skill.id} style={{ "--skill-color": skill.color } as CSSProperties}>
+								{skill.shortTitle}
+							</span>
+						);
 					})}
 				</div>
 			</div>
@@ -48,11 +71,12 @@ export const AirRaidStageSelectOverlay = ({ bossSkills, choices, mode, pendingBo
 							type="button"
 							className={styles.routeChoice}
 							data-direction={choice.direction}
+							data-selected={selectedStage === choice.id}
 							data-weak={isWeak}
 							style={{ "--route-color": stage.palette.accent } as CSSProperties}
-							onClick={() => onSelect(choice.id)}
-							>
-								<span className={styles.routeDirection}>{choice.direction}시</span>
+							onClick={() => handleSelect(choice.id)}
+						>
+							<span className={styles.routeDirection}>{choice.direction}시</span>
 							<b>{choice.title}</b>
 							<strong>{choice.routeTitle}</strong>
 							<small>{choice.description}</small>
@@ -64,6 +88,9 @@ export const AirRaidStageSelectOverlay = ({ bossSkills, choices, mode, pendingBo
 						</button>
 					);
 				})}
+			</div>
+			<div className={styles.travelVeil} aria-hidden="true">
+				<span />
 			</div>
 		</section>
 	);

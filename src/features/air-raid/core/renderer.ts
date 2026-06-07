@@ -107,6 +107,7 @@ const drawBullets = (ctx: CanvasRenderingContext2D, bullets: Bullet[]) => {
 			? clamp(bullet.visualRadius ?? bullet.radius * PLAYER_BULLET_VISUAL_SCALE, PLAYER_BULLET_MIN_VISUAL_RADIUS, PLAYER_BULLET_MAX_VISUAL_RADIUS)
 			: bullet.radius;
 		const trailScale = isPlayerBullet ? 0.026 : 0.035;
+		const angle = Math.atan2(bullet.vy, bullet.vx) + Math.PI / 2;
 
 		ctx.save();
 		ctx.shadowColor = bullet.color;
@@ -120,15 +121,43 @@ const drawBullets = (ctx: CanvasRenderingContext2D, bullets: Bullet[]) => {
 		ctx.lineTo(bullet.x - bullet.vx * trailScale, bullet.y - bullet.vy * trailScale);
 		ctx.stroke();
 		ctx.globalAlpha = 1;
-		ctx.fillStyle = bullet.color;
-		ctx.beginPath();
-		ctx.ellipse(bullet.x, bullet.y, visualRadius * (isPlayerBullet ? 0.86 : 1), visualRadius * (isPlayerBullet ? 1.12 : 2.1), 0, 0, Math.PI * 2);
-		ctx.fill();
+
 		if (isPlayerBullet) {
+			ctx.fillStyle = bullet.color;
+			ctx.beginPath();
+			ctx.ellipse(bullet.x, bullet.y, visualRadius * 0.86, visualRadius * 1.12, 0, 0, Math.PI * 2);
+			ctx.fill();
 			ctx.fillStyle = "rgba(255,255,255,0.9)";
 			ctx.beginPath();
 			ctx.arc(bullet.x - visualRadius * 0.2, bullet.y - visualRadius * 0.24, Math.max(0.65, visualRadius * 0.22), 0, Math.PI * 2);
 			ctx.fill();
+		} else {
+			ctx.translate(bullet.x, bullet.y);
+			ctx.rotate(angle);
+			ctx.fillStyle = "rgba(5, 6, 14, 0.82)";
+			ctx.beginPath();
+			ctx.moveTo(0, -visualRadius * 2.35);
+			ctx.lineTo(visualRadius * 1.25, 0);
+			ctx.lineTo(0, visualRadius * 2.35);
+			ctx.lineTo(-visualRadius * 1.25, 0);
+			ctx.closePath();
+			ctx.fill();
+			ctx.fillStyle = bullet.color;
+			ctx.beginPath();
+			ctx.moveTo(0, -visualRadius * 1.82);
+			ctx.lineTo(visualRadius * 0.86, 0);
+			ctx.lineTo(0, visualRadius * 1.82);
+			ctx.lineTo(-visualRadius * 0.86, 0);
+			ctx.closePath();
+			ctx.fill();
+			ctx.strokeStyle = "rgba(255,255,255,0.88)";
+			ctx.lineWidth = 1.2;
+			ctx.beginPath();
+			ctx.moveTo(-visualRadius * 0.55, 0);
+			ctx.lineTo(visualRadius * 0.55, 0);
+			ctx.moveTo(0, -visualRadius * 0.55);
+			ctx.lineTo(0, visualRadius * 0.55);
+			ctx.stroke();
 		}
 		ctx.restore();
 	}
@@ -356,34 +385,42 @@ const drawPowerUps = (ctx: CanvasRenderingContext2D, powerUps: PowerUp[]) => {
 const drawExperienceOrbs = (ctx: CanvasRenderingContext2D, experienceOrbs: ExperienceOrb[], time: number) => {
 	for (const orb of experienceOrbs) {
 		const isCoin = orb.kind === "coin";
-		const color = isCoin ? "#fff27a" : "#b6ff7a";
+		const color = isCoin ? "#ffd34d" : "#b6ff7a";
 		const shine = isCoin ? "#fff7c2" : "rgba(255,255,255,0.82)";
 		const pulse = 1 + Math.sin(time * 9 + orb.id) * 0.12;
 		ctx.save();
 		ctx.translate(orb.x, orb.y);
 		ctx.scale(pulse, pulse);
 		ctx.shadowColor = color;
-		ctx.shadowBlur = isCoin ? 16 : 12;
+		ctx.shadowBlur = isCoin ? 10 : 12;
 		ctx.fillStyle = color;
 		if (isCoin) {
-			ctx.rotate(time * 2.4 + orb.id);
+			ctx.rotate(Math.sin(time * 5 + orb.id) * 0.18);
 			ctx.beginPath();
-			for (let i = 0; i < 8; i++) {
-				const angle = (Math.PI * 2 * i) / 8;
-				const radius = i % 2 === 0 ? orb.radius * 1.15 : orb.radius * 0.58;
-				ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
-			}
-			ctx.closePath();
+			ctx.ellipse(0, 0, orb.radius * 1.08, orb.radius * 0.82, 0, 0, Math.PI * 2);
 			ctx.fill();
+			ctx.strokeStyle = "#7a4b00";
+			ctx.lineWidth = 1.4;
+			ctx.stroke();
+			ctx.strokeStyle = "rgba(122, 75, 0, 0.72)";
+			ctx.lineWidth = 1.2;
+			ctx.beginPath();
+			ctx.moveTo(-orb.radius * 0.42, -orb.radius * 0.18);
+			ctx.lineTo(orb.radius * 0.42, -orb.radius * 0.18);
+			ctx.moveTo(-orb.radius * 0.42, orb.radius * 0.18);
+			ctx.lineTo(orb.radius * 0.42, orb.radius * 0.18);
+			ctx.stroke();
 		} else {
 			ctx.beginPath();
 			ctx.arc(0, 0, orb.radius, 0, Math.PI * 2);
 			ctx.fill();
 		}
-		ctx.fillStyle = shine;
-		ctx.beginPath();
-		ctx.arc(-orb.radius * 0.25, -orb.radius * 0.25, Math.max(1.2, orb.radius * 0.28), 0, Math.PI * 2);
-		ctx.fill();
+		if (!isCoin) {
+			ctx.fillStyle = shine;
+			ctx.beginPath();
+			ctx.arc(-orb.radius * 0.25, -orb.radius * 0.25, Math.max(1.2, orb.radius * 0.28), 0, Math.PI * 2);
+			ctx.fill();
+		}
 		ctx.restore();
 	}
 };
@@ -442,7 +479,7 @@ const drawCollectionEffects = (ctx: CanvasRenderingContext2D, effects: Collectio
 	for (const effect of effects) {
 		const progress = clamp(1 - effect.life / effect.maxLife, 0, 1);
 		const scale = Math.max(0.08, (1 - progress) ** 0.85);
-		const color = effect.kind === "experience" ? "#b6ff7a" : effect.kind === "repair" ? "#9eff8f" : "#fff27a";
+		const color = effect.kind === "experience" ? "#b6ff7a" : effect.kind === "repair" ? "#9eff8f" : "#ffd34d";
 		const spin = time * 12 + effect.phase;
 
 		ctx.save();
@@ -464,10 +501,14 @@ const drawCollectionEffects = (ctx: CanvasRenderingContext2D, effects: Collectio
 			ctx.fill();
 		} else {
 			ctx.beginPath();
-			for (let i = 0; i < 8; i++) {
-				const angle = (Math.PI * 2 * i) / 8;
-				const radius = i % 2 === 0 ? effect.radius * 1.08 : effect.radius * 0.5;
-				ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+			if (effect.kind === "coin") {
+				ctx.ellipse(0, 0, effect.radius * 1.08, effect.radius * 0.82, 0, 0, Math.PI * 2);
+			} else {
+				for (let i = 0; i < 8; i++) {
+					const angle = (Math.PI * 2 * i) / 8;
+					const radius = i % 2 === 0 ? effect.radius * 1.08 : effect.radius * 0.5;
+					ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+				}
 			}
 			ctx.closePath();
 			ctx.fill();

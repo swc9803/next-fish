@@ -8,10 +8,53 @@
 	padding: clamp(1rem, 4vw, 2.4rem);
 	overflow-y: auto;
 	background:
-		linear-gradient(120deg, rgba(255, 233, 137, 0.1), transparent 28%, rgba(139, 244, 255, 0.12) 68%, transparent),
-		rgba(5, 10, 22, 0.76);
-	backdrop-filter: blur(8px);
-	animation: augmentBackdrop 0.32s ease-out both;
+		linear-gradient(180deg, rgba(2, 8, 18, 0.44), rgba(1, 4, 10, 0.92)),
+		repeating-linear-gradient(90deg, rgba(139, 244, 255, 0.055) 0 1px, transparent 1px 4.75rem),
+		repeating-linear-gradient(0deg, rgba(255, 233, 137, 0.04) 0 1px, transparent 1px 4.75rem),
+		rgba(3, 8, 18, 0.86);
+	backdrop-filter: blur(7px) saturate(1.12);
+	animation: routeBackdrop 0.34s ease-out both;
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset: 8%;
+		border: 1px solid rgba(139, 244, 255, 0.12);
+		opacity: 0.78;
+		pointer-events: none;
+	}
+
+	&::after {
+		content: "";
+		position: absolute;
+		left: 50%;
+		top: 20%;
+		width: min(36rem, 70vw);
+		height: min(36rem, 70vw);
+		border: 1px solid rgba(255, 233, 137, 0.16);
+		border-radius: 50%;
+		opacity: 0.72;
+		transform: translateX(-50%);
+		pointer-events: none;
+	}
+
+	&[data-travelling="true"] {
+		overflow: hidden;
+
+		.routeHeader,
+		.routeGrid {
+			animation: routeDepart 0.82s cubic-bezier(0.66, 0, 0.24, 1) both;
+		}
+
+		.travelVeil {
+			pointer-events: auto;
+			animation: travelBlackout 0.82s cubic-bezier(0.66, 0, 0.24, 1) both;
+
+			span {
+				animation: travelStreaks 0.82s cubic-bezier(0.66, 0, 0.24, 1) both;
+			}
+		}
+	}
 }
 
 .routeHeader {
@@ -22,10 +65,10 @@
 	h1 {
 		margin-top: 0.4rem;
 		color: #ffffff;
-		font-size: clamp(2rem, 6vw, 4.2rem);
+		font-size: clamp(1.85rem, 5vw, 3.55rem);
 		line-height: 0.96;
 		letter-spacing: 0;
-		text-shadow: 0 0 2.2rem rgba(255, 233, 137, 0.24);
+		text-shadow: 0 0 1.4rem rgba(139, 244, 255, 0.24);
 	}
 
 	p:not(.kicker) {
@@ -38,11 +81,10 @@
 }
 
 .kicker {
-	color: #ffe989;
+	color: #8bf4ff;
 	font-size: 0.82rem;
 	font-weight: 800;
 	letter-spacing: 0.12em;
-	text-transform: uppercase;
 }
 
 .skillRack {
@@ -58,7 +100,7 @@
 		min-height: 1.85rem;
 		padding: 0.42rem 0.58rem;
 		border: 1px solid color-mix(in srgb, var(--skill-color), transparent 44%);
-		border-radius: 8px;
+		border-radius: 999px;
 		color: var(--skill-color);
 		background:
 			linear-gradient(180deg, color-mix(in srgb, var(--skill-color), transparent 84%), rgba(255, 255, 255, 0.055)),
@@ -66,16 +108,29 @@
 		box-shadow: 0 0 1.4rem color-mix(in srgb, var(--skill-color), transparent 82%);
 		font-size: 0.72rem;
 		font-weight: 900;
-		letter-spacing: 0.08em;
+		letter-spacing: 0;
 	}
 }
 
 .routeGrid {
+	position: relative;
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: clamp(0.75rem, 2vw, 1rem);
 	width: min(68rem, 100%);
 	margin: 0 auto;
+
+	&::before {
+		content: "";
+		position: absolute;
+		left: 8%;
+		right: 8%;
+		top: 2.05rem;
+		height: 2px;
+		background: linear-gradient(90deg, transparent, rgba(139, 244, 255, 0.45), rgba(255, 233, 137, 0.52), rgba(139, 244, 255, 0.45), transparent);
+		box-shadow: 0 0 1rem rgba(139, 244, 255, 0.25);
+		pointer-events: none;
+	}
 }
 
 .routeChoice {
@@ -83,60 +138,90 @@
 
 	position: relative;
 	display: grid;
-	min-height: 18rem;
+	min-height: 18.5rem;
 	align-content: start;
-	gap: 0.55rem;
-	padding: clamp(1rem, 2vw, 1.25rem);
+	gap: 0.5rem;
+	padding: clamp(1.05rem, 2vw, 1.35rem) clamp(0.95rem, 2vw, 1.2rem);
 	overflow: hidden;
-	border: 1px solid color-mix(in srgb, var(--route-color), transparent 56%);
-	border-radius: 8px;
+	border: 1px solid color-mix(in srgb, var(--route-color), transparent 44%);
+	border-radius: 0;
 	color: #f7fbff;
+	clip-path: polygon(0 0.85rem, 0.85rem 0, 100% 0, 100% calc(100% - 0.85rem), calc(100% - 0.85rem) 100%, 0 100%);
 	background:
-		linear-gradient(180deg, color-mix(in srgb, var(--route-color), transparent 84%), rgba(255, 255, 255, 0.052)),
-		rgba(8, 16, 33, 0.9);
+		linear-gradient(180deg, color-mix(in srgb, var(--route-color), transparent 90%), rgba(255, 255, 255, 0.026)),
+		linear-gradient(90deg, color-mix(in srgb, var(--route-color), transparent 92%) 0 0.22rem, transparent 0.22rem),
+		rgba(2, 8, 19, 0.82);
 	box-shadow:
-		0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-		0 1.2rem 3rem rgba(0, 0, 0, 0.3),
-		0 0 2rem color-mix(in srgb, var(--route-color), transparent 84%);
+		0 0 0 1px rgba(255, 255, 255, 0.035) inset,
+		0 1rem 2rem rgba(0, 0, 0, 0.24);
 	text-align: left;
-	animation: routeCardReveal 0.46s cubic-bezier(0.16, 1, 0.3, 1) both;
+	animation: routeLineReveal 0.46s cubic-bezier(0.16, 1, 0.3, 1) both;
 	transition:
 		transform 0.2s ease,
 		border-color 0.2s ease,
 		filter 0.2s ease;
 
 	&[data-direction="10"] {
-		rotate: -2deg;
-		translate: 0 1rem;
+		translate: 0 0.8rem;
 	}
 
 	&[data-direction="12"] {
 		animation-delay: 0.08s;
-		translate: 0 -0.45rem;
+		translate: 0 -0.55rem;
 	}
 
 	&[data-direction="2"] {
 		animation-delay: 0.16s;
-		rotate: 2deg;
-		translate: 0 1rem;
+		translate: 0 0.8rem;
 	}
 
 	&[data-weak="true"] {
 		border-color: color-mix(in srgb, var(--route-color), white 18%);
 		box-shadow:
 			0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-			0 1.2rem 3rem rgba(0, 0, 0, 0.3),
-			0 0 2.8rem color-mix(in srgb, var(--route-color), transparent 66%);
+			0 1.1rem 2.6rem rgba(0, 0, 0, 0.28),
+			0 0 2rem color-mix(in srgb, var(--route-color), transparent 72%);
+	}
+
+	&[data-selected="true"] {
+		border-color: #ffffff;
+		filter: brightness(1.18);
+		transform: translateY(-0.5rem) scale(1.02);
+
+		&::after {
+			opacity: 1;
+			scale: 1;
+		}
 	}
 
 	&::before {
 		content: "";
 		position: absolute;
 		inset: -1px;
-		background: linear-gradient(115deg, transparent 8%, color-mix(in srgb, var(--route-color), transparent 72%) 45%, transparent 78%);
-		opacity: 0.5;
+		background:
+			radial-gradient(circle at 50% 2rem, color-mix(in srgb, var(--route-color), transparent 58%), transparent 2.25rem),
+			linear-gradient(115deg, transparent 8%, color-mix(in srgb, var(--route-color), transparent 78%) 45%, transparent 78%);
+		opacity: 0.42;
 		transform: translateX(-85%);
-		animation: raritySweep 1.2s ease-out 0.15s both;
+		animation: routeSweep 1.2s ease-out 0.15s both;
+		pointer-events: none;
+	}
+
+	&::after {
+		content: "";
+		position: absolute;
+		left: 50%;
+		top: 1.68rem;
+		width: 0.7rem;
+		aspect-ratio: 1;
+		border-radius: 50%;
+		background: #ffffff;
+		box-shadow:
+			0 0 0 0.45rem color-mix(in srgb, var(--route-color), transparent 74%),
+			0 0 1.6rem color-mix(in srgb, var(--route-color), white 8%);
+		opacity: 0.56;
+		scale: 0.86;
+		transform: translateX(-50%);
 		pointer-events: none;
 	}
 
@@ -144,8 +229,7 @@
 		z-index: 1;
 		border-color: color-mix(in srgb, var(--route-color), white 12%);
 		filter: brightness(1.08);
-		rotate: 0deg;
-		translate: 0 -0.35rem;
+		transform: translateY(-0.35rem);
 	}
 
 	b,
@@ -167,15 +251,14 @@
 
 	strong {
 		width: fit-content;
-		padding: 0.32rem 0.48rem;
+		padding: 0.28rem 0.46rem;
 		border: 1px solid color-mix(in srgb, var(--route-color), transparent 52%);
-		border-radius: 8px;
+		border-radius: 999px;
 		color: var(--route-color);
-		background: rgba(255, 255, 255, 0.07);
+		background: rgba(255, 255, 255, 0.055);
 		font-size: 0.74rem;
 		font-weight: 900;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
+		letter-spacing: 0;
 	}
 
 	small {
@@ -207,26 +290,47 @@
 		width: fit-content;
 		padding: 0.32rem 0.48rem;
 		border: 1px solid color-mix(in srgb, var(--route-color), transparent 45%);
-		border-radius: 8px;
+		border-radius: 999px;
 		color: var(--route-color);
 		background: color-mix(in srgb, var(--route-color), transparent 88%);
 	}
 }
 
 .routeDirection {
+	justify-self: center;
 	width: fit-content;
 	min-height: 1.85rem;
 	padding: 0.42rem 0.56rem;
 	border: 1px solid rgba(255, 255, 255, 0.16);
-	border-radius: 8px;
-	color: #07111b;
-	background: linear-gradient(180deg, #ffe989, #ffb45f);
+	border-radius: 999px;
+	color: #06101a;
+	background: linear-gradient(180deg, #f7fbff, #8bf4ff);
 	font-size: 0.72rem;
 	font-weight: 900;
-	letter-spacing: 0.08em;
+	letter-spacing: 0;
 }
 
-@keyframes augmentBackdrop {
+.travelVeil {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	overflow: hidden;
+	pointer-events: none;
+	opacity: 0;
+	background: #000000;
+
+	span {
+		position: absolute;
+		inset: -18% -8%;
+		background:
+			linear-gradient(100deg, transparent 0 22%, rgba(139, 244, 255, 0.34) 24%, transparent 28% 46%, rgba(255, 233, 137, 0.22) 48%, transparent 52%),
+			repeating-linear-gradient(100deg, transparent 0 2.2rem, rgba(255, 255, 255, 0.12) 2.2rem 2.32rem, transparent 2.32rem 4.6rem);
+		opacity: 0;
+		transform: translateX(-32%) scaleX(1.3);
+	}
+}
+
+@keyframes routeBackdrop {
 	from {
 		opacity: 0;
 	}
@@ -236,21 +340,68 @@
 	}
 }
 
-@keyframes raritySweep {
+@keyframes routeSweep {
 	to {
 		transform: translateX(85%);
 	}
 }
 
-@keyframes routeCardReveal {
+@keyframes routeLineReveal {
 	from {
 		opacity: 0;
-		scale: 0.96;
+		transform: translateY(0.9rem);
 	}
 
 	to {
 		opacity: 1;
-		scale: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes routeDepart {
+	0% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+
+	58% {
+		opacity: 0.78;
+		transform: translateY(2.4rem) scale(1.08);
+	}
+
+	100% {
+		opacity: 0;
+		transform: translateY(7rem) scale(1.28);
+	}
+}
+
+@keyframes travelBlackout {
+	0% {
+		opacity: 0;
+	}
+
+	42% {
+		opacity: 0.72;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
+@keyframes travelStreaks {
+	0% {
+		opacity: 0;
+		transform: translateX(-32%) scaleX(1.3);
+	}
+
+	28% {
+		opacity: 0.82;
+	}
+
+	100% {
+		opacity: 0;
+		transform: translateX(32%) scaleX(1.9);
 	}
 }
 
@@ -268,6 +419,6 @@
 	.routeChoice[data-direction="12"],
 	.routeChoice[data-direction="2"] {
 		min-height: 12.5rem;
-		transform: none;
+		translate: none;
 	}
 }

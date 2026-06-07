@@ -98,24 +98,24 @@
 
 	b {
 		color: var(--hud-color);
-		font-size: 0.62rem;
+		font-size: 0.68rem;
 		font-weight: 900;
 		line-height: 1;
-		letter-spacing: 0.11em;
+		letter-spacing: 0;
 	}
 
 	strong {
 		color: #ffffff;
 		font-size: 0.92rem;
-		line-height: 1.05;
+		line-height: 1.14;
 		white-space: nowrap;
 	}
 
 	small {
 		color: rgba(247, 251, 255, 0.64);
-		font-size: 0.62rem;
+		font-size: 0.66rem;
 		font-weight: 800;
-		line-height: 1;
+		line-height: 1.12;
 		white-space: nowrap;
 	}
 }
@@ -185,16 +185,32 @@
 }
 
 .bonusChip {
-	min-height: 1.85rem;
-	padding: 0.42rem 0.52rem;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.34rem;
+	min-height: 1.95rem;
+	padding: 0.4rem 0.56rem;
 	border: 1px solid rgba(255, 255, 255, 0.12);
 	border-radius: 8px;
 	color: rgba(247, 251, 255, 0.84);
 	background: rgba(255, 255, 255, 0.065);
-	font-size: 0.66rem;
-	font-weight: 900;
-	letter-spacing: 0.04em;
-	line-height: 1;
+	line-height: 1.1;
+
+	small {
+		color: rgba(247, 251, 255, 0.58);
+		font-size: 0.62rem;
+		font-weight: 900;
+		letter-spacing: 0;
+		white-space: nowrap;
+	}
+
+	b {
+		color: rgba(247, 251, 255, 0.9);
+		font-size: 0.72rem;
+		font-weight: 900;
+		letter-spacing: 0;
+		white-space: nowrap;
+	}
 }
 
 @media screen and (max-width: 720px) {

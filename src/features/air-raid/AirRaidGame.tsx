@@ -158,7 +158,7 @@ export const AirRaidGame = () => {
 						onStatSlot={handleStatSlot}
 						slotResult={slotResult}
 					/>
-					<AirRaidAugmentOverlay choices={hud.augmentChoices} mode={hud.mode} onSelect={selectAugment} />
+					<AirRaidAugmentOverlay augmentStacks={hud.augmentStacks} choices={hud.augmentChoices} mode={hud.mode} onSelect={selectAugment} />
 					<AirRaidStageSelectOverlay
 						bossSkills={hud.bossSkills}
 						choices={hud.stageChoices}

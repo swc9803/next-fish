@@ -583,6 +583,54 @@
 		--rarity-glow: rgba(139, 244, 255, 0.16);
 	}
 
+	&[data-attribute="bomb"] {
+		--attribute-color: #ffe989;
+	}
+
+	&[data-attribute="blade"] {
+		--attribute-color: #ff8fae;
+	}
+
+	&[data-attribute="machineGun"] {
+		--attribute-color: #9eff8f;
+	}
+
+	&[data-attribute="shotgun"] {
+		--attribute-color: #ffb45f;
+	}
+
+	&[data-attribute="pierce"] {
+		--attribute-color: #f7fbff;
+	}
+
+	&[data-attribute="laser"] {
+		--attribute-color: #ff9cff;
+	}
+
+	&[data-attribute="drone"] {
+		--attribute-color: #8bf4ff;
+	}
+
+	&[data-attribute="defense"] {
+		--attribute-color: #9cc7ff;
+	}
+
+	&[data-attribute="mobility"] {
+		--attribute-color: #37d9a4;
+	}
+
+	&[data-attribute="power"] {
+		--attribute-color: #ffe989;
+	}
+
+	&[data-attribute="utility"] {
+		--attribute-color: #c79cff;
+	}
+
+	&[data-attribute="risk"] {
+		--attribute-color: #ff6f91;
+	}
+
 		&[data-rarity="rare"] {
 			--rarity-color: #9eff8f;
 			--rarity-glow: rgba(158, 255, 143, 0.22);
@@ -650,6 +698,14 @@
 			}
 		}
 
+	.augmentMeta {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+
 	span {
 		position: relative;
 		z-index: 1;
@@ -663,6 +719,28 @@
 		font-weight: 800;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
+	}
+
+	.attributeBadge {
+		border-color: color-mix(in srgb, var(--attribute-color, var(--rarity-color)), transparent 38%);
+		color: var(--attribute-color, var(--rarity-color));
+		background: color-mix(in srgb, var(--attribute-color, var(--rarity-color)), transparent 90%);
+		text-transform: none;
+
+		i {
+			display: inline-grid;
+			place-items: center;
+			min-width: 1.7rem;
+			margin: -0.12rem 0.28rem -0.12rem -0.22rem;
+			padding: 0.12rem 0.22rem;
+			border-radius: 6px;
+			color: #06101a;
+			background: var(--attribute-color, var(--rarity-color));
+			font-style: normal;
+			font-size: 0.66rem;
+			font-weight: 1000;
+			letter-spacing: 0;
+		}
 	}
 
 	b {
@@ -687,6 +765,31 @@
 		color: rgba(247, 251, 255, 0.68);
 		font-size: 0.86rem;
 		line-height: 1.45;
+	}
+
+	.stackTrack {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(1.8rem, 1fr);
+		gap: 0.34rem;
+		width: 100%;
+		margin-top: auto;
+
+		i {
+			height: 0.42rem;
+			border-radius: 999px;
+			background: rgba(255, 255, 255, 0.12);
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+
+			&[data-filled="true"] {
+				background: linear-gradient(90deg, var(--attribute-color, var(--rarity-color)), var(--rarity-color));
+				box-shadow:
+					0 0 0 1px color-mix(in srgb, var(--rarity-color), white 14%) inset,
+					0 0 1rem color-mix(in srgb, var(--attribute-color, var(--rarity-color)), transparent 54%);
+			}
+		}
 	}
 
 	&:hover {
