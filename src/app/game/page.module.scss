@@ -92,12 +92,26 @@
 
 .disabled {
 	cursor: default;
-	opacity: 0.64;
+	opacity: 0.82;
 
 	&:hover {
 		transform: none;
-		border-color: rgba(255, 255, 255, 0.16);
-		background: rgba(255, 255, 255, 0.08);
+		border-color: rgba(139, 244, 255, 0.22);
+		background:
+			linear-gradient(180deg, rgba(139, 244, 255, 0.08), rgba(255, 233, 137, 0.04)),
+			rgba(5, 14, 28, 0.82);
+	}
+
+	.imageWrap {
+		img {
+			filter: saturate(0.74) brightness(0.42) contrast(1.05);
+		}
+
+		&::after {
+			background:
+				linear-gradient(180deg, rgba(8, 19, 31, 0.2), rgba(8, 19, 31, 0.94)),
+				repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 12px);
+		}
 	}
 }
 
@@ -156,4 +170,10 @@
 	font-weight: 900;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
+}
+
+.pending {
+	border-color: rgba(255, 233, 137, 0.36);
+	color: #ffe989;
+	background: rgba(255, 233, 137, 0.09);
 }

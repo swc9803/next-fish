@@ -77,6 +77,7 @@ const AnimatedFishModel = memo(({ stateRef, timeScaleRef }: { stateRef: RefObjec
 	const object = useMemo(() => {
 		const clone = cloneSkeleton(scene);
 		centerObject(clone);
+		clone.rotation.set(0, 0, 0);
 		clone.traverse((child) => {
 			if (child instanceof Mesh) {
 				child.material = Array.isArray(child.material)
@@ -168,7 +169,12 @@ const OceanModelScene = ({ stateRef, layoutRef }: AirRaidModelLayerProps) => {
 	const { camera } = useThree();
 	const fishModelSize = useMemo(() => getModelSize(fishScene), [fishScene]);
 	const fishScale = useFishStore((state) => state.fishScale);
-	const previousPlayerRef = useRef({ x: 0, y: 0, initialized: false });
+	const previousPlayerRef = useRef<{ x: number; y: number; initialized: boolean; state: GameState | null }>({
+		x: 0,
+		y: 0,
+		initialized: false,
+		state: null,
+	});
 	const modelInitializedRef = useRef(false);
 	const animationTimeScaleRef = useRef(0.35);
 	const scaleVectorRef = useRef(new Vector3());
@@ -213,14 +219,18 @@ const OceanModelScene = ({ stateRef, layoutRef }: AirRaidModelLayerProps) => {
 		if (!state || !fishGroup) return;
 
 		const previousPlayer = previousPlayerRef.current;
-		if (!previousPlayer.initialized) {
+		const isNewState = previousPlayer.state !== state;
+		if (isNewState || !previousPlayer.initialized) {
 			previousPlayer.x = state.player.x;
 			previousPlayer.y = state.player.y;
+			previousPlayer.state = state;
 			previousPlayer.initialized = true;
+			modelInitializedRef.current = false;
+			animationTimeScaleRef.current = 0.35;
 		}
 
-		const velocityX = (state.player.x - previousPlayer.x) / Math.max(delta, 0.001);
-		const velocityY = (state.player.y - previousPlayer.y) / Math.max(delta, 0.001);
+		const velocityX = isNewState ? 0 : (state.player.x - previousPlayer.x) / Math.max(delta, 0.001);
+		const velocityY = isNewState ? 0 : (state.player.y - previousPlayer.y) / Math.max(delta, 0.001);
 		const movementSpeed = Math.hypot(velocityX, velocityY);
 		previousPlayer.x = state.player.x;
 		previousPlayer.y = state.player.y;

@@ -145,7 +145,7 @@ export const AirRaidGame = () => {
 			<AirRaidHud hud={hud} />
 
 			<div ref={wrapperRef} className={styles.stage}>
-				<canvas ref={canvasRef} className={styles.canvas} aria-label="Deep Sea 1945 game canvas" />
+				<canvas ref={canvasRef} className={styles.canvas} aria-label="슈팅 게임 canvas" />
 				<AirRaidModelLayer stateRef={stateRef} layoutRef={layoutRef} />
 					<AirRaidOverlay
 						hud={hud}

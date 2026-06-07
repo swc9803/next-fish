@@ -49,8 +49,8 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 
 	const [isShowGuide, setIsShowGuide] = useState(false);
 	const [showGuideShader, setShowGuideShader] = useState(false);
-	const [showGalleryTransitionOverlay, setShowGalleryTransitionOverlay] = useState(false);
-	const [isMovingToGallery, setIsNavigatingToGallery] = useState(false);
+	const [transitionDestination, setTransitionDestination] = useState<"/gallery" | "/game" | null>(null);
+	const [isInternalNavigating, setIsInternalNavigating] = useState(false);
 
 	const countdownRef = useRef<HTMLParagraphElement | null>(null);
 	const [isInBombZone, setIsInBombZone] = useState(false);
@@ -74,7 +74,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 	const readyFrameRef = useRef<number | null>(null);
 	const hasStartedReadyNotificationRef = useRef(false);
 	const guideFrameRef = useRef<number | null>(null);
-	const galleryNavTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const internalNavTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const router = useRouter();
 
@@ -120,16 +120,18 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 		};
 	}, [hasNotified]);
 
-	const galleryTransitionOverlayHandler = useCallback(() => {
-		setIsNavigatingToGallery(true);
-		setShowGalleryTransitionOverlay(true);
-		if (galleryNavTimeoutRef.current) clearTimeout(galleryNavTimeoutRef.current);
-		galleryNavTimeoutRef.current = setTimeout(() => router.push("/gallery"), 800);
+	const internalTransitionOverlayHandler = useCallback((url: string) => {
+		if (url !== "/gallery" && url !== "/game") return;
+
+		setIsInternalNavigating(true);
+		setTransitionDestination(url);
+		if (internalNavTimeoutRef.current) clearTimeout(internalNavTimeoutRef.current);
+		internalNavTimeoutRef.current = setTimeout(() => router.push(url), 800);
 	}, [router]);
 
 	useEffect(() => {
 		return () => {
-			if (galleryNavTimeoutRef.current) clearTimeout(galleryNavTimeoutRef.current);
+			if (internalNavTimeoutRef.current) clearTimeout(internalNavTimeoutRef.current);
 		};
 	}, []);
 
@@ -294,7 +296,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 					startAnimation={startAnimation}
 					isCleared={isCleared}
 				/>
-				<MoveRouter fishRef={fishRef} showGalleryOverlay={galleryTransitionOverlayHandler} hideSpeechBubble={isMovingToGallery} />
+				<MoveRouter fishRef={fishRef} onInternalNavigate={internalTransitionOverlayHandler} hideSpeechBubble={isInternalNavigating} />
 				<Ground planeRef={planeRef} onLoaded={() => setGroundLoaded(true)} />
 
 				{TALKATIVE_MODELS.map((item) => (
@@ -353,7 +355,7 @@ export const Experience = ({ onReady, startAnimation }: { onReady: () => void; s
 				showClearText={showClearText}
 			/>
 
-			{showGalleryTransitionOverlay && <GalleryTransitionOverlay />}
+			{transitionDestination && <GalleryTransitionOverlay variant={transitionDestination === "/game" ? "game" : "gallery"} />}
 
 			{showGuideShader && <GuideOverlay isVisible={isShowGuide} onFinish={() => setShowGuideShader(false)} />}
 
